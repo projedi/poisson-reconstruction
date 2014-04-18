@@ -26,14 +26,18 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#ifndef ALLOCATOR_INCLUDED
-#define ALLOCATOR_INCLUDED
+#pragma once
+
+#include <iostream>
+#include <memory>
 #include <vector>
 
-class AllocatorState{
-public:
-	int index,remains;
+struct AllocatorState {
+	AllocatorState(): index(0), remains(0) { }
+	size_t index;
+	size_t remains;
 };
+
 /** This templated class assists in memory allocation and is well suited for instances
   * when it is known that the sequence of memory allocations is performed in a stack-based
   * manner, so that memory allocated last is released first. It also preallocates memory
@@ -43,117 +47,107 @@ public:
   * ensuring that appropriate constructors and destructors are called as necessary.
   */
 template<class T>
-class Allocator{
-	int blockSize;
-	int index,remains;
-	std::vector<T*> memory;
+class Allocator {
 public:
-	Allocator(void){
-		blockSize=index=remains=0;
-	}
-	~Allocator(void){
-		reset();
-	}
+	Allocator(): block_size_(0) { }
+	~Allocator() { reset(); }
 
 	/** This method is the allocators destructor. It frees up any of the memory that
 	  * it has allocated. */
-	void reset(void){
-		for(size_t i=0;i<memory.size();i++){delete[] memory[i];}
-		memory.clear();
-		blockSize=index=remains=0;
-	}
-	/** This method returns the memory state of the allocator. */
-	AllocatorState getState(void) const{
-		AllocatorState s;
-		s.index=index;
-		s.remains=remains;
-		return s;
-	}
+	void reset();
 
+	/** This method returns the memory state of the allocator. */
+	AllocatorState getState() const { return state_; }
 
 	/** This method rolls back the allocator so that it makes all of the memory previously
-	  * allocated available for re-allocation. Note that it does it not call the constructor
-	  * again, so after this method has been called, assumptions about the state of the values
-	  * in memory are no longer valid. */
-	void rollBack(void){
-		if(memory.size()){
-			for(size_t i=0;i<memory.size();i++){
-				for(int j=0;j<blockSize;j++){
-					memory[i][j].~T();
-					new(&memory[i][j]) T();
-				}
-			}
-			index=0;
-			remains=blockSize;
-		}
-	}
-	/** This method rolls back the allocator to the previous memory state and makes all of the memory previously
-	  * allocated available for re-allocation. Note that it does it not call the constructor
-	  * again, so after this method has been called, assumptions about the state of the values
-	  * in memory are no longer valid. */
-	void rollBack(const AllocatorState& state){
-		if(state.index<index || (state.index==index && state.remains<remains)){
-			if(state.index<index){
-				for(int j=state.remains;j<blockSize;j++){
-					memory[state.index][j].~T();
-					new(&memory[state.index][j]) T();
-				}
-				for(int i=state.index+1;i<index-1;i++){
-					for(int j=0;j<blockSize;j++){
-						memory[i][j].~T();
-						new(&memory[i][j]) T();
-					}
-				}
-				for(int j=0;j<remains;j++){
-					memory[index][j].~T();
-					new(&memory[index][j]) T();
-				}
-				index=state.index;
-				remains=state.remains;
-			}
-			else{
-				for(int j=0;j<state.remains;j<remains){
-					memory[index][j].~T();
-					new(&memory[index][j]) T();
-				}
-				remains=state.remains;
-			}
-		}
-	}
+	  * allocated available for re-allocation. Note that it does it not call the
+	  * constructor again, so after this method has been called, assumptions about the
+	  * state of the values in memory are no longer valid. */
+	void rollBack();
 
-	/** This method initiallizes the constructor and the blockSize variable specifies the
+	/** This method rolls back the allocator to the previous memory state and makes
+	  * all of the memory previously allocated available for re-allocation. Note that
+	  * it does it not call the constructor again, so after this method has been
+	  * called, assumptions about the state of the values in memory are no longer valid. */
+	void rollBack(AllocatorState const& state);
+
+	/** This method initiallizes the constructor and the block_size variable specifies the
 	  * the number of objects that should be pre-allocated at a time. */
-	void set( int blockSize){
-		reset();
-		this->blockSize=blockSize;
-		index=-1;
-		remains=0;
-	}
+	void set(size_t block_size);
 
-	/** This method returns a pointer to an array of elements objects. If there is left over pre-allocated
-	  * memory, this method simply returns a pointer to the next free piece of memory, otherwise it pre-allocates
-	  * more memory. Note that if the number of objects requested is larger than the value blockSize with which
-	  * the allocator was initialized, the request for memory will fail.
+	/** This method returns a pointer to an array of elements objects. If there is
+	  * left over pre-allocated memory, this method simply returns a pointer to
+	  * the next free piece of memory, otherwise it pre-allocates more memory.
+	  * Note that if the number of objects requested is larger than the value
+	  * block_size_ with which the allocator was initialized, the request for
+	  * memory will fail.
 	  */
-	T* newElements( int elements=1){
-		T* mem;
-		if(!elements){return NULL;}
-		if(elements>blockSize){
-			fprintf(stderr,"Allocator Error, elements bigger than block-size: %d>%d\n",elements,blockSize);
-			return NULL;
-		}
-		if(remains<elements){
-			if(index==static_cast<int>(memory.size())-1){
-				mem=new T[blockSize];
-				if(!mem){fprintf(stderr,"Failed to allocate memory\n");exit(0);}
-				memory.push_back(mem);
-			}
-			index++;
-			remains=blockSize;
-		}
-		mem=&(memory[index][blockSize-remains]);
-		remains-=elements;
-		return mem;
-	}
+	T* newElements(size_t elements = 1);
+private:
+	size_t block_size_;
+	AllocatorState state_;
+	std::vector<std::unique_ptr<T[]>> memory_;
 };
-#endif // ALLOCATOR_INCLUDE
+
+template<class T>
+void Allocator<T>::reset() {
+	memory_.clear();
+	state_ = AllocatorState();
+	block_size_ = 0;
+}
+
+template<class T>
+void Allocator<T>::rollBack() {
+	if(memory_.size()) {
+		for(size_t i = 0; i < memory_.size(); ++i) {
+			for(size_t j = 0; j < block_size_; ++j) {
+				memory_[i][j].~T();
+				new(&memory_[i][j]) T();
+			}
+		}
+		state_.index = 0;
+		state_.remains = block_size_;
+	}
+}
+
+template<class T>
+void Allocator<T>::rollBack(AllocatorState const& state) {
+	if(!(state.index < state_.index ||
+			(state.index == state_.index && state.remains < state_.remains))) return;
+	for(size_t i = state.index; i < state_.index + 1; ++i) {
+		size_t jfrom = (i == state.index) ? state.remains : 0;
+		size_t jto = (i == state_.index) ? state_.remains : block_size_;
+		for(size_t j = jfrom; j < jto; ++j){
+			memory_[i][j].~T();
+			new(&memory_[i][j]) T();
+		}
+	}
+	state_ = state;
+}
+
+template<class T>
+void Allocator<T>::set(size_t block_size) {
+	reset();
+	block_size_ = block_size;
+	state_.remains = block_size_;
+	memory_.push_back(std::unique_ptr<T[]>(new T[block_size_]));
+}
+
+template<class T>
+T* Allocator<T>::newElements(size_t elements) {
+	if(!elements) return nullptr;
+	if(elements > block_size_) {
+		std::cerr << "Allocator Error, elements bigger than block size:"
+					 << elements << " > " << block_size_ << std::endl;
+		return nullptr;
+	}
+	if(state_.remains < elements) {
+		if(state_.index == memory_.size() - 1)
+			memory_.push_back(std::unique_ptr<T[]>(new T[block_size_]));
+		++state_.index;
+		state_.remains = block_size_;
+	}
+	T* mem = &(memory_[state_.index][block_size_ - state_.remains]);
+	state_.remains -= elements;
+	return mem;
+}
