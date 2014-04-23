@@ -30,8 +30,8 @@
 		 
 */
 
-#ifndef __PLY_H__
-#define __PLY_H__
+#ifndef PLY_FILE_INCLUDED
+#define PLY_FILE_INCLUDED
 
 
 #ifndef WIN32
@@ -80,6 +80,7 @@ extern "C" {
 #define  PLY_SCALAR  0
 #define  PLY_LIST    1
 	
+#define PLY_STRIP_COMMENT_HEADER 0
 	
 typedef struct PlyProperty {    /* description of a property */
 	
@@ -199,7 +200,7 @@ extern PlyFile *ply_read(FILE *, int *, char ***);
 extern PlyFile *ply_open_for_reading( char *, int *, char ***, int *, float *);
 extern PlyProperty **ply_get_element_description(PlyFile *, char *, int*, int*);
 extern void ply_get_element_setup( PlyFile *, char *, int, PlyProperty *);
-extern void ply_get_property(PlyFile *, char *, PlyProperty *);
+extern int ply_get_property(PlyFile *, char *, PlyProperty *);
 extern PlyOtherProp *ply_get_other_properties(PlyFile *, char *, int);
 extern void ply_get_element(PlyFile *, void *);
 extern char **ply_get_comments(PlyFile *, int *);
@@ -217,9 +218,4 @@ extern int equal_strings(char *, char *);
 #ifdef __cplusplus
 }
 #endif
-#include "Geometry.h"
-#include <vector>
-
-int PlyWriteTriangles(char* fileName,CoredMeshData* mesh,int file_type,const Point3D<float>& translate,const float& scale,char** comments=NULL,const int& commentNum=0);
-int PlyDefaultFileType(void);
-#endif /* !__PLY_H__ */
+#endif // PLY_FILE_INCLUDED
