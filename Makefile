@@ -10,7 +10,7 @@ ST_TARGET=SurfaceTrimmer
 PR_SOURCE=CmdLineParser.cpp Factor.cpp Geometry.cpp MarchingCubes.cpp PlyFile.cpp Time.cpp PoissonRecon.cpp
 ST_SOURCE=CmdLineParser.cpp Factor.cpp Geometry.cpp MarchingCubes.cpp PlyFile.cpp Time.cpp SurfaceTrimmer.cpp
 
-CFLAGS += -fopenmp -std=c++11 -fpermissive
+CFLAGS += -fopenmp -std=c++11 -Wall -Wextra -Werror
 LFLAGS += -lgomp
 
 CFLAGS_DEBUG = -DDEBUG -g3

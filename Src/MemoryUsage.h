@@ -83,73 +83,12 @@ public:
 #include <sys/time.h>
 #include <sys/resource.h>
 
-class MemoryInfo
-{
- public:
-  static size_t Usage(void)
-  {
-		FILE* f = fopen("/proc/self/stat","rb");
-		
-		int d;
-		long ld;
-		unsigned long lu;
-		unsigned long long llu;
-		char* s;
-		char c;
-		
-		int pid;
-		unsigned long vm;
-
-		int n = fscanf(f, "%d %s %c %d %d %d %d %d %lu %lu %lu %lu %lu %lu %lu %ld %ld %ld %ld %d %ld %llu %lu %ld %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu %d %d %lu %lu"
-			,&pid ,&s ,&c ,&d ,&d ,&d ,&d ,&d ,&lu ,&lu ,&lu ,&lu ,&lu ,&lu ,&lu ,&ld ,&ld ,&ld ,&ld ,&d ,&ld ,&llu ,&vm ,&ld ,&lu ,&lu ,&lu ,&lu ,&lu ,&lu ,&lu ,&lu ,&lu ,&lu ,&lu ,&lu ,&lu ,&d ,&d ,&lu ,&lu );
-
-		fclose(f);
-/*
-pid %d 
-comm %s 
-state %c 
-ppid %d 
-pgrp %d 
-session %d 
-tty_nr %d
-tpgid %d 
-flags %lu 
-minflt %lu 
-cminflt %lu 
-majflt %lu 
-cmajflt %lu 
-utime %lu 
-stime %lu 
-cutime %ld 
-cstime %ld 
-priority %ld 
-nice %ld 
-0 %ld 
-itrealvalue %ld 
-starttime %lu 
-vsize %lu 
-rss %ld 
-rlim %lu 
-startcode %lu 
-endcode %lu 
-startstack %lu 
-kstkesp %lu 
-kstkeip %lu 
-signal %lu 
-blocked %lu 
-sigignore %lu 
-sigcatch %lu 
-wchan %lu 
-nswap %lu 
-cnswap %lu 
-exit_signal %d 
-processor %d 
-rt_priority %lu (since kernel 2.5.19) 
-policy %lu (since kernel 2.5.19) 
-*/
-		return vm;
+struct MemoryInfo {
+	static size_t Usage() {
+		struct rusage usage;
+		getrusage(RUSAGE_SELF, &usage);
+		return usage.ru_maxrss * 1024;
 	}
-
 };
 #else // __APPLE__: has no "/proc" pseudo-file system
 

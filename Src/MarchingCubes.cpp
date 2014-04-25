@@ -319,7 +319,7 @@ const int MarchingSquares::edges[1<<Square::CORNERS][MAX_EDGES*2+1] = {
 double MarchingSquares::vertexList[Square::EDGES][2];
 int MarchingSquares::GetIndex(const double v[Square::CORNERS],double iso){
 	int idx=0;
-	for(int i=0;i<Square::CORNERS;i++){if(v[i]<iso){idx|=(1<<i);}}
+	for(unsigned i=0;i<Square::CORNERS;i++){if(v[i]<iso){idx|=(1<<i);}}
 	return idx;
 }
 

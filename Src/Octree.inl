@@ -42,12 +42,12 @@ template<class NodeData,class Real> const int OctNode<NodeData,Real>::OffsetShif
 template<class NodeData,class Real> const int OctNode<NodeData,Real>::OffsetShift3=OffsetShift2+OffsetShift;
 
 template<class NodeData,class Real> bool OctNode<NodeData,Real>::UseAlloc=false;
-template<class NodeData,class Real> Allocator<OctNode<NodeData,Real> > OctNode<NodeData,Real>::Allocator;
+template<class NodeData,class Real> Allocator<OctNode<NodeData,Real> > OctNode<NodeData,Real>::allocator;
 
 template<class NodeData,class Real>
 void OctNode<NodeData,Real>::SetAllocator(int blockSize)
 {
-	if( blockSize>0 ) UseAlloc=true , Allocator.set(blockSize);
+	if( blockSize>0 ) UseAlloc=true , allocator.set(blockSize);
 	else UseAlloc = false;
 }
 template<class NodeData,class Real>
@@ -76,7 +76,7 @@ void OctNode<NodeData,Real>::setFullDepth(int maxDepth){
 template <class NodeData,class Real>
 bool OctNode<NodeData,Real>::initChildren( void )
 {
-	if( UseAlloc ) children=Allocator.newElements(8);
+	if( UseAlloc ) children=allocator.newElements(8);
 	else
 	{
 		if( children ) delete[] children;
@@ -173,7 +173,7 @@ int OctNode<NodeData,Real>::maxDepth(void) const{
 	if(!children){return 0;}
 	else{
 		int c,d;
-		for(int i=0;i<Cube::CORNERS;i++){
+		for(unsigned i=0;i<Cube::CORNERS;i++){
 			d=children[i].maxDepth();
 			if(!i || d>c){c=d;}
 		}
@@ -187,7 +187,7 @@ size_t OctNode< NodeData , Real >::nodes( void ) const
 	else
 	{
 		size_t c=0;
-		for( int i=0 ; i<Cube::CORNERS ; i++ ) c += children[i].nodes();
+		for( unsigned i=0 ; i<Cube::CORNERS ; i++ ) c += children[i].nodes();
 		return c+1;
 	}
 }
@@ -198,7 +198,7 @@ size_t OctNode< NodeData , Real >::leaves( void ) const
 	else
 	{
 		size_t c=0;
-		for( int i=0 ; i<Cube::CORNERS ; i++ ) c += children[i].leaves();
+		for( unsigned i=0 ; i<Cube::CORNERS ; i++ ) c += children[i].leaves();
 		return c;
 	}
 }
@@ -210,7 +210,7 @@ size_t OctNode< NodeData , Real >::maxDepthLeaves( int maxDepth ) const
 	else
 	{
 		size_t c=0;
-		for( int i=0 ; i<Cube::CORNERS ; i++ ) c+=children[i].maxDepthLeaves(maxDepth);
+		for( unsigned i=0 ; i<Cube::CORNERS ; i++ ) c+=children[i].maxDepthLeaves(maxDepth);
 		return c;
 	}
 }

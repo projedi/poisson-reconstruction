@@ -89,10 +89,10 @@ template< class C > ConstArray< C > GetPointer( const std::vector< C >& v ){ ret
 #define AlignedFreePointer( ... ) { if( __VA_ARGS__ ) aligned_free( __VA_ARGS__ ) ,                   __VA_ARGS__ = NULL; }
 #define      DeletePointer( ... ) { if( __VA_ARGS__ )      delete[] __VA_ARGS__ ,                     __VA_ARGS__ = NULL; }
 
-template< class C > C*          NewPointer(        size_t size ,                    const char* name=NULL ){ return new C[size]; }
-template< class C > C*        AllocPointer(        size_t size ,                    const char* name=NULL ){ return (C*)        malloc(        sizeof(C) * size             ); }
-template< class C > C* AlignedAllocPointer(        size_t size , size_t alignment , const char* name=NULL ){ return (C*)aligned_malloc(        sizeof(C) * size , alignment ); }
-template< class C > C*      ReAllocPointer( C* c , size_t size ,                    const char* name=NULL ){ return (C*)       realloc( c    , sizeof(C) * size             ); }
+template< class C > C*          NewPointer(        size_t size){ return new C[size]; }
+template< class C > C*        AllocPointer(        size_t size){ return (C*)        malloc(        sizeof(C) * size             ); }
+template< class C > C* AlignedAllocPointer(        size_t size , size_t alignment){ return (C*)aligned_malloc(        sizeof(C) * size , alignment ); }
+template< class C > C*      ReAllocPointer( C* c , size_t size){ return (C*)       realloc( c    , sizeof(C) * size             ); }
 
 template< class C > C* NullPointer( void ){ return NULL; }
 

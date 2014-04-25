@@ -52,6 +52,8 @@ private:
 	void _init( void );
 public:
 	int rows;
+	int Rows() const { return rows; }
+	int Columns() const { return _maxEntriesPerRow; }
 	Pointer( int ) rowSizes;
 	Pointer( Pointer( MatrixEntry< T > ) ) m_ppElements;
 	Pointer( MatrixEntry< T > ) operator[] ( int idx ) { return m_ppElements[idx]; }
@@ -119,7 +121,7 @@ public:
 	T2* operator[]( int t ) { return out[t]; }
 	const T2* operator[]( int t ) const { return out[t]; }
 	int threads( void ) const { return int( out.size() ); }
-	void resize( int threads , int dim )
+	void resize( unsigned threads , int dim )
 	{
 		if( threads!=out.size() || _dim<dim )
 		{

@@ -316,7 +316,7 @@ double BSplineData< Degree , Real >::_dot( int depth1 ,  int off1 , int depth2 ,
 	else                return _dot / (1<<depth);
 }
 template< int Degree , class Real >
-double BSplineData< Degree , Real >::value( int depth ,  int off , double smoothingRadius ,  double s , bool d , bool inset ) const
+double BSplineData< Degree , Real >::value( int depth ,  int off , double smoothingRadius ,  double s , bool d , bool) const
 {
 	PPolynomial< Degree+1 >  function;
 	PPolynomial< Degree   > dFunction;
@@ -657,7 +657,7 @@ template< int Degree >
 BSplineElements< Degree >::BSplineElements( int res , int offset , int boundary , int inset )
 {
 	denominator = 1;
-	resize( res , BSplineElementCoefficients< Degree >() );
+	this->resize( res , BSplineElementCoefficients< Degree >() );
 
 	for( int i=0 ; i<=Degree ; i++ )
 	{
@@ -724,11 +724,13 @@ void BSplineElements< 1 >::upSample( BSplineElements< 1 >& high ) const
 template<>
 void BSplineElements< 2 >::upSample( BSplineElements< 2 >& high ) const
 {
-	//    /----\
-	//   /      \
-	//  /        \  = 1  /--\       +3    /--\     +3      /--\   +1        /--\
-	// /          \     /    \           /    \           /    \           /    \
-	// |----------|     |----------|   |----------|   |----------|   |----------|
+	/*
+	    /----\
+	   /      \
+	  /        \  = 1  /--\       +3    /--\     +3      /--\   +1        /--\
+	 /          \     /    \           /    \           /    \           /    \
+	 |----------|     |----------|   |----------|   |----------|   |----------|
+	*/
 
 	high.resize( size()*2 );
 	high.assign( high.size() , BSplineElementCoefficients<2>() );

@@ -139,7 +139,7 @@ void PLYPointStream< Real >::reset( void )
 		}
 		for( int j=0 ; j<nr_props ; j++ )
 		{
-			free( plist[j]->name );
+			free( const_cast<char*>(plist[j]->name) );
 			free( plist[j] );
 		}
 		free( plist );

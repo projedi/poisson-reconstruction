@@ -82,7 +82,7 @@ extern "C" {
 
 typedef struct PlyProperty {    /* description of a property */
 	
-	char *name;                           /* property name */
+	char const* name;                           /* property name */
 	int external_type;                    /* file's data type */
 	int internal_type;                    /* program's data type */
 	int offset;                           /* offset bytes of prop in a struct */
@@ -95,7 +95,7 @@ typedef struct PlyProperty {    /* description of a property */
 } PlyProperty;
 
 typedef struct PlyElement {     /* description of an element */
-	char *name;                   /* element name */
+	char const* name;                   /* element name */
 	int num;                      /* number of elements in this object */
 	int size;                     /* size of element (bytes) or -1 if variable */
 	int nprops;                   /* number of properties for this element */
@@ -106,7 +106,7 @@ typedef struct PlyElement {     /* description of an element */
 } PlyElement;
 
 typedef struct PlyOtherProp {   /* describes other properties in an element */
-	char *name;                   /* element name */
+	char const* name;                   /* element name */
 	int size;                     /* size of other_props */
 	int nprops;                   /* number of properties in other_props */
 	PlyProperty **props;          /* list of properties in other_props */
@@ -117,7 +117,7 @@ typedef struct OtherData { /* for storing other_props for an other element */
 } OtherData;
 
 typedef struct OtherElem {     /* data for one "other" element */
-	char *elem_name;             /* names of other elements */
+	char const* elem_name;             /* names of other elements */
 	int elem_count;              /* count of instances of each element */
 	OtherData **other_data;      /* actual property data for the elements */
 	PlyOtherProp *other_props;   /* description of the property data */
@@ -184,13 +184,13 @@ extern char *my_alloc();
 
 /*** delcaration of routines ***/
 
-extern PlyFile *ply_write(FILE *, int, char **, int);
-extern PlyFile *ply_open_for_writing(char *, int, char **, int, float *);
+extern PlyFile *ply_write(FILE *, int, char const**, int);
+extern PlyFile *ply_open_for_writing(char *, int, char const**, int, float *);
 extern void ply_describe_element(PlyFile *, char *, int, int, PlyProperty *);
-extern void ply_describe_property(PlyFile *, char *, PlyProperty *);
-extern void ply_element_count(PlyFile *, char *, int);
+extern void ply_describe_property(PlyFile *, char const*, PlyProperty *);
+extern void ply_element_count(PlyFile *, char const*, int);
 extern void ply_header_complete(PlyFile *);
-extern void ply_put_element_setup(PlyFile *, char *);
+extern void ply_put_element_setup(PlyFile *, char const*);
 extern void ply_put_element(PlyFile *, void *);
 extern void ply_put_comment(PlyFile *, char *);
 extern void ply_put_obj_info(PlyFile *, char *);
@@ -211,7 +211,7 @@ extern void ply_put_other_elements (PlyFile *);
 extern void ply_free_other_elements (PlyOtherElems *);
 extern void ply_describe_other_properties(PlyFile *, PlyOtherProp *, int);
 
-extern int equal_strings(char *, char *);
+extern int equal_strings(char const*, char const*);
 
 #ifdef __cplusplus
 }
@@ -258,20 +258,6 @@ public:
 #endif
 };
 template< class Real > PlyVertex< Real > operator * ( XForm4x4< Real > xForm , PlyVertex< Real > v ) { return PlyVertex< Real >( xForm * v.point ); }
-template<>
-PlyProperty PlyVertex< float >::Properties[]=
-{
-	{"x", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyVertex,point.coords[0])), 0, 0, 0, 0},
-	{"y", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyVertex,point.coords[1])), 0, 0, 0, 0},
-	{"z", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyVertex,point.coords[2])), 0, 0, 0, 0}
-};
-template<>
-PlyProperty PlyVertex< double >::Properties[]=
-{
-	{"x", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyVertex,point.coords[0])), 0, 0, 0, 0},
-	{"y", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyVertex,point.coords[1])), 0, 0, 0, 0},
-	{"z", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyVertex,point.coords[2])), 0, 0, 0, 0}
-};
 template< class Real >
 class PlyValueVertex
 {
@@ -301,22 +287,6 @@ public:
 #endif
 };
 template< class Real > PlyValueVertex< Real > operator * ( XForm4x4< Real > xForm , PlyValueVertex< Real > v ) { return PlyValueVertex< Real >( xForm * v.point , v.value ); }
-template< >
-PlyProperty PlyValueVertex< float >::Properties[]=
-{
-	{"x", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyValueVertex,point.coords[0])), 0, 0, 0, 0},
-	{"y", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyValueVertex,point.coords[1])), 0, 0, 0, 0},
-	{"z", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyValueVertex,point.coords[2])), 0, 0, 0, 0},
-	{"value", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyValueVertex,value)), 0, 0, 0, 0}
-};
-template< >
-PlyProperty PlyValueVertex< double >::Properties[]=
-{
-	{"x", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyValueVertex,point.coords[0])), 0, 0, 0, 0},
-	{"y", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyValueVertex,point.coords[1])), 0, 0, 0, 0},
-	{"z", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyValueVertex,point.coords[2])), 0, 0, 0, 0},
-	{"value", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyValueVertex,value)), 0, 0, 0, 0}
-};
 template< class Real >
 class PlyOrientedVertex
 {
@@ -345,26 +315,6 @@ public:
 #endif
 };
 template< class Real > PlyOrientedVertex< Real > operator * ( XForm4x4< Real > xForm , PlyOrientedVertex< Real > v ) { return PlyOrientedVertex< Real >( xForm * v.point , xForm.inverse().transpose() * v.normal ); }
-template<>
-PlyProperty PlyOrientedVertex< float >::Properties[]=
-{
-	{"x", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyOrientedVertex,point.coords[0])), 0, 0, 0, 0},
-	{"y", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyOrientedVertex,point.coords[1])), 0, 0, 0, 0},
-	{"z", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyOrientedVertex,point.coords[2])), 0, 0, 0, 0},
-	{"nx", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyOrientedVertex,normal.coords[0])), 0, 0, 0, 0},
-	{"ny", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyOrientedVertex,normal.coords[1])), 0, 0, 0, 0},
-	{"nz", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyOrientedVertex,normal.coords[2])), 0, 0, 0, 0}
-};
-template<>
-PlyProperty PlyOrientedVertex< double >::Properties[]=
-{
-	{"x", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyOrientedVertex,point.coords[0])), 0, 0, 0, 0},
-	{"y", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyOrientedVertex,point.coords[1])), 0, 0, 0, 0},
-	{"z", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyOrientedVertex,point.coords[2])), 0, 0, 0, 0},
-	{"nx", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyOrientedVertex,normal.coords[0])), 0, 0, 0, 0},
-	{"ny", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyOrientedVertex,normal.coords[1])), 0, 0, 0, 0},
-	{"nz", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyOrientedVertex,normal.coords[2])), 0, 0, 0, 0}
-};
 template< class Real >
 class PlyColorVertex
 {
@@ -379,26 +329,6 @@ public:
 	operator const Point3D<Real>& () const		{return point;}
 	PlyColorVertex(void)						{point.coords[0]=point.coords[1]=point.coords[2]=0,color[0]=color[1]=color[2]=0;}
 	PlyColorVertex(const Point3D<Real>& p)	{point=p;}
-};
-template<>
-PlyProperty PlyColorVertex< float >::Properties[]=
-{
-	{"x", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyColorVertex,point.coords[0])), 0, 0, 0, 0},
-	{"y", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyColorVertex,point.coords[1])), 0, 0, 0, 0},
-	{"z", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyColorVertex,point.coords[2])), 0, 0, 0, 0},
-	{"red",		PLY_UCHAR, PLY_UCHAR, int(offsetof(PlyColorVertex,color[0])),	0, 0, 0, 0},
-	{"green",	PLY_UCHAR, PLY_UCHAR, int(offsetof(PlyColorVertex,color[1])),	0, 0, 0, 0},
-	{"blue",	PLY_UCHAR, PLY_UCHAR, int(offsetof(PlyColorVertex,color[2])),	0, 0, 0, 0}
-};
-template<>
-PlyProperty PlyColorVertex< double >::Properties[]=
-{
-	{"x", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyColorVertex,point.coords[0])), 0, 0, 0, 0},
-	{"y", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyColorVertex,point.coords[1])), 0, 0, 0, 0},
-	{"z", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyColorVertex,point.coords[2])), 0, 0, 0, 0},
-	{"red",		PLY_UCHAR, PLY_UCHAR, int(offsetof(PlyColorVertex,color[0])),	0, 0, 0, 0},
-	{"green",	PLY_UCHAR, PLY_UCHAR, int(offsetof(PlyColorVertex,color[1])),	0, 0, 0, 0},
-	{"blue",	PLY_UCHAR, PLY_UCHAR, int(offsetof(PlyColorVertex,color[2])),	0, 0, 0, 0}
 };
 
 template< class Vertex >
@@ -431,7 +361,7 @@ int PlyWritePolygons(char* fileName,
 	int nr_vertices=int(vertices.size());
 	int nr_faces=int(polygons.size());
 	float version;
-	char *elem_names[] = { "vertex" , "face" };
+	char const* elem_names[] = { "vertex" , "face" };
 	PlyFile *ply = ply_open_for_writing( fileName , 2 , elem_names , file_type , &version );
 	if (!ply){return 0;}
 	
@@ -517,10 +447,10 @@ int PlyReadPolygons(char* fileName,
 		if(!plist)
 		{
 			for(i=0;i<nr_elems;i++){
-				free(ply->elems[i]->name);
+				free(const_cast<char*>(ply->elems[i]->name));
 				free(ply->elems[i]->store_prop);
 				for(j=0;j<ply->elems[i]->nprops;j++){
-					free(ply->elems[i]->props[j]->name);
+					free(const_cast<char*>(ply->elems[i]->props[j]->name));
 					free(ply->elems[i]->props[j]);
 				}
 				free(ply->elems[i]->props);
@@ -563,17 +493,17 @@ int PlyReadPolygons(char* fileName,
 		else{ply_get_other_element (ply, elem_name, num_elems);}
 
 		for(j=0;j<nr_props;j++){
-			free(plist[j]->name);
+			free(const_cast<char*>(plist[j]->name));
 			free(plist[j]);
 		}
 		free(plist);
 	}  // for each type of element
 	
 	for(i=0;i<nr_elems;i++){
-		free(ply->elems[i]->name);
+		free(const_cast<char*>(ply->elems[i]->name));
 		free(ply->elems[i]->store_prop);
 		for(j=0;j<ply->elems[i]->nprops;j++){
-			free(ply->elems[i]->props[j]->name);
+			free(const_cast<char*>(ply->elems[i]->props[j]->name));
 			free(ply->elems[i]->props[j]);
 		}
 		if(ply->elems[i]->props && ply->elems[i]->nprops){free(ply->elems[i]->props);}
@@ -671,7 +601,7 @@ int PlyWritePolygons( char* fileName , CoredMeshData< Vertex >* mesh , int file_
 	int nr_vertices=int(mesh->outOfCorePointCount()+mesh->inCorePoints.size());
 	int nr_faces=mesh->polygonCount();
 	float version;
-	char *elem_names[] = { "vertex" , "face" };
+	char const* elem_names[] = { "vertex" , "face" };
 	PlyFile *ply = ply_open_for_writing( fileName , 2 , elem_names , file_type , &version );
 	if( !ply ) return 0;
 

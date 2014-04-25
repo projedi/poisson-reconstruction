@@ -75,7 +75,7 @@ DAMAGE.
 #pragma message( "[WARNING] Not zeroing out normal component on boundary" )
 #endif // !FORCE_NEUMANN_FIELD
 
-#include "Hash.h"
+#include <unordered_map>
 #include "BSplineData.h"
 typedef float Real;
 typedef float MatrixReal;
@@ -95,8 +95,7 @@ public:
 	Real constraint , solution;
 	int pointIndex;
 
-	TreeNodeData(void);
-	~TreeNodeData(void);
+	TreeNodeData();
 };
 
 template< bool OutputDensity >
@@ -243,7 +242,7 @@ class Octree
 	public:
 		int fIndex , maxDepth;
 		std::vector< std::pair< RootInfo< OutputDensity > , RootInfo< OutputDensity > > >* edges;
-		hash_map< long long , std::pair< RootInfo< OutputDensity > , int > >* vertexCount;
+		std::unordered_map< long long , std::pair< RootInfo< OutputDensity > , int > >* vertexCount;
 		void Function( const TreeOctNode* node1 , const TreeOctNode* node2 );
 		typename TreeOctNode::ConstNeighborKey3* neighborKey3;
 	};
@@ -307,9 +306,9 @@ class Octree
 	struct RootData : public SortedTreeNodes< OutputDensity >::CornerTableData , public SortedTreeNodes< OutputDensity >::EdgeTableData
 	{
 		// Edge to iso-vertex map
-		hash_map< long long , int > boundaryRoots;
+		std::unordered_map< long long , int > boundaryRoots;
 		// Vertex to ( value , normal ) map
-		hash_map< long long , std::pair< Real , Point3D< Real > > > *boundaryValues;
+		std::unordered_map< long long , std::pair< Real , Point3D< Real > > > *boundaryValues;
 		Pointer( int ) interiorRoots;
 		Pointer( Real ) cornerValues;
 		Pointer( Point3D< Real > ) cornerNormals;

@@ -36,9 +36,83 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "PlyFile.h"
+#include "Ply.h"
 
-char *type_names[] = {
+template<>
+PlyProperty PlyVertex< float >::Properties[]=
+{
+	{"x", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyVertex,point.coords[0])), 0, 0, 0, 0},
+	{"y", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyVertex,point.coords[1])), 0, 0, 0, 0},
+	{"z", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyVertex,point.coords[2])), 0, 0, 0, 0}
+};
+template<>
+PlyProperty PlyVertex< double >::Properties[]=
+{
+	{"x", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyVertex,point.coords[0])), 0, 0, 0, 0},
+	{"y", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyVertex,point.coords[1])), 0, 0, 0, 0},
+	{"z", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyVertex,point.coords[2])), 0, 0, 0, 0}
+};
+
+template< >
+PlyProperty PlyValueVertex< float >::Properties[]=
+{
+	{"x", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyValueVertex,point.coords[0])), 0, 0, 0, 0},
+	{"y", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyValueVertex,point.coords[1])), 0, 0, 0, 0},
+	{"z", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyValueVertex,point.coords[2])), 0, 0, 0, 0},
+	{"value", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyValueVertex,value)), 0, 0, 0, 0}
+};
+template< >
+PlyProperty PlyValueVertex< double >::Properties[]=
+{
+	{"x", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyValueVertex,point.coords[0])), 0, 0, 0, 0},
+	{"y", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyValueVertex,point.coords[1])), 0, 0, 0, 0},
+	{"z", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyValueVertex,point.coords[2])), 0, 0, 0, 0},
+	{"value", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyValueVertex,value)), 0, 0, 0, 0}
+};
+
+template<>
+PlyProperty PlyOrientedVertex< float >::Properties[]=
+{
+	{"x", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyOrientedVertex,point.coords[0])), 0, 0, 0, 0},
+	{"y", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyOrientedVertex,point.coords[1])), 0, 0, 0, 0},
+	{"z", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyOrientedVertex,point.coords[2])), 0, 0, 0, 0},
+	{"nx", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyOrientedVertex,normal.coords[0])), 0, 0, 0, 0},
+	{"ny", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyOrientedVertex,normal.coords[1])), 0, 0, 0, 0},
+	{"nz", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyOrientedVertex,normal.coords[2])), 0, 0, 0, 0}
+};
+template<>
+PlyProperty PlyOrientedVertex< double >::Properties[]=
+{
+	{"x", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyOrientedVertex,point.coords[0])), 0, 0, 0, 0},
+	{"y", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyOrientedVertex,point.coords[1])), 0, 0, 0, 0},
+	{"z", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyOrientedVertex,point.coords[2])), 0, 0, 0, 0},
+	{"nx", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyOrientedVertex,normal.coords[0])), 0, 0, 0, 0},
+	{"ny", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyOrientedVertex,normal.coords[1])), 0, 0, 0, 0},
+	{"nz", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyOrientedVertex,normal.coords[2])), 0, 0, 0, 0}
+};
+
+template<>
+PlyProperty PlyColorVertex< float >::Properties[]=
+{
+	{"x", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyColorVertex,point.coords[0])), 0, 0, 0, 0},
+	{"y", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyColorVertex,point.coords[1])), 0, 0, 0, 0},
+	{"z", PLY_FLOAT, PLY_FLOAT, int(offsetof(PlyColorVertex,point.coords[2])), 0, 0, 0, 0},
+	{"red",		PLY_UCHAR, PLY_UCHAR, int(offsetof(PlyColorVertex,color[0])),	0, 0, 0, 0},
+	{"green",	PLY_UCHAR, PLY_UCHAR, int(offsetof(PlyColorVertex,color[1])),	0, 0, 0, 0},
+	{"blue",	PLY_UCHAR, PLY_UCHAR, int(offsetof(PlyColorVertex,color[2])),	0, 0, 0, 0}
+};
+template<>
+PlyProperty PlyColorVertex< double >::Properties[]=
+{
+	{"x", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyColorVertex,point.coords[0])), 0, 0, 0, 0},
+	{"y", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyColorVertex,point.coords[1])), 0, 0, 0, 0},
+	{"z", PLY_DOUBLE, PLY_DOUBLE, int(offsetof(PlyColorVertex,point.coords[2])), 0, 0, 0, 0},
+	{"red",		PLY_UCHAR, PLY_UCHAR, int(offsetof(PlyColorVertex,color[0])),	0, 0, 0, 0},
+	{"green",	PLY_UCHAR, PLY_UCHAR, int(offsetof(PlyColorVertex,color[1])),	0, 0, 0, 0},
+	{"blue",	PLY_UCHAR, PLY_UCHAR, int(offsetof(PlyColorVertex,color[2])),	0, 0, 0, 0}
+};
+
+char const* type_names[] = {
 	"invalid",
 	"char",
 	"short",
@@ -97,15 +171,11 @@ static int types_checked = 0;
 #define OTHER_PROP       0
 #define NAMED_PROP       1
 
-
-/* returns 1 if strings are equal, 0 if not */
-int equal_strings(char *, char *);
-
 /* find an element in a plyfile's list */
-PlyElement *find_element(PlyFile *, char *);
+PlyElement *find_element(PlyFile *, char const*);
 
 /* find a property in an element's list */
-PlyProperty *find_property(PlyElement *, char *, int *);
+PlyProperty *find_property(PlyElement *, char const*, int *);
 
 /* write to a file the word describing a PLY file data type */
 void write_scalar_type (FILE *, int);
@@ -146,7 +216,7 @@ void ascii_get_element(PlyFile *, char *);
 void binary_get_element(PlyFile *, char *);
 
 /* memory allocation */
-char *my_alloc(int, int, char *);
+char *my_alloc(int, int, char const*);
 
 /* byte ordering */
 void get_native_binary_type();
@@ -175,7 +245,7 @@ Given a file pointer, get ready to write PLY data to the file.
 PlyFile *ply_write(
 				   FILE *fp,
 				   int nelems,
-				   char **elem_names,
+				   char const** elem_names,
 				   int file_type
 				   )
 {
@@ -239,7 +309,7 @@ Open a polygon file for writing.
 PlyFile *ply_open_for_writing(
 							  char *filename,
 							  int nelems,
-							  char **elem_names,
+							  char const** elem_names,
 							  int file_type,
 							  float *version
 							  )
@@ -336,7 +406,7 @@ Describe a property of an element.
 
 void ply_describe_property(
 						   PlyFile *plyfile,
-						   char *elem_name,
+						   char const* elem_name,
 						   PlyProperty *prop
 						   )
 {
@@ -442,7 +512,7 @@ State how many of a given element will be written.
 
 void ply_element_count(
 					   PlyFile *plyfile,
-					   char *elem_name,
+					   char const* elem_name,
 					   int nelems
 					   )
 {
@@ -540,7 +610,7 @@ before a call to the routine ply_put_element().
  elem_name - name of element we're talking about
 ******************************************************************************/
 
-void ply_put_element_setup(PlyFile *plyfile, char *elem_name)
+void ply_put_element_setup(PlyFile *plyfile, char const* elem_name)
 {
 	PlyElement *elem;
 	
@@ -1454,7 +1524,7 @@ Open a polygon file for reading.
   Compare two strings.  Returns 1 if they are the same, 0 if not.
   ******************************************************************************/
   
-  int equal_strings(char *s1, char *s2)
+  int equal_strings(char const* s1, char const* s2)
   {
 	  
 	  while (*s1 && *s2)
@@ -1479,7 +1549,7 @@ Open a polygon file for reading.
 	returns the element, or NULL if not found
   ******************************************************************************/
   
-  PlyElement *find_element(PlyFile *plyfile, char *element)
+  PlyElement *find_element(PlyFile *plyfile, char const* element)
   {
 	  int i;
 	  
@@ -1503,7 +1573,7 @@ Open a polygon file for reading.
 	returns a pointer to the property, or NULL if not found
   ******************************************************************************/
   
-  PlyProperty *find_property(PlyElement *elem, char *prop_name, int *index)
+  PlyProperty *find_property(PlyElement *elem, char const* prop_name, int *index)
   {
 	  int i;
 	  
@@ -2712,7 +2782,7 @@ Read an element from a binary file.
    fname - file name from which memory was requested
   ******************************************************************************/
   
-  char *my_alloc(int size, int lnum, char *fname)
+  char *my_alloc(int size, int lnum, char const* fname)
   {
 	  char *ptr;
 	  

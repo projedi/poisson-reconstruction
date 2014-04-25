@@ -29,7 +29,7 @@ DAMAGE.
 #ifndef __VECTOR_HPP
 #define __VECTOR_HPP
 
-
+#include <cstring>
 #define Assert assert
 #include <assert.h>
 #include "Array.h"

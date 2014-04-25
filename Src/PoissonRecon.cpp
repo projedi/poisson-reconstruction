@@ -234,7 +234,7 @@ void ShowUsage(char* ex)
 	printf( "\t\t If this flag is enabled, the progress of the reconstructor will be output to STDOUT.\n" );
 }
 template< int Degree , class Vertex , bool OutputDensity >
-int Execute( int argc , char* argv[] )
+int Execute(int, char* argv[] )
 {
 	int i;
 	int paramNum = sizeof(params)/sizeof(cmdLineReadable*);
@@ -416,8 +416,8 @@ int main( int argc , char* argv[] )
 		if( !SetInformationJobObject( h , JobObjectExtendedLimitInformation , &jeli , sizeof( jeli ) ) )
 			fprintf( stderr , "Failed to set memory limit\n" );
 	}
-#endif // defined(WIN32) && defined(MAX_MEMORY_GB)
 	double t = Time();
+#endif // defined(WIN32) && defined(MAX_MEMORY_GB)
 
 	cmdLineParse( argc-1 , &argv[1] , sizeof(params)/sizeof(cmdLineReadable*) , params , 1 );
 	if( Density.set ) Execute< 2 , PlyValueVertex< Real > , true  >( argc , argv );

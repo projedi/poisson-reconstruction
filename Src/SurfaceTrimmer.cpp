@@ -133,7 +133,7 @@ void SplitPolygon
 	std::vector< PlyValueVertex< Real > >& vertices , 
 	std::vector< std::vector< int > >* ltPolygons , std::vector< std::vector< int > >* gtPolygons ,
 	std::vector< bool >* ltFlags , std::vector< bool >* gtFlags ,
-	hash_map< long long , int >& vertexTable ,
+	std::unordered_map< long long , int >& vertexTable ,
 	Real trimValue
 	)
 {
@@ -160,7 +160,7 @@ void SplitPolygon
 			int j1 = (start+int(sz)-1)%sz , j2 = start;
 			int v1 = polygon[j1] , v2 = polygon[j2];
 			int vIdx;
-			hash_map< long long , int >::iterator iter = vertexTable.find( EdgeKey( v1 , v2 ) );
+			std::unordered_map< long long , int >::iterator iter = vertexTable.find( EdgeKey( v1 , v2 ) );
 			if( iter==vertexTable.end() )
 			{
 				vertexTable[ EdgeKey( v1 , v2 ) ] = vIdx = int( vertices.size() );
@@ -178,7 +178,7 @@ void SplitPolygon
 			else
 			{
 				int vIdx;
-				hash_map< long long , int >::iterator iter = vertexTable.find( EdgeKey( v1 , v2 ) );
+				std::unordered_map< long long , int >::iterator iter = vertexTable.find( EdgeKey( v1 , v2 ) );
 				if( iter==vertexTable.end() )
 				{
 					vertexTable[ EdgeKey( v1 , v2 ) ] = vIdx = int( vertices.size() );
@@ -221,7 +221,7 @@ void Triangulate( const std::vector< PlyValueVertex< Real > >& vertices , const 
 template< class Vertex >
 void RemoveHangingVertices( std::vector< Vertex >& vertices , std::vector< std::vector< int > >& polygons )
 {
-	hash_map< int , int > vMap;
+	std::unordered_map< int , int > vMap;
 	std::vector< bool > vertexFlags( vertices.size() , false );
 	for( size_t i=0 ; i<polygons.size() ; i++ ) for( size_t j=0 ; j<polygons[i].size() ; j++ ) vertexFlags[ polygons[i][j] ] = true;
 	int vCount = 0;
@@ -236,7 +236,7 @@ void SetConnectedComponents( const std::vector< std::vector< int > >& polygons ,
 {
 	std::vector< int > polygonRoots( polygons.size() );
 	for( size_t i=0 ; i<polygons.size() ; i++ ) polygonRoots[i] = int(i);
-	hash_map< long long , int > edgeTable;
+	std::unordered_map< long long , int > edgeTable;
 	for( size_t i=0 ; i<polygons.size() ; i++ )
 	{
 		int sz = int( polygons[i].size() );
@@ -245,7 +245,7 @@ void SetConnectedComponents( const std::vector< std::vector< int > >& polygons ,
 			int j1 = j , j2 = (j+1)%sz;
 			int v1 = polygons[i][j1] , v2 = polygons[i][j2];
 			long long eKey = EdgeKey( v1 , v2 );
-			hash_map< long long , int >::iterator iter = edgeTable.find( eKey );
+			std::unordered_map< long long , int >::iterator iter = edgeTable.find( eKey );
 			if( iter==edgeTable.end() ) edgeTable[ eKey ] = int(i);
 			else
 			{
@@ -274,7 +274,7 @@ void SetConnectedComponents( const std::vector< std::vector< int > >& polygons ,
 		}
 	}
 	int cCount = 0;
-	hash_map< int , int > vMap;
+	std::unordered_map< int , int > vMap;
 	for( int i= 0 ; i<int(polygonRoots.size()) ; i++ ) if( polygonRoots[i]==i ) vMap[i] = cCount++;
 	components.resize( cCount );
 	for( int i=0 ; i<int(polygonRoots.size()) ; i++ ) components[ vMap[ polygonRoots[i] ] ].push_back(i);
@@ -342,7 +342,7 @@ int main( int argc , char* argv[] )
 
 	if( Trim.set )
 	{
-		hash_map< long long , int > vertexTable;
+		std::unordered_map< long long , int > vertexTable;
 		std::vector< std::vector< int > > ltPolygons , gtPolygons;
 		std::vector< bool > ltFlags , gtFlags;
 

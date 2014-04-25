@@ -79,7 +79,7 @@ public:
 	static const int DepthShift,OffsetShift,OffsetShift1,OffsetShift2,OffsetShift3;
 	static const int DepthMask,OffsetMask;
 
-	static Allocator<OctNode> Allocator;
+	static Allocator<OctNode> allocator;
 	static bool UseAllocator( void );
 	static void SetAllocator( int blockSize );
 
