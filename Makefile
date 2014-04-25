@@ -56,3 +56,10 @@ $(BIN)%.o: $(SRC)%.c
 $(BIN)%.o: $(SRC)%.cpp
 	$(CXX) -c -o $@ $(CFLAGS) -I$(INCLUDE) $<
 
+test:
+	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig"
+	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig"
+
+test-release:
+	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig-release"
+	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig-release"
