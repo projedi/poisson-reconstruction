@@ -976,7 +976,7 @@ void Octree< Degree , OutputDensity >::setBSplineData( int maxDepth , int bounda
 	radius = 0.5 + 0.5 * Degree;
 	width = int(double(radius+0.5-EPSILON)*2);
 	postDerivativeSmooth = Real(1.0)/(1<<maxDepth);
-	fData.set( maxDepth , true , boundaryType );
+	fData.set( maxDepth , (BoundaryType)boundaryType );
 }
 
 template< int Degree , bool OutputDensity >
@@ -1182,13 +1182,13 @@ int Octree< Degree , OutputDensity >::SetMatrixRow( const typename TreeOctNode::
 						for( int s=0 ; s<3 ; s++ )
 						{
 #if ROBERTO_TOLDO_FIX
-							if( idx[0]+j-s>=0 && idx[0]+j-s<((2<<node->depth())-1) ) _splineValues[3*0+s] = Real( fData.baseBSplines[ idx[0]+j-s][s]( p[0] ) );
-							if( idx[1]+k-s>=0 && idx[1]+k-s<((2<<node->depth())-1) ) _splineValues[3*1+s] = Real( fData.baseBSplines[ idx[1]+k-s][s]( p[1] ) );
-							if( idx[2]+l-s>=0 && idx[2]+l-s<((2<<node->depth())-1) ) _splineValues[3*2+s] = Real( fData.baseBSplines[ idx[2]+l-s][s]( p[2] ) );
+							if( idx[0]+j-s>=0 && idx[0]+j-s<((2<<node->depth())-1) ) _splineValues[3*0+s] = Real( fData.baseBSplines(idx[0]+j-s, s)( p[0] ) );
+							if( idx[1]+k-s>=0 && idx[1]+k-s<((2<<node->depth())-1) ) _splineValues[3*1+s] = Real( fData.baseBSplines(idx[1]+k-s, s)( p[1] ) );
+							if( idx[2]+l-s>=0 && idx[2]+l-s<((2<<node->depth())-1) ) _splineValues[3*2+s] = Real( fData.baseBSplines(idx[2]+l-s, s)( p[2] ) );
 #else // !ROBERTO_TOLDO_FIX
-							_splineValues[3*0+s] = Real( fData.baseBSplines[ idx[0]+j-s][s]( p[0] ) );
-							_splineValues[3*1+s] = Real( fData.baseBSplines[ idx[1]+k-s][s]( p[1] ) );
-							_splineValues[3*2+s] = Real( fData.baseBSplines[ idx[2]+l-s][s]( p[2] ) );
+							_splineValues[3*0+s] = Real( fData.baseBSplines(idx[0]+j-s, s)( p[0] ) );
+							_splineValues[3*1+s] = Real( fData.baseBSplines(idx[1]+k-s, s)( p[1] ) );
+							_splineValues[3*2+s] = Real( fData.baseBSplines(idx[2]+l-s, s)( p[2] ) );
 #endif // ROBERTO_TOLDO_FIX
 						}
 						Real value = _splineValues[3*0+j] * _splineValues[3*1+k] * _splineValues[3*2+l];
@@ -1489,9 +1489,9 @@ void Octree< Degree , OutputDensity >::UpdateConstraintsFromCoarser( const typen
 				Real pointValue = pData.coarserValue;
 				Point3D< Real > p = pData.position;
 				constraint += 
-					fData.baseBSplines[idx[0]][x-1]( p[0] ) *
-					fData.baseBSplines[idx[1]][y-1]( p[1] ) *
-					fData.baseBSplines[idx[2]][z-1]( p[2] ) * 
+					fData.baseBSplines(idx[0], x-1)( p[0] ) *
+					fData.baseBSplines(idx[1], y-1)( p[1] ) *
+					fData.baseBSplines(idx[2], z-1)( p[2] ) * 
 					pointValue;
 			}
 		node->nodeData.constraint -= Real( constraint );
@@ -1752,19 +1752,19 @@ Real Octree< Degree , OutputDensity >::WeightedCoarserFunctionValue( const typen
 		{
 #if ROBERTO_TOLDO_FIX
 			double xValue = 0;
-			if( _idx[0]+j>=0 && _idx[0]+j<((1<<depth)-1) ) xValue = fData.baseBSplines[ _idx[0]+j ][2-j]( p[0] );
+			if( _idx[0]+j>=0 && _idx[0]+j<((1<<depth)-1) ) xValue = fData.baseBSplines(_idx[0]+j, 2-j)( p[0] );
 			else continue;
 #else // !ROBERTO_TOLDO_FIX
-			double xValue = fData.baseBSplines[ _idx[0]+j ][2-j]( p[0] );
+			double xValue = fData.baseBSplines(_idx[0]+j, 2-j)( p[0] );
 #endif // ROBERTO_TOLDO_FIX
 			for( int k=0 ; k<3 ; k++ )
 			{
 #if ROBERTO_TOLDO_FIX
 				double xyValue = 0;
-				if( _idx[1]+k>=0 && _idx[1]+k<((1<<depth)-1) ) xyValue = xValue * fData.baseBSplines[ _idx[1]+k ][2-k]( p[1] );
+				if( _idx[1]+k>=0 && _idx[1]+k<((1<<depth)-1) ) xyValue = xValue * fData.baseBSplines(_idx[1]+k, 2-k)( p[1] );
 				else continue;
 #else // !ROBERTO_TOLDO_FIX
-				double xyValue = xValue * fData.baseBSplines[ _idx[1]+k ][2-k]( p[1] );
+				double xyValue = xValue * fData.baseBSplines(_idx[1]+k, 2-k)( p[1] );
 #endif // ROBERTO_TOLDO_FIX
 				double _pointValue = 0;
 				for( int l=0 ; l<3 ; l++ )
@@ -1772,10 +1772,10 @@ Real Octree< Degree , OutputDensity >::WeightedCoarserFunctionValue( const typen
 					const TreeOctNode* basisNode = neighbors.neighbors[j][k][l];
 #if ROBERTO_TOLDO_FIX
 					if( basisNode && basisNode->nodeData.nodeIndex>=0 && _idx[2]+l>=0 && _idx[2]+l<((1<<depth)-1) )
-						_pointValue += fData.baseBSplines[ _idx[2]+l ][2-l]( p[2] ) * double( metSolution[basisNode->nodeData.nodeIndex] );
+						_pointValue += fData.baseBSplines(_idx[2]+l, 2-l)( p[2] ) * double( metSolution[basisNode->nodeData.nodeIndex] );
 #else // !ROBERTO_TOLDO_FIX
 					if( basisNode && basisNode->nodeData.nodeIndex>=0 )
-						_pointValue += fData.baseBSplines[ _idx[2]+l ][2-l]( p[2] ) * double( metSolution[basisNode->nodeData.nodeIndex] );
+						_pointValue += fData.baseBSplines(_idx[2]+l, 2-l)( p[2] ) * double( metSolution[basisNode->nodeData.nodeIndex] );
 #endif // ROBERTO_TOLDO_FIX
 				}
 				pointValue += _pointValue * xyValue;
@@ -2049,7 +2049,7 @@ int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const 
 	int maxDimension = 0;
 	typename TreeOctNode::NeighborKey3 neighborKey3;
 	typename TreeOctNode::Neighbors5 neighbors5;
-	neighborKey3.set( fData.depth );
+	neighborKey3.set( fData.depth() );
 	for( int i=sNodes.nodeCount[d] ; i<sNodes.nodeCount[d+1] ; i++ )
 	{
 		// Count the number of nodes at depth "depth" that lie under sNodes.treeNodes[i]
@@ -2063,7 +2063,7 @@ int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const 
 #pragma message( "[WARNING] Assuming that the 2-ring contains all the children of interest..." )
 		neighborKey3.getNeighbors( sNodes.treeNodes[i] , neighbors5 );
 		for( int x=0 ; x<5 ; x++ ) for( int y=0 ; y<5 ; y++ ) for( int z=0 ; z<5 ; z++ ) if( neighbors5.neighbors[x][y][z] && !(x==2 && y==2 && z==2) )
-			TreeOctNode::ProcessFixedDepthNodeAdjacentNodes( fData.depth , sNodes.treeNodes[i] , 1 , neighbors5.neighbors[x][y][z] , 2*width-1 , depth , &acf );
+			TreeOctNode::ProcessFixedDepthNodeAdjacentNodes( fData.depth() , sNodes.treeNodes[i] , 1 , neighbors5.neighbors[x][y][z] , 2*width-1 , depth , &acf );
 		subDimension[i-sNodes.nodeCount[d]] = acf.adjacencyCount;
 		maxDimension = std::max< int >( maxDimension , subDimension[i-sNodes.nodeCount[d]] );
 	}
@@ -2091,7 +2091,7 @@ int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const 
 #pragma message( "[WARNING] Assuming that the 2-ring contains all the children of interest..." )
 		neighborKey3.getNeighbors( sNodes.treeNodes[i] , neighbors5 );
 		for( int x=0 ; x<5 ; x++ ) for( int y=0 ; y<5 ; y++ ) for( int z=0 ; z<5 ; z++ ) if( neighbors5.neighbors[x][y][z] && !(x==2 && y==2 && z==2) )
-			TreeOctNode::ProcessFixedDepthNodeAdjacentNodes( fData.depth , sNodes.treeNodes[i] , 1 , neighbors5.neighbors[x][y][z] , 2*width-1 , depth , &asf );
+			TreeOctNode::ProcessFixedDepthNodeAdjacentNodes( fData.depth() , sNodes.treeNodes[i] , 1 , neighbors5.neighbors[x][y][z] , 2*width-1 , depth , &asf );
 
 		// Get the associated constraint vector
 		_B.Resize( asf.adjacencyCount ) , _X.Resize( asf.adjacencyCount );
@@ -2204,7 +2204,7 @@ void Octree< Degree , OutputDensity >::SetLaplacianConstraints( void )
 		SetDivergenceStencils( d , integrator , stencils , true );
 		{
 			typename TreeOctNode::NeighborKey3 neighborKey3;
-			neighborKey3.set( fData.depth );
+			neighborKey3.set( fData.depth() );
 #pragma omp parallel for num_threads( threads ) firstprivate( neighborKey3 )
 			for( int i=_sNodes.nodeCount[d] ; i<_sNodes.nodeCount[d+1] ; i++ )
 			{
@@ -2377,8 +2377,6 @@ void Octree< Degree , OutputDensity >::SetLaplacianConstraints( void )
 		}
 	}
 
-	fData.clearDotTables( fData.DV_DOT_FLAG );
-
 	// Set the point weights for evaluating the iso-value
 #pragma omp parallel for num_threads( threads )
 	for( int i=0 ; i<_sNodes.nodeCount[maxDepth+1] ; i++ )
@@ -2515,7 +2513,7 @@ template< class Vertex >
 void Octree< Degree , OutputDensity >::GetMCIsoTriangles( Real isoValue , int subdivideDepth , CoredMeshData< Vertex >* mesh , int, int nonLinearFit , bool addBarycenter , bool polygonMesh )
 {
 	typename BSplineData< Degree , Real >::template CornerEvaluator< 2 > evaluator;
-	fData.setCornerEvaluator( evaluator , 0 , postDerivativeSmooth , _boundaryType==0 );
+	fData.setCornerEvaluator( evaluator , 0 , postDerivativeSmooth);
 	// Ensure that the subtrees are self-contained
 	int sDepth = refineBoundary( subdivideDepth );
 
@@ -2863,7 +2861,7 @@ Real Octree< Degree , OutputDensity >::GetIsoValue( void )
 	int maxDepth = tree.maxDepth();
 
 	typename BSplineData< Degree , Real >::template CenterEvaluator< 1 > evaluator;
-	fData.setCenterEvaluator( evaluator , 0 , 0 , _boundaryType==0 );
+	fData.setCenterEvaluator( evaluator , 0 , 0);
 	std::vector< CenterValueStencil > vStencils( maxDepth+1 );
 	for( int d=_minDepth ; d<=maxDepth ; d++ )
 	{
@@ -3156,8 +3154,8 @@ int Octree< Degree , OutputDensity >::GetRoot( const RootInfo< OutputDensity >& 
 	Real averageRoot=0;
 	Cube::FactorEdgeIndex( ri.edgeIndex , o , i1 , i2 );
 	int idx1[3] , idx2[3];
-	key1 = VertexData< OutputDensity >::CornerIndex( ri.node , c1 , fData.depth , idx1 );
-	key2 = VertexData< OutputDensity >::CornerIndex( ri.node , c2 , fData.depth , idx2 );
+	key1 = VertexData< OutputDensity >::CornerIndex( ri.node , c1 , fData.depth() , idx1 );
+	key2 = VertexData< OutputDensity >::CornerIndex( ri.node , c2 , fData.depth() , idx2 );
 
 	bool isBoundary = ( IsBoundaryEdge( ri.node , ri.edgeIndex , sDepth )!=0 );
 	bool haveKey1 , haveKey2;
@@ -3440,7 +3438,7 @@ int Octree< Degree , OutputDensity >::SetMCRootPositions( TreeOctNode* node , in
 	{
 		long long key;
 		eIndex = Cube::EdgeIndex( i , j , k );
-		if( GetRootIndex( node , eIndex , fData.depth , neighborKey3 , ri ) )
+		if( GetRootIndex( node , eIndex , fData.depth() , neighborKey3 , ri ) )
 		{
 			key = ri.key;
 			if( !rootData.interiorRoots || IsBoundaryEdge( node , i , j , k , sDepth ) )
@@ -3551,7 +3549,7 @@ void Octree< Degree , OutputDensity >::GetMCIsoEdges( TreeOctNode* node , typena
 	std::unordered_map< long long , std::pair< RootInfo< OutputDensity > , int > > vertexCount;
 
 	fef.edges = &edges;
-	fef.maxDepth = fData.depth;
+	fef.maxDepth = fData.depth();
 	fef.vertexCount = &vertexCount;
 	fef.neighborKey3 = &neighborKey3;
 	const TreeOctNode* _temp[Cube::NEIGHBORS];
@@ -3580,7 +3578,7 @@ void Octree< Degree , OutputDensity >::GetMCIsoEdges( TreeOctNode* node , typena
 			for( int j=0 ; j<count ; j++ )
 				for( int k=0 ; k<3 ; k++ )
 					if( fIndex==Cube::FaceAdjacentToEdges( isoTri[j*3+k] , isoTri[j*3+((k+1)%3)] ) ) {
-						if( GetRootIndex( node , isoTri[j*3+k] , fData.depth , neighborKey3 , ri1 ) && GetRootIndex( node , isoTri[j*3+((k+1)%3)] , fData.depth , neighborKey3 , ri2 ) )
+						if( GetRootIndex( node , isoTri[j*3+k] , fData.depth() , neighborKey3 , ri1 ) && GetRootIndex( node , isoTri[j*3+((k+1)%3)] , fData.depth() , neighborKey3 , ri2 ) )
 						{
 							long long key1 = ri1.key , key2 = ri2.key;
 							edges.push_back( std::pair< RootInfo< OutputDensity > , RootInfo< OutputDensity > >( ri1 , ri2 ) );
@@ -3615,7 +3613,7 @@ void Octree< Degree , OutputDensity >::GetMCIsoEdges( TreeOctNode* node , typena
 		else if( vertexCount[ edges[i].first.key ].second )
 		{
 			RootInfo< OutputDensity > ri;
-			GetRootPair( vertexCount[edges[i].first.key].first , fData.depth , neighborKey3 , ri );
+			GetRootPair( vertexCount[edges[i].first.key].first , fData.depth() , neighborKey3 , ri );
 			long long key = ri.key;
 			iter = vertexCount.find( key );
 			if( iter==vertexCount.end() )
@@ -3637,7 +3635,7 @@ void Octree< Degree , OutputDensity >::GetMCIsoEdges( TreeOctNode* node , typena
 		else if( vertexCount[edges[i].second.key].second )
 		{
 			RootInfo< OutputDensity > ri;
-			GetRootPair( vertexCount[edges[i].second.key].first , fData.depth , neighborKey3 , ri );
+			GetRootPair( vertexCount[edges[i].second.key].first , fData.depth() , neighborKey3 , ri );
 			long long key = ri.key;
 			iter=vertexCount.find( key );
 			if( iter==vertexCount.end() )
@@ -3830,7 +3828,7 @@ Real Octree< Degree , OutputDensity >::GetSolutionValue( Point3D< Real > p , con
 {
 	Real value = Real(0);
 	BSplineData< Degree , Real > _fData;
-	if( !fData ) _fData.set( tree.maxDepth() , true , _boundaryType ) , fData = &_fData;
+	if( !fData ) _fData.set( tree.maxDepth() , _boundaryType ) , fData = &_fData;
 	const TreeOctNode* n = tree.nextNode();
 	while( n )
 	{
@@ -3863,9 +3861,9 @@ Pointer( Real ) Octree< Degree , OutputDensity >::GetSolutionGrid( int& res , Re
 	int maxDepth = _boundaryType==0 ? tree.maxDepth()-1 : tree.maxDepth();
 	if( depth<=0 || depth>maxDepth ) depth = maxDepth;
 	BSplineData< Degree , Real > fData;
-	fData.set( _boundaryType==0 ? depth+1 : depth , true , _boundaryType );
+	fData.set( _boundaryType==0 ? depth+1 : depth , (BoundaryType)_boundaryType );
 	res = 1<<depth;
-	fData.setValueTables( fData.VALUE_FLAG );
+	fData.setValueTables();
 	Pointer( Real ) values = NewPointer< Real >( res * res * res );
 	memset( values , 0 , sizeof( Real ) * res  * res * res );
 
@@ -3903,9 +3901,9 @@ Pointer( Real ) Octree< Degree , OutputDensity >::GetSolutionGrid( int& res , Re
 					if( _boundaryType==0 ) xx -= res/2 , yy -= res/2 , zz -= res/2;
 					values[ zz*res*res + yy*res + xx ] +=
 						coefficient *
-						fData.valueTables[ idx[0]+x*fData.functionCount ] *
-						fData.valueTables[ idx[1]+y*fData.functionCount ] *
-						fData.valueTables[ idx[2]+z*fData.functionCount ];
+						fData.valueTables(idx[0]+x*fData.functionCount()) *
+						fData.valueTables(idx[1]+y*fData.functionCount()) *
+						fData.valueTables(idx[2]+z*fData.functionCount());
 				}
 	}
 	if( _boundaryType==-1 ) for( int i=0 ; i<res*res*res ; i++ ) values[i] -= Real(0.5);
