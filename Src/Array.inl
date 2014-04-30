@@ -27,6 +27,14 @@ DAMAGE.
 */
 #define FULL_ARRAY_DEBUG    0	// Note that this is not thread-safe
 
+#ifdef _WIN64
+#define ASSERT(x) { if(!(x)) __debugbreak(); }
+#elif defined(_WIN32)
+#define ASSERT(x) { if(!(x)) _asm{ int 0x03 } }
+#else
+#define ASSERT(x) { if(!(x)) exit(0); }
+#endif
+
 #include <stdio.h>
 #include <emmintrin.h>
 #include <vector>
@@ -34,6 +42,23 @@ DAMAGE.
 #include <windows.h>
 #endif // _WIN32
 #include <stddef.h>
+
+// Code from http://stackoverflow.com
+void* aligned_malloc(size_t size, size_t align) {
+	// Align enough for the data, the alignment padding, and room
+	// to store a pointer to the actual start of the memory
+	void* mem = malloc(size + align + sizeof(void*));
+	// The position at which we could potentially start addressing
+	void* amem = mem + sizeof(void*);
+	// Add align - 1 to the start of the address and then zero out
+	// at most of the first align-1 bits.
+	amem = (void*)((size_t)(amem + align - 1) & ~(align - 1));
+	// Pre-write the actual address
+	((void**)amem)[-1] = mem;
+	return amem;
+}
+
+void aligned_free(void* mem) { free(((void**)mem)[-1]); }
 
 inline bool isfinitef( float fp ){ float f=fp; return ((*(unsigned *)&f)&0x7f800000)!=0x7f800000; }
 
