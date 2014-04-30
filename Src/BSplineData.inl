@@ -254,23 +254,28 @@ void BSplineData<Degree,Real>::set( int maxDepth , bool useDotRatios , int bound
 	rightBSpline[1] += rightBSpline[0].shift(  1 ) , rightBSpline[2] *= 0;
 	leftRightBSpline[1] += leftRightBSpline[2].shift( -1 ) + leftRightBSpline[0].shift( 1 ) , leftRightBSpline[0] *= 0 , leftRightBSpline[2] *= 0 ;
 
-	double c , w;
 	for( size_t i=0 ; i<functionCount ; i++ )
 	{
-		BinaryNode< double >::CenterAndWidth( int(i) , c , w );
-		baseFunctions[i] = baseFunction.scale(w).shift(c);
-		baseBSplines[i] = baseBSpline.scale(w).shift(c);
+		auto caw = BinaryNode<double>::CenterAndWidth(i);
+		baseFunctions[i] = baseFunction.scale(caw.second).shift(caw.first);
+		baseBSplines[i] = baseBSpline.scale(caw.second).shift(caw.first);
 		if( _boundaryType )
 		{
-			int d , off , r;
-			BinaryNode< double >::DepthAndOffset( int(i) , d , off );
-			r = 1<<d;
-			if     ( off==0 && off==r-1 ) baseFunctions[i] = leftRightBaseFunction.scale(w).shift(c);
-			else if( off==0             ) baseFunctions[i] =      leftBaseFunction.scale(w).shift(c);
-			else if(           off==r-1 ) baseFunctions[i] =     rightBaseFunction.scale(w).shift(c);
-			if     ( off==0 && off==r-1 ) baseBSplines [i] = leftRightBSpline.scale(w).shift(c);
-			else if( off==0             ) baseBSplines [i] =      leftBSpline.scale(w).shift(c);
-			else if(           off==r-1 ) baseBSplines [i] =     rightBSpline.scale(w).shift(c);
+			auto dao = BinaryNode<double>::DepthAndOffset(i);
+			int r = 1 << dao.first;
+			if(dao.second == 0 && dao.second == r - 1)
+				baseFunctions[i] = leftRightBaseFunction.scale(caw.second).shift(caw.first);
+			else if(dao.second == 0)
+				baseFunctions[i] = leftBaseFunction.scale(caw.second).shift(caw.first);
+			else if(dao.second == r - 1)
+				baseFunctions[i] = rightBaseFunction.scale(caw.second).shift(caw.first);
+
+			if(dao.second == 0 && dao.second == r - 1)
+				baseBSplines[i] = leftRightBSpline.scale(caw.second).shift(caw.first);
+			else if(dao.second == 0)
+				baseBSplines[i] = leftBSpline.scale(caw.second).shift(caw.first);
+			else if(dao.second == r - 1)
+				baseBSplines[i] = rightBSpline.scale(caw.second).shift(caw.first);
 		}
 	}
 }
@@ -549,11 +554,10 @@ void BSplineData<Degree,Real>::clearDotTables( int flags )
 template< int Degree , class Real >
 void BSplineData< Degree , Real >::setSampleSpan( int idx , int& start , int& end , double smooth ) const
 {
-	int d , off , res;
-	BinaryNode< double >::DepthAndOffset( idx , d , off );
-	res = 1<<d;
-	double _start = ( off + 0.5 - 0.5*(Degree+1) ) / res - smooth;
-	double _end   = ( off + 0.5 + 0.5*(Degree+1) ) / res + smooth;
+	auto dao = BinaryNode<double>::DepthAndOffset(idx);
+	int res = 1 << dao.first;
+	double _start = ( dao.second + 0.5 - 0.5*(Degree+1) ) / res - smooth;
+	double _end   = ( dao.second + 0.5 + 0.5*(Degree+1) ) / res + smooth;
 	//   (start)/(sampleCount-1) >_start && (start-1)/(sampleCount-1)<=_start
 	// => start > _start * (sampleCount-1 ) && start <= _start*(sampleCount-1) + 1
 	// => _start * (sampleCount-1) + 1 >= start > _start * (sampleCount-1)

@@ -47,28 +47,33 @@ public:
 		{ return Real(index) / (1 << maxDepth); }
 	static Real Width(int depth) { return Real(1.0 / (1 << depth)); }
 
-	static void CenterAndWidth(int depth, int offset, Real& center, Real& width) {
-		width = Real(1.0 / (1 << depth));
-		center = Real((0.5 + offset) * width);
-	}
+	static std::pair<Real, Real> CenterAndWidth(std::pair<int, int> const& dao);
 
-	static void CenterAndWidth(int idx, Real& center, Real& width) {
-		int depth;
-		int offset;
-		DepthAndOffset(idx, depth, offset);
-		CenterAndWidth(depth, offset, center, width);
-	}
+	static std::pair<Real, Real> CenterAndWidth(int idx)
+		{ return CenterAndWidth(DepthAndOffset(idx)); }
 
-	static void DepthAndOffset(int idx, int& depth, int& offset) {
-		int i = idx + 1;
-		// MSVC_2010_FIX - no idea what's going on.
-		depth = 0;
-		while(i) {
-			i >>= 1;
-			++depth;
-		}
-		// MSVC_2010_FIX - no idea what's going on.
-		--depth;
-		offset = ( idx+1 ) - (1<<depth);
-	}
+	static std::pair<int, int> DepthAndOffset(int idx);
 };
+
+template<class Real>
+std::pair<Real, Real> BinaryNode<Real>::CenterAndWidth(
+		std::pair<int, int> const& dao) {
+	Real width = 1.0 / (1 << dao.first);
+	return std::make_pair((0.5 + dao.second) * width, width);
+}
+
+template<class Real>
+std::pair<int, int> BinaryNode<Real>::DepthAndOffset(int idx) {
+	int i = idx + 1;
+	std::pair<int, int> dao;
+	// MSVC_2010_FIX - no idea what's going on.
+	dao.first = 0;
+	while(i) {
+		i >>= 1;
+		++dao.first;
+	}
+	// MSVC_2010_FIX - no idea what's going on.
+	--dao.first;
+	dao.second = (idx + 1) - (1 << dao.first);
+	return dao;
+}
