@@ -28,7 +28,7 @@ DAMAGE.
 
 #pragma once
 
-#define ARRAY_DEBUG 1
+#define ARRAY_DEBUG 0
 
 #if ARRAY_DEBUG
 
@@ -37,7 +37,7 @@ DAMAGE.
 #include "Array.inl"
 
 #define Pointer(...) Array<__VA_ARGS__>
-#define ConstPointer(...) ConstArray<__VA_ARGS__>
+#define ConstPointer(...) Array<__VA_ARGS__ const>
 
 template<class C>
 Array<C> NewPointer(size_t size, char const* name = nullptr)
