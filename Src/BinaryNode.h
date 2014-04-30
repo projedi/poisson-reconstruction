@@ -36,28 +36,17 @@ public:
 	static int CenterIndex(int depth, int offset) { return (1 << depth) + offset - 1; }
 
 	static int CornerCount(int depth) { return (1 << depth) + 1; }
-	static int CumulativeCornerCount(int maxDepth)
-		{ return (1 << (maxDepth + 1)) + maxDepth; }
-	static int CornerIndex(int depth, int offset)
-		{ return (1 << depth) + offset + depth; }
-
 	static int CornerIndex(int maxDepth, int depth, int offset, int forwardCorner)
 		{ return (offset + forwardCorner) << (maxDepth - depth); }
-	static Real CornerIndexPosition(int index, int maxDepth)
-		{ return Real(index) / (1 << maxDepth); }
-	static Real Width(int depth) { return Real(1.0 / (1 << depth)); }
 
-	static std::pair<Real, Real> CenterAndWidth(std::pair<int, int> const& dao);
-
-	static std::pair<Real, Real> CenterAndWidth(int idx)
-		{ return CenterAndWidth(DepthAndOffset(idx)); }
+	static std::pair<Real, Real> CenterAndWidth(int idx);
 
 	static std::pair<int, int> DepthAndOffset(int idx);
 };
 
 template<class Real>
-std::pair<Real, Real> BinaryNode<Real>::CenterAndWidth(
-		std::pair<int, int> const& dao) {
+std::pair<Real, Real> BinaryNode<Real>::CenterAndWidth(int idx) {
+	auto dao = DepthAndOffset(idx);
 	Real width = 1.0 / (1 << dao.first);
 	return std::make_pair((0.5 + dao.second) * width, width);
 }
