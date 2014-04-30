@@ -26,54 +26,49 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#ifndef BINARY_NODE_INCLUDED
-#define BINARY_NODE_INCLUDED
-
-#define MSVC_2010_FIX 1
-
+#pragma once
 
 template<class Real>
-class BinaryNode
-{
+class BinaryNode {
 public:
-	static inline int CenterCount( int depth ) { return  1<<depth; }
-	static inline int CornerCount( int depth ) { return (1<<depth)+1; }
-	static inline int CumulativeCenterCount( int maxDepth ) { return (1<<(maxDepth+1))-1; }
-	static inline int CumulativeCornerCount( int maxDepth ) { return (1<<(maxDepth+1))+maxDepth; }
-	static inline int CenterIndex( int depth , int offSet ) { return (1<<depth)+offSet-1; }
-	static inline int CornerIndex( int depth , int offSet ) { return (1<<depth)+offSet+depth; }
+	static int CenterCount(int depth) { return  1 << depth; }
+	static int CumulativeCenterCount(int maxDepth) { return (1 << (maxDepth + 1)) - 1; }
+	static int CenterIndex(int depth, int offset) { return (1 << depth) + offset - 1; }
 
-	static inline int CornerIndex( int maxDepth , int depth , int offSet , int forwardCorner ){ return (offSet+forwardCorner)<<(maxDepth-depth); }
-	static inline Real CornerIndexPosition(int index,int maxDepth){ return Real(index)/(1<<maxDepth); }
-	static inline Real Width(int depth){ return Real(1.0/(1<<depth)); }
-	static inline void CenterAndWidth( int depth , int offset , Real& center , Real& width )
-	  {
-	    width=Real (1.0/(1<<depth) );
-	    center=Real((0.5+offset)*width);
-	  }
-	static inline void CenterAndWidth( int idx , Real& center , Real& width )
-	  {
-	    int depth , offset;
-	    DepthAndOffset( idx , depth , offset );
-	    CenterAndWidth( depth , offset , center , width );
-	  }
-	static inline void DepthAndOffset( int idx , int& depth , int& offset )
-	  {
-	    int i=idx+1;
-#if MSVC_2010_FIX
+	static int CornerCount(int depth) { return (1 << depth) + 1; }
+	static int CumulativeCornerCount(int maxDepth)
+		{ return (1 << (maxDepth + 1)) + maxDepth; }
+	static int CornerIndex(int depth, int offset)
+		{ return (1 << depth) + offset + depth; }
+
+	static int CornerIndex(int maxDepth, int depth, int offset, int forwardCorner)
+		{ return (offset + forwardCorner) << (maxDepth - depth); }
+	static Real CornerIndexPosition(int index, int maxDepth)
+		{ return Real(index) / (1 << maxDepth); }
+	static Real Width(int depth) { return Real(1.0 / (1 << depth)); }
+
+	static void CenterAndWidth(int depth, int offset, Real& center, Real& width) {
+		width = Real(1.0 / (1 << depth));
+		center = Real((0.5 + offset) * width);
+	}
+
+	static void CenterAndWidth(int idx, Real& center, Real& width) {
+		int depth;
+		int offset;
+		DepthAndOffset(idx, depth, offset);
+		CenterAndWidth(depth, offset, center, width);
+	}
+
+	static void DepthAndOffset(int idx, int& depth, int& offset) {
+		int i = idx + 1;
+		// MSVC_2010_FIX - no idea what's going on.
 		depth = 0;
-#else // !MSVC_2010_FIX
-	    depth = -1;
-#endif // MSVC_2010_FIX
-	    while( i )
-		{
-	      i >>= 1;
-	      depth++;
-	    }
-#if MSVC_2010_FIX
-		depth--;
-#endif // MSVC_2010_FIX
-	    offset = ( idx+1 ) - (1<<depth);
-	  }
+		while(i) {
+			i >>= 1;
+			++depth;
+		}
+		// MSVC_2010_FIX - no idea what's going on.
+		--depth;
+		offset = ( idx+1 ) - (1<<depth);
+	}
 };
-#endif // BINARY_NODE_INCLUDED
