@@ -25,634 +25,280 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
 ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-#define FULL_ARRAY_DEBUG    0	// Note that this is not thread-safe
 
-#include <stdio.h>
-#include <emmintrin.h>
+#define FULL_ARRAY_DEBUG 0 // Note that this is not thread-safe
+
+#include <cstdio>
+#include <cstddef>
 #include <vector>
+
 #ifdef _WIN32
 #include <windows.h>
-#endif // _WIN32
-#include <stddef.h>
+#endif
 
-inline bool isfinitef( float fp ){ float f=fp; return ((*(unsigned *)&f)&0x7f800000)!=0x7f800000; }
-
-
-template< class C >        bool IsValid( const C& c );
-#if _DEBUG
-template< >         inline bool IsValid< float >( const float& f ) { return isfinitef( f ) &&  ( f==0.f || abs(f)>1e-31f ); }
-#else // !_DEBUG
-template< >         inline bool IsValid< float >( const float& f ) { return isfinitef( f ); }
-#endif // _DEBUG
-template< >         inline bool IsValid< __m128 >( const __m128& m )
-{
-	const __m128* addr = &m;
-	if( size_t(addr) & 15 ) return false;
-	else                    return true;
-}
-template< class C > inline bool IsValid( const C& c ){ return true; }
-
+#ifdef _WIN64
+#define ASSERT(x) { if(!(x)) __debugbreak(); }
+#elif defined(_WIN32)
+#define ASSERT(x) { if(!(x)) _asm{ int 0x03 } }
+#else
+#define ASSERT(x) { if(!(x)) exit(0); }
+#endif
 
 #if FULL_ARRAY_DEBUG
-class DebugMemoryInfo
-{
-public:
-	const void* address;
+struct DebugMemoryInfo {
+	void const* address;
 	char name[512];
 };
-static std::vector< DebugMemoryInfo > memoryInfo;
-#endif // FULL_ARRAY_DEBUG
+static std::vector<DebugMemoryInfo> memoryInfo;
+#endif
 
-template< class C >
-class Array
-{
-	void _assertBounds( long long idx ) const
-	{
-		if( idx<min || idx>=max )
-		{
-			fprintf( stderr , "Array index out-of-bounds: %lld <= %lld < %lld\n" , min , idx , max );
-			ASSERT( 0 );
-			exit( 0 );
+template<class C>
+class Array {
+public:
+	Array(): data(nullptr), min(0), max(0) { }
+
+	template<class D>
+	Array(Array<D> const& a):
+		data(&a[0]),
+		min(a.minimum() * sizeof(D) / sizeof(C)),
+		max(a.maximum() * sizeof(D) / sizeof(C)) {
+		if(min * sizeof(C) != a.minimum() * sizeof(D) ||
+				max * sizeof(C) != a.maximum() * sizeof(D)) {
+			std::cerr << "Could not convert array [ " << a.minimum() << " , "
+				<< a.maximum() << " ] * " << sizeof(D) << " => [ " << min << " , "
+				<< max << " * " << sizeof(C) << std::endl;
+			ASSERT(0);
+			exit(0);
 		}
 	}
-protected:
-	C *data , *_data;
-	long long min , max;
+
+	static Array New(size_t size , char const* name = nullptr) {
+		Array a;
+		a.data = new C[size];
+		a.min = 0;
+#pragma message( "[WARNING] Casting unsigned to signed" )
+		a.max = (long long) size;
+		_AddMemoryInfo(a.data, name);
+		return a;
+	}
+
+	static Array Alloc(size_t size, bool clear, char const* name = nullptr) {
+		Array a;
+		a.data = (C*)malloc(size * sizeof(C));
+		if(clear) memset(a.data, 0, size * sizeof(C));
+		a.min = 0;
+#pragma message( "[WARNING] Casting unsigned to signed" )
+		a.max = (long long) size;
+		_AddMemoryInfo(a.data, name);
+		return a;
+	}
+
+	void Free() {
+		if(data) {
+			free(data);
+			_RemoveMemoryInfo(data);
+		}
+		*this = Array();
+	}
+
+	void Delete() {
+		if(data) {
+			delete[] data;
+			_RemoveMemoryInfo(data);
+		}
+		*this = Array();
+	}
+
+	long long minimum() const { return min; }
+	long long maximum() const { return max; }
+
+	bool operator==(Array<C> const& a) const { return data == a.data; }
+	bool operator!=(Array<C> const& a) const { return !(*this == a); }
+	bool operator==(C const* c) const { return data == c; }
+	bool operator!=(C const* c) const { return !(*this == c); }
+
+	C* operator->() {
+		return const_cast<C*>(const_cast<Array const*>(this)->operator->());
+	}
+
+	C const* operator->() const {
+		_assertBounds(0);
+		return data;
+	}
+
+	C& operator[](long long idx) {
+		return const_cast<C&>(const_cast<Array const*>(this)->operator[](idx));
+	}
+
+	C const& operator[](long long idx) const {
+		_assertBounds(idx);
+		return data[idx];
+	}
+
+	Array operator+(long long idx) const {
+		Array a;
+		a.data = data + idx;
+		a.min = min - idx;
+		a.max = max - idx;
+		return a;
+	}
+
+	Array& operator+=(long long idx) {
+		min -= idx;
+		max -= idx;
+		data += idx;
+		return *this;
+	}
+
+	Array& operator++() { return *this += 1; }
+
+	Array operator-(long long idx) const { return *this + (-idx); }
+
+	Array& operator-=(long long idx) { return *this += -idx; }
+
+	Array& operator--() { return *this -= 1; }
+
+	long long operator-(Array const& a) const { return data - a.data; }
+
+	C* pointer() { return const_cast<C*>(const_cast<Array const*>(this)->pointer()); }
+	C const* pointer() const { return data; }
+
+	bool operator!() const { return data == nullptr; }
+	operator bool() const { return data != nullptr; }
+
+private:
+	void _assertBounds(long long idx) const {
+		if(idx < min || idx >= max) {
+			std::cerr << "Array index out-of-bounds: " << min << " <= " << idx
+				<< " < " << max << std::endl;
+			ASSERT(0);
+			exit(0);
+		}
+	}
+
 #if FULL_ARRAY_DEBUG
-	static void _AddMemoryInfo( const void* ptr , const char* name )
-	{
+	static void _AddMemoryInfo(void const* ptr, char const* name) {
 		size_t sz = memoryInfo.size();
-		memoryInfo.resize( sz + 1 );
+		memoryInfo.resize(sz + 1);
 		memoryInfo[sz].address = ptr;
-		if( name ) strcpy( memoryInfo[sz].name , name );
+		if(name) strcpy(memoryInfo[sz].name, name);
 		else memoryInfo[sz].name[0] = 0;
 	}
-	static void _RemoveMemoryInfo( const void* ptr )
-	{
-		{
-			size_t idx;
-			for( idx=0 ; idx<memoryInfo.size( ) ; idx++ ) if( memoryInfo[idx].address==ptr ) break;
-			if( idx==memoryInfo.size() )
-			{
-				fprintf( stderr , "Could not find memory in address table\n" );
-				ASSERT( 0 );
-			}
-			else
-			{
-				memoryInfo[idx] = memoryInfo[memoryInfo.size()-1];
-				memoryInfo.pop_back( );
-			}
+
+	static void _RemoveMemoryInfo(void const* ptr) {
+		size_t idx;
+		for(idx = 0; idx != memoryInfo.size(); ++idx)
+			if(memoryInfo[idx].address == ptr) break;
+		if(idx == memoryInfo.size()) {
+			std::cerr << "Could not find memory address table" << std::endl;
+			ASSERT(0);
+		} else {
+			memoryInfo[idx] = memoryInfo[memoryInfo.size() - 1];
+			memoryInfo.pop_back();
 		}
 	}
+#else
+	static void _AddMemoryInfo(void const*, char const*) { }
+	static void _RemoveMemoryInfo(void const*) { }
 #endif // FULL_ARRAY_DEBUG
 
-public:
-	long long minimum( void ) const { return min; }
-	long long maximum( void ) const { return max; }
-
-	static inline Array New( size_t size , const char* name=NULL )
-	{
-		Array a;
-		a._data = a.data = new C[size];
-		a.min = 0;
-#pragma message( "[WARNING] Casting unsigned to signed" )
-		a.max = ( long long ) size;
-#if FULL_ARRAY_DEBUG
-		_AddMemoryInfo( a._data , name );
-#endif // FULL_ARRAY_DEBUG
-		return a;
-	}
-	static inline Array Alloc( size_t size , bool clear , const char* name=NULL )
-	{
-		Array a;
-		a._data = a.data = ( C* ) malloc( size * sizeof( C ) );
-		if( clear ) memset( a.data ,  0 , size * sizeof( C ) );
-//		else        memset( a.data , -1 , size * sizeof( C ) );
-		a.min = 0;
-#pragma message( "[WARNING] Casting unsigned to signed" )
-		a.max = ( long long ) size;
-#if FULL_ARRAY_DEBUG
-		_AddMemoryInfo( a._data , name );
-#endif // FULL_ARRAY_DEBUG
-		return a;
-	}
-	static inline Array AlignedAlloc( size_t size , size_t alignment , bool clear , const char* name=NULL )
-	{
-		Array a;
-		a.data = ( C* ) aligned_malloc( sizeof(C) * size , alignment );
-		a._data = ( C* )( ( ( void** )a.data )[-1] );
-		if( clear ) memset( a.data ,  0 , size * sizeof( C ) );
-//		else        memset( a.data , -1 , size * sizeof( C ) );
-		a.min = 0;
-#pragma message( "[WARNING] Casting unsigned to signed" )
-		a.max = ( long long ) size;
-#if FULL_ARRAY_DEBUG
-		_AddMemoryInfo( a._data , name );
-#endif // FULL_ARRAY_DEBUG
-		return a;
-	}
-	static inline Array ReAlloc( Array& a , size_t size , bool clear , const char* name=NULL )
-	{
-		Array _a;
-		_a._data = _a.data = ( C* ) realloc( a.data , size * sizeof( C ) );
-		if( clear ) memset( _a.data ,  0 , size * sizeof( C ) );
-#if FULL_ARRAY_DEBUG
-		_RemoveMemoryInfo( a._data );
-#endif // FULL_ARRAY_DEBUG
-		a._data = NULL;
-		_a.min = 0;
-#pragma message( "[WARNING] Casting unsigned to signed" )
-		_a.max = ( long long ) size;
-#if FULL_ARRAY_DEBUG
-		_AddMemoryInfo( _a._data , name );
-#endif // FULL_ARRAY_DEBUG
-		return _a;
-	}
-
-	Array( void )
-	{
-		data = _data = NULL;
-		min = max = 0;
-	}
-	template< class D >
-	Array( Array< D >& a )
-	{
-		_data = NULL;
-		if( !a )
-		{
-			data =  NULL;
-			min = max = 0;
-		}
-		else
-		{
-			// [WARNING] Chaning szC and szD to size_t causes some really strange behavior.
-			long long szC = sizeof( C );
-			long long szD = sizeof( D );
-			data = (C*)&a[0];
-			min = ( a.minimum() * szD ) / szC;
-			max = ( a.maximum() * szD ) / szC;
-			if( min*szC!=a.minimum()*szD || max*szC!=a.maximum()*szD )
-			{
-				fprintf( stderr , "Could not convert array [ %lld , %lld ] * %lld => [ %lld , %lld ] * %lld\n" , a.minimum() , a.maximum() , szD , min , max , szC );
-				ASSERT( 0 );
-				exit( 0 );
-			}
-		}
-	}
-	static Array FromPointer( C* data , long long max )
-	{
-		Array a;
-		a._data = NULL;
-		a.data = data;
-		a.min = 0;
-		a.max = max;
-		return a;
-	}
-	static Array FromPointer( C* data , long long min , long long max )
-	{
-		Array a;
-		a._data = NULL;
-		a.data = data;
-		a.min = min;
-		a.max = max;
-		return a;
-	}
-	inline bool operator == ( const Array< C >& a ) const { return data==a.data; }
-	inline bool operator != ( const Array< C >& a ) const { return data!=a.data; }
-	inline bool operator == ( const C* c ) const { return data==c; }
-	inline bool operator != ( const C* c ) const { return data!=c; }
-	inline C* operator -> ( void )
-	{
-		_assertBounds( 0 );
-		return data;
-	}
-	inline const C* operator -> ( ) const
-	{
-		_assertBounds( 0 );
-		return data;
-	}
-	inline C& operator[]( long long idx )
-	{
-		_assertBounds( idx );
-		return data[idx];
-	}
-	inline const C& operator[]( long long idx ) const
-	{
-		_assertBounds( idx );
-		return data[idx];
-	}
-	inline Array operator + ( int idx ) const
-	{
-		Array a;
-		a._data = _data;
-		a.data = data+idx;
-		a.min = min-idx;
-		a.max = max-idx;
-		return a;
-	}
-	inline Array operator + ( long long idx ) const
-	{
-		Array a;
-		a._data = _data;
-		a.data = data+idx;
-		a.min = min-idx;
-		a.max = max-idx;
-		return a;
-	}
-	inline Array operator + ( unsigned int idx ) const
-	{
-		Array a;
-		a._data = _data;
-		a.data = data+idx;
-		a.min = min-idx;
-		a.max = max-idx;
-		return a;
-	}
-	inline Array operator + ( unsigned long long idx ) const
-	{
-		Array a;
-		a._data = _data;
-		a.data = data+idx;
-		a.min = min-idx;
-		a.max = max-idx;
-		return a;
-	}
-	inline Array& operator += ( int idx  )
-	{
-		min -= idx;
-		max -= idx;
-		data += idx;
-		return (*this);
-	}
-	inline Array& operator += ( long long idx  )
-	{
-		min -= idx;
-		max -= idx;
-		data += idx;
-		return (*this);
-	}
-	inline Array& operator += ( unsigned int idx  )
-	{
-		min -= idx;
-		max -= idx;
-		data += idx;
-		return (*this);
-	}
-	inline Array& operator += ( unsigned long long idx  )
-	{
-		min -= idx;
-		max -= idx;
-		data += idx;
-		return (*this);
-	}
-	inline Array& operator ++ ( void  ) { return (*this) += 1; }
-	Array  operator -  ( int idx ) const { return (*this) +  (-idx); }
-	Array  operator -  ( long long idx ) const { return (*this) +  (-idx); }
-	Array  operator -  ( unsigned int idx ) const { return (*this) +  (-idx); }
-	Array  operator -  ( unsigned long long idx ) const { return (*this) +  (-idx); }
-	Array& operator -= ( int idx )    { return (*this) += (-idx); }
-	Array& operator -= ( long long idx )    { return (*this) += (-idx); }
-	Array& operator -= ( unsigned int idx )    { return (*this) += (-idx); }
-	Array& operator -= ( unsigned long long idx )    { return (*this) += (-idx); }
-	Array& operator -- ( void ) { return (*this) -= 1; }
-	long long operator - ( const Array& a ) const { return ( long long )( data - a.data ); }
-
-	void Free( void )
-	{
-		if( _data )
-		{
-			free( _data );
-#if FULL_ARRAY_DEBUG
-			_RemoveMemoryInfo( _data );
-#endif // FULL_ARRAY_DEBUG
-		}
-		(*this) = Array( );
-	}
-	void Delete( void )
-	{
-		if( _data )
-		{
-			delete[] _data;
-#if FULL_ARRAY_DEBUG
-			_RemoveMemoryInfo( _data );
-#endif // FULL_ARRAY_DEBUG
-		}
-		(*this) = Array( );
-	}
-	C* pointer( void ){ return data; }
-	const C* pointer( void ) const { return data; }
-	bool operator !( void ) const { return data==NULL; }
-	operator bool( ) const { return data!=NULL; }
-};
-
-template< class C >
-class ConstArray
-{
-	void _assertBounds( long long idx ) const
-	{
-		if( idx<min || idx>=max )
-		{
-			fprintf( stderr , "ConstArray index out-of-bounds: %lld <= %lld < %lld\n" , min , idx , max );
-			ASSERT( 0 );
-			exit( 0 );
-		}
-	}
-protected:
-	const C *data;
-	long long min , max;
-public:
-	long long minimum( void ) const { return min; }
-	long long maximum( void ) const { return max; }
-
-	inline ConstArray( void )
-	{
-		data = NULL;
-		min = max = 0;
-	}
-	inline ConstArray( const Array< C >& a )
-	{
-		// [WARNING] Changing szC and szD to size_t causes some really strange behavior.
-		data = ( const C* )a.pointer( );
-		min = a.minimum();
-		max = a.maximum();
-	}
-	template< class D >
-	inline ConstArray( const Array< D >& a )
-	{
-		// [WARNING] Changing szC and szD to size_t causes some really strange behavior.
-		long long szC = ( long long ) sizeof( C );
-		long long szD = ( long long ) sizeof( D );
-		data = ( const C* )a.pointer( );
-		min = ( a.minimum() * szD ) / szC;
-		max = ( a.maximum() * szD ) / szC;
-		if( min*szC!=a.minimum()*szD || max*szC!=a.maximum()*szD )
-		{
-//			fprintf( stderr , "Could not convert const array [ %lld , %lld ] * %lld => [ %lld , %lld ] * %lld\n" , a.minimum() , a.maximum() , szD , min , max , szC );
-			fprintf( stderr , "Could not convert const array [ %lld , %lld ] * %lld => [ %lld , %lld ] * %lld\n %lld %lld %lld\n" , a.minimum() , a.maximum() , szD , min , max , szC , a.minimum() , a.minimum()*szD , (a.minimum()*szD)/szC );
-			ASSERT( 0 );
-			exit( 0 );
-		}
-	}
-	template< class D >
-	inline ConstArray( const ConstArray< D >& a )
-	{
-		// [WARNING] Chaning szC and szD to size_t causes some really strange behavior.
-		long long szC = sizeof( C );
-		long long szD = sizeof( D );
-		data = ( const C*)a.pointer( );
-		min = ( a.minimum() * szD ) / szC;
-		max = ( a.maximum() * szD ) / szC;
-		if( min*szC!=a.minimum()*szD || max*szC!=a.maximum()*szD )
-		{
-			fprintf( stderr , "Could not convert array [ %lld , %lld ] * %lld => [ %lld , %lld ] * %lld\n" , a.minimum() , a.maximum() , szD , min , max , szC );
-			ASSERT( 0 );
-			exit( 0 );
-		}
-	}
-	static ConstArray FromPointer( const C* data , long long max )
-	{
-		ConstArray a;
-		a.data = data;
-		a.min = 0;
-		a.max = max;
-		return a;
-	}
-	static ConstArray FromPointer( const C* data , long long min , long long max )
-	{
-		ConstArray a;
-		a.data = data;
-		a.min = min;
-		a.max = max;
-		return a;
-	}
-
-	inline bool operator == ( const ConstArray< C >& a ) const { return data==a.data; }
-	inline bool operator != ( const ConstArray< C >& a ) const { return data!=a.data; }
-	inline bool operator == ( const C* c ) const { return data==c; }
-	inline bool operator != ( const C* c ) const { return data!=c; }
-	inline const C* operator -> ( void )
-	{
-		_assertBounds( 0 );
-		return data;
-	}
-	inline const C& operator[]( long long idx ) const
-	{
-		_assertBounds( idx );
-		return data[idx];
-	}
-	inline ConstArray operator + ( int idx ) const
-	{
-		ConstArray a;
-		a.data = data+idx;
-		a.min = min-idx;
-		a.max = max-idx;
-		return a;
-	}
-	inline ConstArray operator + ( long long idx ) const
-	{
-		ConstArray a;
-		a.data = data+idx;
-		a.min = min-idx;
-		a.max = max-idx;
-		return a;
-	}
-	inline ConstArray operator + ( unsigned int idx ) const
-	{
-		ConstArray a;
-		a.data = data+idx;
-		a.min = min-idx;
-		a.max = max-idx;
-		return a;
-	}
-	inline ConstArray operator + ( unsigned long long idx ) const
-	{
-		ConstArray a;
-		a.data = data+idx;
-		a.min = min-idx;
-		a.max = max-idx;
-		return a;
-	}
-	inline ConstArray& operator += ( int idx  )
-	{
-		min -= idx;
-		max -= idx;
-		data += idx;
-		return (*this);
-	}
-	inline ConstArray& operator += ( long long idx  )
-	{
-		min -= idx;
-		max -= idx;
-		data += idx;
-		return (*this);
-	}
-	inline ConstArray& operator += ( unsigned int idx  )
-	{
-		min -= idx;
-		max -= idx;
-		data += idx;
-		return (*this);
-	}
-	inline ConstArray& operator += ( unsigned long long idx  )
-	{
-		min -= idx;
-		max -= idx;
-		data += idx;
-		return (*this);
-	}
-	inline ConstArray& operator ++ ( void ) { return (*this) += 1; }
-	ConstArray  operator -  ( int idx ) const { return (*this) +  (-idx); }
-	ConstArray  operator -  ( long long idx ) const { return (*this) +  (-idx); }
-	ConstArray  operator -  ( unsigned int idx ) const { return (*this) +  (-idx); }
-	ConstArray  operator -  ( unsigned long long idx ) const { return (*this) +  (-idx); }
-	ConstArray& operator -= ( int idx )    { return (*this) += (-idx); }
-	ConstArray& operator -= ( long long idx )    { return (*this) += (-idx); }
-	ConstArray& operator -= ( unsigned int idx )    { return (*this) += (-idx); }
-	ConstArray& operator -= ( unsigned long long idx )    { return (*this) += (-idx); }
-	ConstArray& operator -- ( void ) { return (*this) -= 1; }
-	long long operator - ( const ConstArray& a ) const { return ( long long )( data - a.data ); }
-	long long operator - ( const Array< C >& a ) const { return ( long long )( data - a.pointer() ); }
-
-	const C* pointer( void ) const { return data; }
-	bool operator !( void ) { return data==NULL; }
-	operator bool( ) { return data!=NULL; }
+private:
+	C* data;
+	long long min;
+	long long max;
 };
 
 #if FULL_ARRAY_DEBUG
-inline void PrintMemoryInfo( void ){ for( size_t i=0 ; i<memoryInfo.size() ; i++ ) printf( "%d] %s\n" , i , memoryInfo[i].name ); }
+inline void PrintMemoryInfo() {
+	for(size_t i = 0; i != memoryInfo.size(); ++i)
+		std::cout << i << "] " << memoryInfo[i].name << std::endl;
+}
 #endif // FULL_ARRAY_DEBUG
-template< class C >
-Array< C > memcpy( Array< C > destination , const void* source , size_t size )
-{
-	if( size>destination.maximum()*sizeof(C) )
-	{
-		fprintf( stderr , "Size of copy exceeds destination maximum: %lld > %lld\n" , ( long long )( size ) , ( long long )( destination.maximum()*sizeof( C ) ) );
-		ASSERT( 0 );
-		exit( 0 );
+
+template<class C>
+Array<C> memcpy(Array<C> destination, void const* source, size_t size) {
+	if(size > destination.maximum() * sizeof(C)) {
+		std::cerr << "Size of copy exceeds destination maximum: " << size
+			<< " > " << destination.maximum() * sizeof(C) << std::endl;
+		ASSERT(0);
+		exit(0);
 	}
-	if( size ) memcpy( &destination[0] , source , size );
-	return destination;
-}
-template< class C , class D >
-Array< C > memcpy( Array< C > destination , Array< D > source , size_t size )
-{
-	if( size>destination.maximum()*sizeof( C ) )
-	{
-		fprintf( stderr , "Size of copy exceeds destination maximum: %lld > %lld\n" , ( long long )( size ) , ( long long )( destination.maximum()*sizeof( C ) ) );
-		ASSERT( 0 );
-		exit( 0 );
-	}
-	if( size>source.maximum()*sizeof( D ) )
-	{
-		fprintf( stderr , "Size of copy exceeds source maximum: %lld > %lld\n" , ( long long )( size ) , ( long long )( source.maximum()*sizeof( D ) ) );
-		ASSERT( 0 );
-		exit( 0 );
-	}
-	if( size ) memcpy( &destination[0] , &source[0] , size );
-	return destination;
-}
-template< class C , class D >
-Array< C > memcpy( Array< C > destination , ConstArray< D > source , size_t size )
-{
-	if( size>destination.maximum()*sizeof( C ) )
-	{
-		fprintf( stderr , "Size of copy exceeds destination maximum: %lld > %lld\n" , ( long long )( size ) , ( long  long )( destination.maximum()*sizeof( C ) ) );
-		ASSERT( 0 );
-		exit( 0 );
-	}
-	if( size>source.maximum()*sizeof( D ) )
-	{
-		fprintf( stderr , "Size of copy exceeds source maximum: %lld > %lld\n" , ( long long )( size ) , ( long long )( source.maximum()*sizeof( D ) ) );
-		ASSERT( 0 );
-		exit( 0 );
-	}
-	if( size ) memcpy( &destination[0] , &source[0] , size );
-	return destination;
-}
-template< class D >
-void* memcpy( void* destination , Array< D > source , size_t size )
-{
-	if( size>source.maximum()*sizeof( D ) )
-	{
-		fprintf( stderr , "Size of copy exceeds source maximum: %lld > %lld\n" , ( long long )( size ) , ( long long )( source.maximum()*sizeof( D ) ) );
-		ASSERT( 0 );
-		exit( 0 );
-	}
-	if( size ) memcpy( destination , &source[0] , size );
-	return destination;
-}
-template< class D >
-void* memcpy( void* destination , ConstArray< D > source , size_t size )
-{
-	if( size>source.maximum()*sizeof( D ) )
-	{
-		fprintf( stderr , "Size of copy exceeds source maximum: %lld > %lld\n" , ( long long )( size ) , ( long long )( source.maximum()*sizeof( D ) ) );
-		ASSERT( 0 );
-		exit( 0 );
-	}
-	if( size ) memcpy( destination , &source[0] , size );
-	return destination;
-}
-template< class C >
-Array< C > memset( Array< C > destination , int value , size_t size )
-{
-	if( size>destination.maximum()*sizeof( C ) )
-	{
-		fprintf( stderr , "Size of set exceeds destination maximum: %lld > %lld\n" , ( long long )( size ) , ( long long )( destination.maximum()*sizeof( C ) ) );
-		ASSERT( 0 );
-		exit( 0 );
-	}
-	if( size ) memset( &destination[0] , value , size );
+	memcpy(&destination[0], source, size);
 	return destination;
 }
 
-template< class C >
-size_t fread( Array< C > destination , size_t eSize , size_t count , FILE* fp )
-{
-	if( count*eSize>destination.maximum()*sizeof( C ) )
-	{
-		fprintf( stderr , "Size of read exceeds source maximum: %lld > %lld\n" , ( long long )( count*eSize ) , ( long long )( destination.maximum()*sizeof( C ) ) );
-		ASSERT( 0 );
-		exit( 0 );
+template<class C, class D>
+Array<C> memcpy(Array<C> destination, Array<D> source, size_t size) {
+	if(size > source.maximum() * sizeof(D)) {
+		std::cerr << "Size of copy exceeds source maximum: " << size
+			<< " > " << source.maximum() * sizeof(D) << std::endl;
+		ASSERT(0);
+		exit(0);
 	}
-	return fread( &destination[0] , eSize , count , fp );
+	memcpy(destination, &source[0], size);
+	return destination;
 }
-template< class C >
-size_t fwrite( Array< C > source , size_t eSize , size_t count , FILE* fp )
-{
-	if( count*eSize>source.maximum()*sizeof( C ) )
-	{
-		fprintf( stderr , "Size of write exceeds source maximum: %lld > %lld\n" , ( long long )( count*eSize ) , ( long long )( source.maximum()*sizeof( C ) ) );
-		ASSERT( 0 );
-		exit( 0 );
+
+template<class D>
+void* memcpy(void* destination, Array<D> source, size_t size) {
+	if(size > source.maximum() * sizeof(D)) {
+		std::cerr << "Size of copy exceeds source maximum: " << size
+			<< " > " << source.maximum() * sizeof(D) << std::endl;
+		ASSERT(0);
+		exit(0);
 	}
-	return fwrite( &source[0] , eSize , count , fp );
+	memcpy(destination, &source[0], size);
+	return destination;
 }
-template< class C >
-size_t fwrite( ConstArray< C > source , size_t eSize , size_t count , FILE* fp )
-{
-	if( count*eSize>source.maximum()*sizeof( C ) )
-	{
-		fprintf( stderr , "Size of write exceeds source maximum: %lld > %lld\n" , ( long long )( count*eSize ) , ( long long )( source.maximum()*sizeof( C ) ) );
-		ASSERT( 0 );
-		exit( 0 );
+
+template<class C>
+Array<C> memset(Array<C> destination, int value, size_t size) {
+	if(size > destination.maximum() * sizeof(C)) {
+		std::cerr << "Size of set exceeds destination maximum: " << size
+			<< " > " << destination.maximum() * sizeof(C) << std::endl;
+		ASSERT(0);
+		exit(0);
 	}
-	return fwrite( &source[0] , eSize , count , fp );
+	memset(&destination[0], value, size);
+	return destination;
 }
-template< class C >
-void qsort( Array< C > base , size_t numElements , size_t elementSize , int (*compareFunction)( const void* , const void* ) )
-{
-	if( sizeof(C)!=elementSize )
-	{
-		fprintf( stderr , "Element sizes differ: %lld != %lld\n" , ( long long )( sizeof(C) ) , ( long long )( elementSize ) );
-		ASSERT( 0 );
-		exit( 0 );
+
+template<class C>
+size_t fread(Array<C> destination, size_t eSize, size_t count, FILE* fp) {
+	if(count * eSize > destination.maximum() * sizeof(C)) {
+		std::cerr << "Size of read exceeds destination maximum: " << count * eSize
+			<< " > " << destination.maximum() * sizeof(C) << std::endl;
+		ASSERT(0);
+		exit(0);
 	}
-	if( base.minimum()>0 || base.maximum()<numElements )
-	{
-		fprintf( stderr , "Array access out of bounds: %lld <= 0 <= %lld <= %lld\n" , base.minimum() , base.maximum() , ( long long )( numElements ) );
-		ASSERT( 0 );
-		exit( 0 );
+	return fread(&destination[0], eSize, count, fp);
+}
+
+template<class C>
+size_t fwrite(Array<C> source, size_t eSize, size_t count, FILE* fp) {
+	if(count * eSize > source.maximum() * sizeof(C)) {
+		std::cerr << "Size of write exceeds source maximum: " << count * eSize
+			<< " > " << source.maximum() * sizeof(C) << std::endl;
+		ASSERT(0);
+		exit(0);
 	}
-	qsort( base.pointer() , numElements , elementSize , compareFunction );
+	return fwrite(&source[0], eSize, count, fp);
+}
+
+template<class C>
+void qsort(Array<C> base, size_t numElements, size_t elementSize,
+		int (*compareFunction)(void const*, void const*)) {
+	if(sizeof(C) != elementSize) {
+		std::cerr << "Element sizes differ: " << sizeof(C) << " != " << elementSize
+			<< std::endl;
+		ASSERT(0);
+		exit(0);
+	}
+	if(base.minimum() > 0 || base.maximum() < numElements) {
+		std::cerr << "Array access out of bounds: " << base.minimum() << " <= 0 <= "
+			<< base.maximum() << " <= " << numElements << std::endl;
+		ASSERT(0);
+		exit(0);
+	}
+	qsort(base.pointer(), numElements, elementSize, compareFunction);
 }

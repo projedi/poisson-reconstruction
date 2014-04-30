@@ -475,7 +475,7 @@ void SparseSymmetricMatrix<T>::Multiply( const Vector<T2>& In , Vector<T2>& Out 
 				T2& out_i_ = out[i];
 				ConstPointer( MatrixEntry< T > ) temp;
 				ConstPointer( MatrixEntry< T > ) end;
-				for( temp = SparseMatrix< T >::m_ppElements[i] , end = temp+SparseMatrix< T >::rowSizes[i] ; temp!=end ; temp++ )
+				for( temp = SparseMatrix< T >::m_ppElements[i] , end = temp+(long long)SparseMatrix< T >::rowSizes[i] ; temp!=end ; ++temp )
 				{
 					int j = temp->N;
 					T2 v = temp->Value;
@@ -509,7 +509,7 @@ void SparseSymmetricMatrix<T>::Multiply( const Vector<T2>& In , Vector<T2>& Out 
 				T2 out_i_ = T2();
 				ConstPointer( MatrixEntry< T > ) temp;
 				ConstPointer( MatrixEntry< T > ) end;
-				for( temp = SparseMatrix< T >::m_ppElements[i] , end = temp+SparseMatrix< T >::rowSizes[i] ; temp!=end ; temp++ )
+				for( temp = SparseMatrix< T >::m_ppElements[i] , end = temp+(long long)SparseMatrix< T >::rowSizes[i] ; temp!=end ; ++temp )
 				{
 					int j = temp->N;
 					T2 v = temp->Value;
