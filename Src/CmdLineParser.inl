@@ -26,116 +26,30 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-/////////////////////
-// cmdLineIntArray //
-/////////////////////
-template<int Dim>
-cmdLineIntArray<Dim>::cmdLineIntArray(const char* name) : cmdLineReadable(name)
-{
-	for(int i=0;i<Dim;i++)	values[i]=0;
-}
-template<int Dim>
-cmdLineIntArray<Dim>::cmdLineIntArray(const char* name,const int v[Dim]) : cmdLineReadable(name)
-{
-	for(int i=0;i<Dim;i++)	values[i]=v[i];
-}
-template<int Dim>
-int cmdLineIntArray<Dim>::read(char** argv,int argc)
-{
-	if(argc>=Dim)
-	{
-		for(int i=0;i<Dim;i++)	values[i]=atoi(argv[i]);
-		set=true;
-		return Dim;
-	}
-	else{return 0;}
-}
-template<int Dim>
-void cmdLineIntArray<Dim>::writeValue(char* str)
-{
-	char* temp=str;
-	for(int i=0;i<Dim;i++)
-	{
-		sprintf(temp,"%d ",values[i]);
-		temp=str+strlen(str);
-	}
+#include <sstream>
+
+template<class T1, class T2>
+std::ostream& operator<<(std::ostream& ost, std::pair<T1, T2> const& p) {
+	return ost << p.first << " " << p.second << std::endl;
 }
 
-///////////////////////
-// cmdLineFloatArray //
-///////////////////////
-template<int Dim>
-cmdLineFloatArray<Dim>::cmdLineFloatArray(const char* name) : cmdLineReadable(name)
-{
-	for(int i=0;i<Dim;i++)	values[i]=0;
-}
-template<int Dim>
-cmdLineFloatArray<Dim>::cmdLineFloatArray(const char* name,const float f[Dim]) : cmdLineReadable(name)
-{
-	for(int i=0;i<Dim;i++)	values[i]=f[i];
-}
-template<int Dim>
-int cmdLineFloatArray<Dim>::read(char** argv,int argc)
-{
-	if(argc>=Dim)
-	{
-		for(int i=0;i<Dim;i++)	values[i]=(float)atof(argv[i]);
-		set=true;
-		return Dim;
-	}
-	else{return 0;}
-}
-template<int Dim>
-void cmdLineFloatArray<Dim>::writeValue(char* str)
-{
-	char* temp=str;
-	for(int i=0;i<Dim;i++)
-	{
-		sprintf(temp,"%f ",values[i]);
-		temp=str+strlen(str);
-	}
+template<class T1, class T2>
+std::istream& operator>>(std::istream& ist, std::pair<T1, T2>& p) {
+	return ist >> p.first >> p.second;
 }
 
+template<class T>
+int cmdLine<T>::read(char** argv, int argc) {
+	if(argc <= 0) return 0;
+	std::stringstream ss(argv[0]);
+	ss >> value_;
+	set_ = true;
+	return 1;
+}
 
-////////////////////////
-// cmdLineStringArray //
-////////////////////////
-template<int Dim>
-cmdLineStringArray<Dim>::cmdLineStringArray(const char* name) : cmdLineReadable(name)
-{
-	for(int i=0;i<Dim;i++)	values[i]=NULL;
-}
-template<int Dim>
-cmdLineStringArray<Dim>::~cmdLineStringArray(void)
-{
-	for(int i=0;i<Dim;i++)
-	{
-		if(values[i])	delete[] values[i];
-		values[i]=NULL;
-	}
-}
-template<int Dim>
-int cmdLineStringArray<Dim>::read(char** argv,int argc)
-{
-	if(argc>=Dim)
-	{
-		for(int i=0;i<Dim;i++)
-		{
-			values[i]=new char[strlen(argv[i])+1];
-			strcpy(values[i],argv[i]);
-		}
-		set=true;
-		return Dim;
-	}
-	else{return 0;}
-}
-template<int Dim>
-void cmdLineStringArray<Dim>::writeValue(char* str)
-{
-	char* temp=str;
-	for(int i=0;i<Dim;i++)
-	{
-		sprintf(temp,"%s ",values[i]);
-		temp=str+strlen(str);
-	}
+template<class T>
+void cmdLine<T>::writeValue(char* str) {
+	std::stringstream ss;
+	ss << value_;
+	strncpy(str, ss.str().c_str(), ss.str().size());
 }

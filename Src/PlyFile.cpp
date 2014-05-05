@@ -307,7 +307,7 @@ Open a polygon file for writing.
 ******************************************************************************/
 
 PlyFile *ply_open_for_writing(
-							  char *filename,
+							  char const*filename,
 							  int nelems,
 							  char const** elem_names,
 							  int file_type,
@@ -926,7 +926,7 @@ Open a polygon file for reading.
   ******************************************************************************/
   
   PlyFile *ply_open_for_reading(
-	  char *filename,
+	  char const* filename,
 	  int *nelems,
 	  char ***elem_names,
 	  int *file_type,
