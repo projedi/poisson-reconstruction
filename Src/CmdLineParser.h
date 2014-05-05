@@ -26,95 +26,58 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#ifndef CMD_LINE_PARSER_INCLUDED
-#define CMD_LINE_PARSER_INCLUDED
-#include <stdarg.h>
-#include <string.h>
+#pragma once
 
+#include <array>
+#include <cstring>
+#include <string>
 
-#ifdef WIN32
-int strcasecmp(char* c1,char* c2);
-#endif
-
-class cmdLineReadable{
+class cmdLineReadable {
 public:
-	bool set;
-	char* name;
-	cmdLineReadable(const char* name);
-	virtual ~cmdLineReadable(void);
-	virtual int read(char** argv,int argc);
-	virtual void writeValue(char* str);
-};
+	cmdLineReadable(std::string const& name): set_(false), name_(name) { }
+	virtual ~cmdLineReadable() { }
 
-class cmdLineInt : public cmdLineReadable {
-public:
-	int value;
-	cmdLineInt(const char* name);
-	cmdLineInt(const char* name,const int& v);
-	int read(char** argv,int argc);
-	void writeValue(char* str);
-};
-template<int Dim>
-class cmdLineIntArray : public cmdLineReadable {
-public:
-	int values[Dim];
-	cmdLineIntArray(const char* name);
-	cmdLineIntArray(const char* name,const int v[Dim]);
-	int read(char** argv,int argc);
-	void writeValue(char* str);
+	bool set() const { return set_; }
+	char const* name() const { return name_.c_str(); }
+
+	virtual int read(char** /* argv */, int /* argc */) { set_ = true; return 0; }
+	virtual void writeValue(char* str) { *str = 0; }
+protected:
+	bool set_;
+	std::string name_;
 };
 
-class cmdLineFloat : public cmdLineReadable {
+template<class T>
+class cmdLine: public cmdLineReadable {
 public:
-	float value;
-	cmdLineFloat(const char* name);
-	cmdLineFloat(const char* name,const float& f);
-	int read(char** argv,int argc);
-	void writeValue(char* str);
+	cmdLine(std::string const& name, T const& t = T()):
+		cmdLineReadable(name), value_(t) { }
+
+	T const& value() const { return value_; }
+	T& value() { return value_; }
+
+	int read(char** argv, int argc) override;
+	void writeValue(char* str) override;
+private:
+	T value_;
 };
-template<int Dim>
-class cmdLineFloatArray : public cmdLineReadable {
+
+template<class T, size_t Dim>
+class cmdLine<std::array<T, Dim>>: public cmdLineReadable {
 public:
-	float values[Dim];
-	cmdLineFloatArray(const char* name);
-	cmdLineFloatArray(const char* name,const float f[Dim]);
-	int read(char** argv,int argc);
-	void writeValue(char* str);
-};
-class cmdLineString : public cmdLineReadable {
-public:
-	char* value;
-	cmdLineString(const char* name);
-	~cmdLineString();
-	int read(char** argv,int argc);
-	void writeValue(char* str);
-};
-class cmdLineStrings : public cmdLineReadable {
-	int Dim;
-public:
-	char** values;
-	cmdLineStrings(const char* name,int Dim);
-	~cmdLineStrings(void);
-	int read(char** argv,int argc);
-	void writeValue(char* str);
-};
-template<int Dim>
-class cmdLineStringArray : public cmdLineReadable {
-public:
-	char* values[Dim];
-	cmdLineStringArray(const char* name);
-	~cmdLineStringArray();
-	int read(char** argv,int argc);
-	void writeValue(char* str);
+	cmdLine(std::string const& name): cmdLineReadable(name) { }
+
+	std::array<T, Dim> const& values() const { return values_; }
+
+	int read(char** argv, int argc) override;
+	void writeValue(char* str) override;
+private:
+	std::array<T, Dim> values_;
 };
 
 // This reads the arguments in argc, matches them against "names" and sets
 // the values of "r" appropriately. Parameters start with "--"
-void cmdLineParse(int argc, char **argv,int num,cmdLineReadable** r,int dumpError=1);
-
-char* GetFileExtension(char* fileName);
-char* GetLocalFileName(char* fileName);
-char** ReadWords(const char* fileName,int& cnt);
+void cmdLineParse(int argc, char** argv, int num, cmdLineReadable** r,
+		bool dumpError = true);
 
 #include "CmdLineParser.inl"
-#endif // CMD_LINE_PARSER_INCLUDED

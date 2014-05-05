@@ -185,7 +185,7 @@ extern char *my_alloc();
 /*** delcaration of routines ***/
 
 extern PlyFile *ply_write(FILE *, int, char const**, int);
-extern PlyFile *ply_open_for_writing(char *, int, char const**, int, float *);
+extern PlyFile *ply_open_for_writing(char const*, int, char const**, int, float *);
 extern void ply_describe_element(PlyFile *, char *, int, int, PlyProperty *);
 extern void ply_describe_property(PlyFile *, char const*, PlyProperty *);
 extern void ply_element_count(PlyFile *, char const*, int);
@@ -195,7 +195,7 @@ extern void ply_put_element(PlyFile *, void *);
 extern void ply_put_comment(PlyFile *, char *);
 extern void ply_put_obj_info(PlyFile *, char *);
 extern PlyFile *ply_read(FILE *, int *, char ***);
-extern PlyFile *ply_open_for_reading( char *, int *, char ***, int *, float *);
+extern PlyFile *ply_open_for_reading( char const*, int *, char ***, int *, float *);
 extern PlyProperty **ply_get_element_description(PlyFile *, char *, int*, int*);
 extern void ply_get_element_setup( PlyFile *, char *, int, PlyProperty *);
 extern int ply_get_property(PlyFile *, char *, PlyProperty *);
@@ -332,27 +332,27 @@ public:
 };
 
 template< class Vertex >
-int PlyWritePolygons( char* fileName , CoredMeshData< Vertex >*  mesh , int file_type , const Point3D< float >& translate , float scale , char** comments=NULL , int commentNum=0 , XForm4x4< float > xForm=XForm4x4< float >::Identity() );
+int PlyWritePolygons( char const* fileName , CoredMeshData< Vertex >*  mesh , int file_type , const Point3D< float >& translate , float scale , char** comments=NULL , int commentNum=0 , XForm4x4< float > xForm=XForm4x4< float >::Identity() );
 
 template< class Vertex >
-int PlyWritePolygons( char* fileName , CoredMeshData< Vertex >*  mesh , int file_type , char** comments=NULL , int commentNum=0 , XForm4x4< float > xForm=XForm4x4< float >::Identity() );
+int PlyWritePolygons( char const* fileName , CoredMeshData< Vertex >*  mesh , int file_type , char** comments=NULL , int commentNum=0 , XForm4x4< float > xForm=XForm4x4< float >::Identity() );
 
 template<class Vertex>
-int PlyReadPolygons(char* fileName,
+int PlyReadPolygons(char const* fileName,
 					std::vector<Vertex>& vertices,std::vector<std::vector<int> >& polygons,
 					PlyProperty* properties,int propertyNum,
 					int& file_type,
 					char*** comments=NULL,int* commentNum=NULL , bool* readFlags=NULL );
 
 template<class Vertex>
-int PlyWritePolygons(char* fileName,
+int PlyWritePolygons(char const* fileName,
 					 const std::vector<Vertex>& vertices,const std::vector<std::vector<int> >& polygons,
 					 PlyProperty* properties,int propertyNum,
 					 int file_type,
 					 char** comments=NULL,const int& commentNum=0);
 
 template<class Vertex>
-int PlyWritePolygons(char* fileName,
+int PlyWritePolygons(char const* fileName,
 					 const std::vector<Vertex>& vertices , const std::vector< std::vector< int > >& polygons,
 					 PlyProperty* properties,int propertyNum,
 					 int file_type,
@@ -413,7 +413,7 @@ int PlyWritePolygons(char* fileName,
 	return 1;
 }
 template<class Vertex>
-int PlyReadPolygons(char* fileName,
+int PlyReadPolygons(char const* fileName,
 					std::vector<Vertex>& vertices , std::vector<std::vector<int> >& polygons ,
 					 PlyProperty* properties , int propertyNum ,
 					int& file_type ,
@@ -524,7 +524,7 @@ int PlyReadPolygons(char* fileName,
 }
 
 template< class Vertex >
-int PlyWritePolygons( char* fileName , CoredMeshData< Vertex >* mesh , int file_type , const Point3D<float>& translate , float scale , char** comments , int commentNum , XForm4x4< float > xForm )
+int PlyWritePolygons( char const* fileName , CoredMeshData< Vertex >* mesh , int file_type , const Point3D<float>& translate , float scale , char** comments , int commentNum , XForm4x4< float > xForm )
 {
 	XForm3x3< float > xFormN;
 	for( int i=0 ; i<3 ; i++ ) for( int j=0 ; j<3 ; j++ ) xFormN(i,j) = xForm(i,j);
@@ -592,7 +592,7 @@ int PlyWritePolygons( char* fileName , CoredMeshData< Vertex >* mesh , int file_
 	return 1;
 }
 template< class Vertex >
-int PlyWritePolygons( char* fileName , CoredMeshData< Vertex >* mesh , int file_type , char** comments , int commentNum , XForm4x4< float > xForm )
+int PlyWritePolygons( char const* fileName , CoredMeshData< Vertex >* mesh , int file_type , char** comments , int commentNum , XForm4x4< float > xForm )
 {
 	XForm3x3< float > xFormN;
 	for( int i=0 ; i<3 ; i++ ) for( int j=0 ; j<3 ; j++ ) xFormN(i,j) = xForm(i,j);

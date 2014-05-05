@@ -746,8 +746,13 @@ bool Octree< Degree , OutputDensity >::_inBounds( Point3D< Real > p ) const
 	else                  { if( p[0]<Real(0.00) || p[0]>Real(1.00) || p[1]<Real(0.00) || p[1]>Real(1.00) || p[2]<Real(0.00) || p[2]>Real(1.00) ) return false; }
 	return true;
 }
+
+#ifdef WIN32
+inline int strcasecmp(char const* c1, char const* c2) { return _stricmp(c1, c2); }
+#endif
+
 template< int Degree , bool OutputDensity >
-int Octree< Degree , OutputDensity >::setTree( char* fileName , int maxDepth , int minDepth , 
+int Octree< Degree , OutputDensity >::setTree( char const* fileName , int maxDepth , int minDepth , 
 							int splatDepth , Real samplesPerNode , Real scaleFactor ,
 							bool useConfidence , bool useNormalWeights , Real constraintWeight , int adaptiveExponent , XForm4x4< Real > xForm )
 {
@@ -772,11 +777,12 @@ int Octree< Degree , OutputDensity >::setTree( char* fileName , int maxDepth , i
 	typename TreeOctNode::NeighborKey3 neighborKey;
 	neighborKey.set( maxDepth );
 	PointStream< Real >* pointStream;
-	char* ext = GetFileExtension( fileName );
-	if     ( !strcasecmp( ext , "bnpts" ) ) pointStream = new BinaryPointStream< Real >( fileName );
-	else if( !strcasecmp( ext , "ply"   ) ) pointStream = new    PLYPointStream< Real >( fileName );
+	std::string fn(fileName);
+	size_t last_dot = fn.find_last_of('.');
+	std::string ext = last_dot == std::string::npos ? "" : fn.substr(last_dot);
+	if     ( !strcasecmp( ext.c_str() , "bnpts" ) ) pointStream = new BinaryPointStream< Real >( fileName );
+	else if( !strcasecmp( ext.c_str() , "ply"   ) ) pointStream = new    PLYPointStream< Real >( fileName );
 	else                                    pointStream = new  ASCIIPointStream< Real >( fileName );
-	delete[] ext;
 
 	tree.setFullDepth( _minDepth );
 	// Read through once to get the center and scale
