@@ -257,7 +257,7 @@ public:
 	PlyVertex(const Point3D<Real>& p)			{point=p;}
 #endif
 };
-template< class Real > PlyVertex< Real > operator * ( XForm4x4< Real > xForm , PlyVertex< Real > v ) { return PlyVertex< Real >( xForm * v.point ); }
+template< class Real > PlyVertex< Real > operator * ( XForm< Real, 4 > xForm , PlyVertex< Real > v ) { return PlyVertex< Real >( xForm * v.point ); }
 template< class Real >
 class PlyValueVertex
 {
@@ -286,7 +286,7 @@ public:
 	PlyValueVertex(const Point3D<Real>& p)	{point=p;}
 #endif
 };
-template< class Real > PlyValueVertex< Real > operator * ( XForm4x4< Real > xForm , PlyValueVertex< Real > v ) { return PlyValueVertex< Real >( xForm * v.point , v.value ); }
+template< class Real > PlyValueVertex< Real > operator * ( XForm< Real, 4 > xForm , PlyValueVertex< Real > v ) { return PlyValueVertex< Real >( xForm * v.point , v.value ); }
 template< class Real >
 class PlyOrientedVertex
 {
@@ -314,7 +314,7 @@ public:
 	PlyOrientedVertex(const Point3D<Real>& p)	{point=p;}
 #endif
 };
-template< class Real > PlyOrientedVertex< Real > operator * ( XForm4x4< Real > xForm , PlyOrientedVertex< Real > v ) { return PlyOrientedVertex< Real >( xForm * v.point , xForm.inverse().transpose() * v.normal ); }
+template< class Real > PlyOrientedVertex< Real > operator * ( XForm< Real, 4 > xForm , PlyOrientedVertex< Real > v ) { return PlyOrientedVertex< Real >( xForm * v.point , xForm.inverse().transpose() * v.normal ); }
 template< class Real >
 class PlyColorVertex
 {
@@ -332,10 +332,10 @@ public:
 };
 
 template< class Vertex >
-int PlyWritePolygons( char const* fileName , CoredMeshData< Vertex >*  mesh , int file_type , const Point3D< float >& translate , float scale , char** comments=NULL , int commentNum=0 , XForm4x4< float > xForm=XForm4x4< float >::Identity() );
+int PlyWritePolygons( char const* fileName , CoredFileMeshData< Vertex >*  mesh , int file_type , const Point3D< float >& translate , float scale , char** comments=NULL , int commentNum=0 , XForm< float, 4 > xForm=XForm< float, 4 >::Identity() );
 
 template< class Vertex >
-int PlyWritePolygons( char const* fileName , CoredMeshData< Vertex >*  mesh , int file_type , char** comments=NULL , int commentNum=0 , XForm4x4< float > xForm=XForm4x4< float >::Identity() );
+int PlyWritePolygons( char const* fileName , CoredFileMeshData< Vertex >*  mesh , int file_type , char** comments=NULL , int commentNum=0 , XForm< float, 4 > xForm=XForm< float, 4 >::Identity() );
 
 template<class Vertex>
 int PlyReadPolygons(char const* fileName,
@@ -524,9 +524,9 @@ int PlyReadPolygons(char const* fileName,
 }
 
 template< class Vertex >
-int PlyWritePolygons( char const* fileName , CoredMeshData< Vertex >* mesh , int file_type , const Point3D<float>& translate , float scale , char** comments , int commentNum , XForm4x4< float > xForm )
+int PlyWritePolygons( char const* fileName , CoredFileMeshData< Vertex >* mesh , int file_type , const Point3D<float>& translate , float scale , char** comments , int commentNum , XForm< float, 4 > xForm )
 {
-	XForm3x3< float > xFormN;
+	XForm< float, 3 > xFormN;
 	for( int i=0 ; i<3 ; i++ ) for( int j=0 ; j<3 ; j++ ) xFormN(i,j) = xForm(i,j);
 	xFormN = xFormN.transpose().inverse();
 	int i;
@@ -592,13 +592,13 @@ int PlyWritePolygons( char const* fileName , CoredMeshData< Vertex >* mesh , int
 	return 1;
 }
 template< class Vertex >
-int PlyWritePolygons( char const* fileName , CoredMeshData< Vertex >* mesh , int file_type , char** comments , int commentNum , XForm4x4< float > xForm )
+int PlyWritePolygons( char const* fileName , CoredFileMeshData< Vertex >* mesh , int file_type , char** comments , int commentNum , XForm< float, 4 > xForm )
 {
-	XForm3x3< float > xFormN;
+	XForm< float, 3 > xFormN;
 	for( int i=0 ; i<3 ; i++ ) for( int j=0 ; j<3 ; j++ ) xFormN(i,j) = xForm(i,j);
 	xFormN = xFormN.transpose().inverse();
 	int i;
-	int nr_vertices=int(mesh->outOfCorePointCount()+mesh->inCorePoints.size());
+	int nr_vertices=int(mesh->outOfCorePointCount()+mesh->inCorePointCount());
 	int nr_faces=mesh->polygonCount();
 	float version;
 	char const* elem_names[] = { "vertex" , "face" };
@@ -624,9 +624,9 @@ int PlyWritePolygons( char const* fileName , CoredMeshData< Vertex >* mesh , int
 	// write vertices
 	ply_put_element_setup( ply , "vertex" );
 	Point3D< float > p;
-	for( i=0 ; i<int( mesh->inCorePoints.size() ) ; i++ )
+	for( i=0 ; i<int( mesh->inCorePointCount() ) ; i++ )
 	{
-		Vertex vertex = xForm * mesh->inCorePoints[i];
+		Vertex vertex = xForm * mesh->inCorePoints(i);
 		ply_put_element(ply, (void *) &vertex);
 	}
 	for( i=0; i<mesh->outOfCorePointCount() ; i++ )
@@ -651,7 +651,7 @@ int PlyWritePolygons( char const* fileName , CoredMeshData< Vertex >* mesh , int
 		ply_face.vertices = new int[ polygon.size() ];
 		for( int i=0 ; i<int(polygon.size()) ; i++ )
 			if( polygon[i].inCore ) ply_face.vertices[i] = polygon[i].idx;
-			else                    ply_face.vertices[i] = polygon[i].idx + int( mesh->inCorePoints.size() );
+			else                    ply_face.vertices[i] = polygon[i].idx + mesh->inCorePointCount();
 		ply_put_element( ply, (void *) &ply_face );
 		delete[] ply_face.vertices;
 	}  // for, write faces

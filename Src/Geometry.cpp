@@ -25,90 +25,82 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
 ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
+
+#include <cstdio>
+#include <cstring>
+#include <iostream>
+
 #include "Geometry.h"
-#include <stdio.h>
-#include <string.h>
 
-///////////////////
-// CoredMeshData //
-///////////////////
+// TODO: fread, fwrite and the kernel already have an underlying buffering.
+// TODO: So remove that with passion.
 
-TriangulationEdge::TriangulationEdge(void){pIndex[0]=pIndex[1]=tIndex[0]=tIndex[1]=-1;}
-TriangulationTriangle::TriangulationTriangle(void){eIndex[0]=eIndex[1]=eIndex[2]=-1;}
-
-///////////////////////////
-// BufferedReadWriteFile //
-///////////////////////////
-BufferedReadWriteFile::BufferedReadWriteFile( char* fileName , int bufferSize )
-{
-	_bufferIndex = 0;
-	_bufferSize = bufferSize;
-	if( fileName ) strcpy( _fileName , fileName ) , tempFile = false;
+BufferedReadWriteFile::BufferedReadWriteFile():
+	buffer_index_(0),
+	buffer_size_(1 << 20) {
 #ifdef _WIN32
-	else strcpy( _fileName , _tempnam( "." , "foo" ) ) , tempFile = true;
-#else // !_WIN32
-	else strcpy( _fileName , tempnam( "." , "foo" ) ) , tempFile = true;
-#endif // _WIN32
-	_fp = fopen( _fileName , "w+b" );
-	if( !_fp ) fprintf( stderr , "[ERROR] Failed to open file: %s\n" , _fileName ) , exit( 0 );
-	_buffer = (char*) malloc( _bufferSize );
+	tmpfile_s(&fp_);
+#else
+	fp_ = tmpfile();
+#endif
+	if(errno) {
+		perror("[ERROR] Failed to create temporary file\n");
+		exit(1);
+	}
+	buffer_ = (char*)malloc(buffer_size_);
 }
-BufferedReadWriteFile::~BufferedReadWriteFile( void )
-{
-	free( _buffer );
-	fclose( _fp );
-	if( tempFile ) remove( _fileName );
+
+BufferedReadWriteFile::~BufferedReadWriteFile() {
+	free(buffer_);
+	fclose(fp_);
 }
-void BufferedReadWriteFile::reset( void )
-{
-	if( _bufferIndex ) fwrite( _buffer , 1 , _bufferIndex , _fp );
-	_bufferIndex = 0;
-	fseek( _fp , 0 , SEEK_SET );
-	_bufferIndex = 0;
-	_bufferSize = fread( _buffer , 1 , _bufferSize , _fp );
+
+void BufferedReadWriteFile::reset() {
+	if(buffer_index_)
+		fwrite(buffer_, 1, buffer_index_, fp_);
+	buffer_index_ = 0;
+	fseek(fp_, 0, SEEK_SET);
+	buffer_index_ = 0;
+	buffer_size_ = fread(buffer_, 1, buffer_size_, fp_);
 }
-bool BufferedReadWriteFile::write( const void* data , size_t size )
-{
-	if( !size ) return true;
-	char* _data = (char*) data;
-	size_t sz = _bufferSize - _bufferIndex;
-	while( sz<=size )
-	{
-		memcpy( _buffer+_bufferIndex , _data , sz );
-		fwrite( _buffer , 1 , _bufferSize , _fp );
+
+bool BufferedReadWriteFile::write(void const* data, size_t size) {
+	if(!size) return true;
+	char* _data = (char*)data;
+	size_t sz = buffer_size_ - buffer_index_;
+	while(sz <= size) {
+		memcpy(buffer_ + buffer_index_, _data, sz);
+		fwrite(buffer_, 1, buffer_size_, fp_);
 		_data += sz;
 		size -= sz;
-		_bufferIndex = 0;
-		sz = _bufferSize;
+		buffer_index_ = 0;
+		sz = buffer_size_;
 	}
-	if( size )
-	{
-		memcpy( _buffer+_bufferIndex , _data , size );
-		_bufferIndex += size;
+	if(size) {
+		memcpy(buffer_ + buffer_index_, _data, size);
+		buffer_index_ += size;
 	}
 	return true;
 }
-bool BufferedReadWriteFile::read( void* data , size_t size )
-{
-	if( !size ) return true;
-	char *_data = (char*) data;
-	size_t sz = _bufferSize - _bufferIndex;
-	while( sz<=size )
-	{
-		if( size && !_bufferSize ) return false;
-		memcpy( _data , _buffer+_bufferIndex , sz );
-		_bufferSize = fread( _buffer , 1 , _bufferSize , _fp );
+
+bool BufferedReadWriteFile::read(void* data, size_t size) {
+	if(!size) return true;
+	char *_data = (char*)data;
+	size_t sz = buffer_size_ - buffer_index_;
+	while(sz <= size) {
+		if(size && !buffer_size_) return false;
+		memcpy(_data, buffer_ + buffer_index_, sz);
+		buffer_size_ = fread(buffer_, 1, buffer_size_, fp_);
 		_data += sz;
 		size -= sz;
-		_bufferIndex = 0;
-		if( !size ) return true;
-		sz = _bufferSize;
+		buffer_index_ = 0;
+		if(!size) return true;
+		sz = buffer_size_;
 	}
-	if( size )
-	{
-		if( !_bufferSize ) return false;
-		memcpy( _data , _buffer+_bufferIndex , size );
-		_bufferIndex += size;
+	if(size) {
+		if(!buffer_size_) return false;
+		memcpy(_data, buffer_ + buffer_index_, size);
+		buffer_index_ += size;
 	}
 	return true;
 }

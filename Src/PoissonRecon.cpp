@@ -101,7 +101,7 @@ cmdLine<std::string>
 	In( "in" ) ,
 	Out( "out" ) ,
 	VoxelGrid( "voxel" ) ,
-	XForm( "xForm" );
+	Xform( "xForm" );
 
 cmdLineReadable
 #ifdef _WIN32
@@ -147,7 +147,7 @@ cmdLine<float>
 
 cmdLineReadable* params[] =
 {
-	&In , &Depth , &Out , &XForm ,
+	&In , &Depth , &Out , &Xform ,
 	&SolverDivide , &IsoDivide , &Scale , &Verbose , &SolverAccuracy , &NoComments ,
 	&KernelDepth , &SamplesPerNode , &Confidence , &NormalWeights , &NonManifold , &PolygonMesh , &ASCII , &ShowResidual , &MinIters , &FixedIters , &VoxelDepth ,
 	&PointWeight , &VoxelGrid , &Threads , &MinDepth , &MaxSolveDepth ,
@@ -246,14 +246,14 @@ int Execute(int, char* argv[] )
 
 	if( Verbose.set() ) echoStdout=1;
 
-	XForm4x4< Real > xForm , iXForm;
-	if( XForm.set() )
+	XForm< Real, 4 > xForm , iXForm;
+	if( Xform.set() )
 	{
-		FILE* fp = fopen( XForm.value().c_str() , "r" );
+		FILE* fp = fopen( Xform.value().c_str() , "r" );
 		if( !fp )
 		{
-			fprintf( stderr , "[WARNING] Could not read x-form from: %s\n" , XForm.value().c_str() );
-			xForm = XForm4x4< Real >::Identity();
+			fprintf( stderr , "[WARNING] Could not read x-form from: %s\n" , Xform.value().c_str() );
+			xForm = XForm< Real, 4 >::Identity();
 		}
 		else
 		{
@@ -261,7 +261,7 @@ int Execute(int, char* argv[] )
 			fclose( fp );
 		}
 	}
-	else xForm = XForm4x4< Real >::Identity();
+	else xForm = XForm< Real, 4 >::Identity();
 	iXForm = xForm.inverse();
 
 	DumpOutput2( comments[commentNum++] , "Running Screened Poisson Reconstruction (Version 5.71)\n" );
