@@ -77,14 +77,13 @@ void MinimalAreaTriangulation<Real>::GetTriangulation(const std::vector<Point3D<
 		tIndex[1][1].idx[1]=1;
 		tIndex[1][1].idx[2]=2;
 
-		Point3D<Real> n,p1,p2;
+		Point3D<Real> p1,p2;
 		for(int i=0;i<2;i++)
 			for(int j=0;j<2;j++)
 			{
 				p1=vertices[tIndex[i][j].idx[1]]-vertices[tIndex[i][j].idx[0]];
 				p2=vertices[tIndex[i][j].idx[2]]-vertices[tIndex[i][j].idx[0]];
-				CrossProduct(p1,p2,n);
-				area[i] += Real( Length(n) );
+				area[i] += Real( Length(CrossProduct(p1, p2)) );
 			}
 		if(area[0]>area[1])
 		{
@@ -174,11 +173,10 @@ Real MinimalAreaTriangulation<Real>::GetArea(const size_t& i,const size_t& j,con
 	{
 		size_t rr=r%eCount;
 		size_t idx1=i*eCount+rr,idx2=rr*eCount+j;
-		Point3D<Real> p,p1,p2;
+		Point3D<Real> p1,p2;
 		p1=vertices[i]-vertices[rr];
 		p2=vertices[j]-vertices[rr];
-		CrossProduct(p1,p2,p);
-		temp = Real( Length(p) );
+		temp = Real( Length(CrossProduct(p1, p2)) );
 		if(bestTriangulation[idx1]>=0)
 		{
 			temp+=bestTriangulation[idx1];

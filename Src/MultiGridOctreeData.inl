@@ -753,13 +753,13 @@ inline int strcasecmp(char const* c1, char const* c2) { return _stricmp(c1, c2);
 template< int Degree , bool OutputDensity >
 int Octree< Degree , OutputDensity >::setTree( char const* fileName , int maxDepth , int minDepth , 
 							int splatDepth , Real samplesPerNode , Real scaleFactor ,
-							bool useConfidence , bool useNormalWeights , Real constraintWeight , int adaptiveExponent , XForm4x4< Real > xForm )
+							bool useConfidence , bool useNormalWeights , Real constraintWeight , int adaptiveExponent , XForm< Real, 4 > xForm )
 {
 	if( splatDepth<0 ) splatDepth = 0;
 	this->samplesPerNode = samplesPerNode;
 	this->splatDepth = splatDepth;
 
-	XForm3x3< Real > xFormN;
+	XForm< Real, 3 > xFormN;
 	for( int i=0 ; i<3 ; i++ ) for( int j=0 ; j<3 ; j++ ) xFormN(i,j) = xForm(i,j);
 	xFormN = xFormN.transpose().inverse();
 	if( _boundaryType==0 ) maxDepth++ , minDepth = std::max< int >( 1 , minDepth )+1;
@@ -800,7 +800,7 @@ int Octree< Degree , OutputDensity >::setTree( char const* fileName , int maxDep
 
 		if( _boundaryType==0 ) _scale = std::max< Real >( max[0]-min[0] , std::max< Real >( max[1]-min[1] , max[2]-min[2] ) ) * 2;
 		else         _scale = std::max< Real >( max[0]-min[0] , std::max< Real >( max[1]-min[1] , max[2]-min[2] ) );
-		_center = ( max+min ) /2;
+		_center = ( max+min ) / 2;
 	}
 
 	_scale *= scaleFactor;
@@ -1020,12 +1020,12 @@ double Octree< Degree , OutputDensity >::GetLaplacian( const typename BSplineDat
 template< int Degree , bool OutputDensity >
 double Octree< Degree , OutputDensity >::GetDivergence1( const typename BSplineData< Degree , Real >::Integrator& integrator , int d , const int off1[] , const int off2[] , bool childParent , const Point3D< Real >& normal1 ) const
 {
-	return Point3D< double >::Dot( GetDivergence1( integrator , d , off1 , off2 , childParent ) , normal1 );
+	return Dot( GetDivergence1( integrator , d , off1 , off2 , childParent ) , Point3D<double>(normal1) );
 }
 template< int Degree , bool OutputDensity > 
 double Octree< Degree , OutputDensity >::GetDivergence2( const typename BSplineData< Degree , Real >::Integrator& integrator , int d , const int off1[] , const int off2[] , bool childParent , const Point3D< Real >& normal2 ) const
 {
-	return Point3D< double >::Dot( GetDivergence2( integrator , d , off1 , off2 , childParent ) , normal2 );
+	return Dot( GetDivergence2( integrator , d , off1 , off2 , childParent ) , Point3D<double>(normal2) );
 }
 template< int Degree , bool OutputDensity >
 Point3D< double > Octree< Degree , OutputDensity >::GetDivergence1( const typename BSplineData< Degree , Real >::Integrator& integrator , int d , const int off1[] , const int off2[] , bool childParent ) const
@@ -2249,7 +2249,7 @@ void Octree< Degree , OutputDensity >::SetLaplacianConstraints( void )
 							if( _node && _node->nodeData.normalIndex>=0 )
 							{
 								const Point3D< Real >& _normal = (*normals)[_node->nodeData.normalIndex];
-								node->nodeData.constraint += Point3D< Real >::Dot( stencil.values[x][y][z] , _normal );
+								node->nodeData.constraint += (Real)Dot( stencil.values[x][y][z] , Point3D<double>(_normal) );
 							}
 						}
 					else
@@ -2515,7 +2515,7 @@ int Octree< Degree , OutputDensity >::refineBoundary( int subdivideDepth )
 }
 template< int Degree , bool OutputDensity >
 template< class Vertex >
-void Octree< Degree , OutputDensity >::GetMCIsoTriangles( Real isoValue , int subdivideDepth , CoredMeshData< Vertex >* mesh , int, int nonLinearFit , bool addBarycenter , bool polygonMesh )
+void Octree< Degree , OutputDensity >::GetMCIsoTriangles( Real isoValue , int subdivideDepth , CoredFileMeshData< Vertex >* mesh , int, int nonLinearFit , bool addBarycenter , bool polygonMesh )
 {
 	typename BSplineData< Degree , Real >::template CornerEvaluator< 2 > evaluator;
 	fData.setCornerEvaluator( evaluator , 0 , postDerivativeSmooth);
@@ -3432,7 +3432,7 @@ int Octree< Degree , OutputDensity >::GetRootIndex( const RootInfo< OutputDensit
 template< int Degree , bool OutputDensity >
 template< class Vertex >
 int Octree< Degree , OutputDensity >::SetMCRootPositions( TreeOctNode* node , int sDepth , Real isoValue , typename TreeOctNode::ConstNeighborKey3& neighborKey3 , RootData& rootData , 
-	std::vector< Vertex >* interiorVertices , CoredMeshData< Vertex >* mesh , const Real* metSolution , const typename BSplineData< Degree , Real >::template CornerEvaluator< 2 >& evaluator , const Stencil< Point3D< double > , 5 > nStencil[8] , const Stencil< Point3D< double > , 5 > nStencils[8][8] , int nonLinearFit )
+	std::vector< Vertex >* interiorVertices , CoredFileMeshData< Vertex >* mesh , const Real* metSolution , const typename BSplineData< Degree , Real >::template CornerEvaluator< 2 >& evaluator , const Stencil< Point3D< double > , 5 > nStencil[8] , const Stencil< Point3D< double > , 5 > nStencils[8][8] , int nonLinearFit )
 {
 	Vertex vertex;
 	int eIndex;
@@ -3467,8 +3467,8 @@ int Octree< Degree , OutputDensity >::SetMCRootPositions( TreeOctNode* node , in
 						end  = rootData.boundaryRoots.end();
 						if( iter==end )
 						{
-							mesh->inCorePoints.push_back( vertex );
-							rootData.boundaryRoots[key] = int( mesh->inCorePoints.size() ) - 1;
+							mesh->addInCorePoint( vertex );
+							rootData.boundaryRoots[key] = int( mesh->inCorePointCount() ) - 1;
 						}
 					}
 					if( iter==end ) count++;
@@ -3487,7 +3487,7 @@ int Octree< Degree , OutputDensity >::SetMCRootPositions( TreeOctNode* node , in
 					{
 						if( !rootData.edgesSet[ nodeEdgeIndex ] )
 						{
-							rootData.interiorRoots[ nodeEdgeIndex ] = mesh->addOutOfCorePoint_s( vertex );
+							rootData.interiorRoots[ nodeEdgeIndex ] = mesh->addOutOfCorePoint( vertex );
 							interiorVertices->push_back( vertex );
 							rootData.edgesSet[ nodeEdgeIndex ] = 1;
 							count++;
@@ -3501,7 +3501,7 @@ int Octree< Degree , OutputDensity >::SetMCRootPositions( TreeOctNode* node , in
 }
 template< int Degree , bool OutputDensity >
 template< class Vertex >
-int Octree< Degree , OutputDensity >::SetBoundaryMCRootPositions( int sDepth , Real isoValue , RootData& rootData , CoredMeshData< Vertex >* mesh , int nonLinearFit )
+int Octree< Degree , OutputDensity >::SetBoundaryMCRootPositions( int sDepth , Real isoValue , RootData& rootData , CoredFileMeshData< Vertex >* mesh , int nonLinearFit )
 {
 	Point3D< Real > position;
 	int i,j,k,eIndex,hits=0;
@@ -3660,7 +3660,7 @@ void Octree< Degree , OutputDensity >::GetMCIsoEdges( TreeOctNode* node , typena
 }
 template< int Degree , bool OutputDensity >
 template< class Vertex >
-int Octree< Degree , OutputDensity >::GetMCIsoTriangles( TreeOctNode* node , typename TreeOctNode::ConstNeighborKey3& neighborKey3 , CoredMeshData< Vertex >* mesh , RootData& rootData , std::vector< Vertex >* interiorVertices , int offSet , int sDepth , bool polygonMesh , std::vector< Vertex >* barycenters )
+int Octree< Degree , OutputDensity >::GetMCIsoTriangles( TreeOctNode* node , typename TreeOctNode::ConstNeighborKey3& neighborKey3 , CoredFileMeshData< Vertex >* mesh , RootData& rootData , std::vector< Vertex >* interiorVertices , int offSet , int sDepth , bool polygonMesh , std::vector< Vertex >* barycenters )
 {
 	int tris=0;
 	std::vector< std::pair< RootInfo< OutputDensity > , RootInfo< OutputDensity > > > edges;
@@ -3731,7 +3731,7 @@ int Octree< Degree , OutputDensity >::GetEdgeLoops( std::vector< std::pair< Root
 }
 template< int Degree , bool OutputDensity >
 template< class Vertex >
-int Octree< Degree , OutputDensity >::AddTriangles( CoredMeshData< Vertex >* mesh , std::vector< CoredPointIndex >& edges , std::vector< Vertex >* interiorVertices , int offSet , bool polygonMesh , std::vector< Vertex >* barycenters )
+int Octree< Degree , OutputDensity >::AddTriangles( CoredFileMeshData< Vertex >* mesh , std::vector< CoredPointIndex >& edges , std::vector< Vertex >* interiorVertices , int offSet , bool polygonMesh , std::vector< Vertex >* barycenters )
 {
 	MinimalAreaTriangulation< Real > MAT;
 	std::vector< Point3D< Real > > vertices;
@@ -3744,7 +3744,7 @@ int Octree< Degree , OutputDensity >::AddTriangles( CoredMeshData< Vertex >* mes
 			vertices[i].idx    =  edges[i].index;
 			vertices[i].inCore = (edges[i].inCore!=0);
 		}
-		mesh->addPolygon_s( vertices );
+		mesh->addPolygon( vertices );
 		return 1;
 	}
 	if( edges.size()>3 )
@@ -3757,9 +3757,9 @@ int Octree< Degree , OutputDensity >::AddTriangles( CoredMeshData< Vertex >* mes
 					if( (i+1)%edges.size()!=j && (j+1)%edges.size()!=i )
 					{
 						Vertex v1 , v2;
-						if( edges[i].inCore ) v1 =  mesh->inCorePoints[ edges[i].index        ];
+						if( edges[i].inCore ) v1 =  mesh->inCorePoints(edges[i].index);
 						else                  v1 = (*interiorVertices)[ edges[i].index-offSet ];
-						if( edges[j].inCore ) v2 =  mesh->inCorePoints[ edges[j].index        ];
+						if( edges[j].inCore ) v2 =  mesh->inCorePoints(edges[j].index);
 						else                  v2 = (*interiorVertices)[ edges[j].index-offSet ];
 						for( int k=0 ; k<3 ; k++ ) if( v1.point[k]==v2.point[k] ) isCoplanar = true;
 					}
@@ -3770,13 +3770,13 @@ int Octree< Degree , OutputDensity >::AddTriangles( CoredMeshData< Vertex >* mes
 			for( int i=0 ; i<int(edges.size()) ; i++ )
 			{
 				Vertex p;
-				if(edges[i].inCore)	p =  mesh->inCorePoints[edges[i].index       ];
+				if(edges[i].inCore)	p =  mesh->inCorePoints(edges[i].index);
 				else				p = (*interiorVertices)[edges[i].index-offSet];
 				c += p;
 			}
 			c /= Real( edges.size() );
 			int cIdx;
-			cIdx = mesh->addOutOfCorePoint_s( c );
+			cIdx = mesh->addOutOfCorePoint( c );
 #pragma omp critical (add_barycenter_access)
 			barycenters->push_back( c );
 			for( int i=0 ; i<int(edges.size()) ; i++ )
@@ -3788,7 +3788,7 @@ int Octree< Degree , OutputDensity >::AddTriangles( CoredMeshData< Vertex >* mes
 				vertices[0].inCore = (edges[i                 ].inCore!=0);
 				vertices[1].inCore = (edges[(i+1)%edges.size()].inCore!=0);
 				vertices[2].inCore = 0;
-				mesh->addPolygon_s( vertices );
+				mesh->addPolygon( vertices );
 			}
 			return int( edges.size() );
 		}
@@ -3799,7 +3799,7 @@ int Octree< Degree , OutputDensity >::AddTriangles( CoredMeshData< Vertex >* mes
 			for( int i=0 ; i<int(edges.size()) ; i++ )
 			{
 				Vertex p;
-				if( edges[i].inCore ) p =  mesh->inCorePoints[edges[i].index       ];
+				if( edges[i].inCore ) p =  mesh->inCorePoints(edges[i].index);
 				else                  p = (*interiorVertices)[edges[i].index-offSet];
 				vertices[i] = p.point;
 			}
@@ -3812,7 +3812,7 @@ int Octree< Degree , OutputDensity >::AddTriangles( CoredMeshData< Vertex >* mes
 					_vertices[j].idx    =  edges[ triangles[i].idx[j] ].index;
 					_vertices[j].inCore = (edges[ triangles[i].idx[j] ].inCore!=0);
 				}
-				mesh->addPolygon_s( _vertices );
+				mesh->addPolygon( _vertices );
 			}
 		}
 	}
@@ -3824,7 +3824,7 @@ int Octree< Degree , OutputDensity >::AddTriangles( CoredMeshData< Vertex >* mes
 			vertices[i].idx    =  edges[i].index;
 			vertices[i].inCore = (edges[i].inCore!=0);
 		}
-		mesh->addPolygon_s( vertices );
+		mesh->addPolygon( vertices );
 	}
 	return int(edges.size())-2;
 }
