@@ -73,21 +73,6 @@ public:
 	static void FaceCorners(int idx,int& c1,int &c2,int& c3,int& c4);
 };
 
-class MarchingSquares{
-	static double Interpolate(double v1,double v2);
-	static void SetVertex(int e,const double values[Square::CORNERS],double iso);
-public:
-	const static unsigned int MAX_EDGES=2;
-	static const int edgeMask[1<<Square::CORNERS];
-	static const int edges[1<<Square::CORNERS][2*MAX_EDGES+1];
-	static double vertexList[Square::EDGES][2];
-
-	static int GetIndex(const double values[Square::CORNERS],double iso);
-	static int IsAmbiguous(const double v[Square::CORNERS],double isoValue);
-	static int AddEdges(const double v[Square::CORNERS],double isoValue,Edge* edges);
-	static int AddEdgeIndices(const double v[Square::CORNERS],double isoValue,int* edges);
-};
-
 class MarchingCubes
 {
 	static void SetVertex(int e,const double values[Cube::CORNERS],double iso);
