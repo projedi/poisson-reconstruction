@@ -779,7 +779,7 @@ int Octree< Degree , OutputDensity >::setTree( char const* fileName , int maxDep
 	PointStream< Real >* pointStream;
 	std::string fn(fileName);
 	size_t last_dot = fn.find_last_of('.');
-	std::string ext = last_dot == std::string::npos ? "" : fn.substr(last_dot);
+	std::string ext = last_dot == std::string::npos ? "" : fn.substr(last_dot + 1);
 	if     ( !strcasecmp( ext.c_str() , "bnpts" ) ) pointStream = new BinaryPointStream< Real >( fileName );
 	else if( !strcasecmp( ext.c_str() , "ply"   ) ) pointStream = new    PLYPointStream< Real >( fileName );
 	else                                    pointStream = new  ASCIIPointStream< Real >( fileName );
