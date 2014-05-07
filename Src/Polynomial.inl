@@ -265,29 +265,13 @@ void Polynomial<Degree>::printnl(void) const{
 template<int Degree>
 void Polynomial<Degree>::getSolutions(double c,std::vector<double>& roots,double EPS) const
 {
-	double r[4][2];
-	int rCount=0;
 	roots.clear();
-	switch(Degree){
-	case 1:
-		rCount=Factor(coefficients[1],coefficients[0]-c,r,EPS);
-		break;
-	case 2:
-		rCount=Factor(coefficients[2],coefficients[1],coefficients[0]-c,r,EPS);
-		break;
-	case 3:
-		rCount=Factor(coefficients[3],coefficients[2],coefficients[1],coefficients[0]-c,r,EPS);
-		break;
-//	case 4:
-//		rCount=Factor(coefficients[4],coefficients[3],coefficients[2],coefficients[1],coefficients[0]-c,r,EPS);
-//		break;
-	default:
-		printf("Can't solve polynomial of degree: %d\n",Degree);
-	}
-	for(int i=0;i<rCount;i++){
-		if(fabs(r[i][1])<=EPS){
-			roots.push_back(r[i][0]);
-		}
+	std::array<double, Degree + 1> cs;
+	std::copy(coefficients, coefficients + Degree + 1, cs.begin());
+	cs[0] -= c;
+	auto rs = Factor<Degree>(cs.data(), EPS);
+	for(auto r: rs) {
+		if(fabs(r.imag()) <= EPS) roots.push_back(r.real());
 	}
 }
 template< >
