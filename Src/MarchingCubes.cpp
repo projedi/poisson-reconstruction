@@ -31,365 +31,140 @@ DAMAGE.
 ////////////
 // Square //
 ////////////
-int Square::AntipodalCornerIndex(int idx){
-	int x,y;
-	FactorCornerIndex(idx,x,y);
-	return CornerIndex( (x+1)%2 , (y+1)%2 );
-}
-int Square::CornerIndex(int x,int y){return (y<<1)|x;}
-void Square::FactorCornerIndex(int idx,int& x,int& y){
-	x=(idx>>0)%2;
-	y=(idx>>1)%2;
-}
-int Square::EdgeIndex(int orientation,int i){
-	switch(orientation){
-		case 0: // x
-			if(!i)	{return  0;} // (0,0) -> (1,0)
-			else	{return  2;} // (0,1) -> (1,1)
-		case 1: // y
-			if(!i)	{return  3;} // (0,0) -> (0,1)
-			else	{return  1;} // (1,0) -> (1,1)
-	};
-	return -1;
-}
-void Square::FactorEdgeIndex(int idx,int& orientation,int& i){
-	switch(idx){
-		case 0: case 2:
-			orientation=0;
-			i=idx/2;
-			return;
-		case 1: case 3:
-			orientation=1;
-			i=((idx/2)+1)%2;
-			return;
-	};
-}
-void Square::EdgeCorners(int idx,int& c1,int& c2){
-	int orientation,i;
-	FactorEdgeIndex(idx,orientation,i);
-	switch(orientation){
-		case 0:
-			c1=CornerIndex(0,i);
-			c2=CornerIndex(1,i);
-			break;
-		case 1:
-			c1=CornerIndex(i,0);
-			c2=CornerIndex(i,1);
-			break;
-	};
-}
-int Square::ReflectEdgeIndex(int idx,int edgeIndex){
-	int orientation=edgeIndex%2;
-	int o,i;
-	FactorEdgeIndex(idx,o,i);
-	if(o!=orientation){return idx;}
-	else{return EdgeIndex(o,(i+1)%2);}
-}
-int Square::ReflectCornerIndex(int idx,int edgeIndex){
-	int orientation=edgeIndex%2;
-	int x,y;
-	FactorCornerIndex(idx,x,y);
-	switch(orientation){
-		case 0:	return CornerIndex((x+1)%2,y);
-		case 1:	return CornerIndex(x,(y+1)%2);
-	};
-	return -1;
-}
 
-
+int Square::AntipodalCornerIndex(int idx) {
+	int x;
+	int y;
+	std::tie(x, y) = FactorCornerIndex(idx);
+	return CornerIndex((x + 1) % 2, (y + 1) % 2);
+}
 
 //////////
 // Cube //
 //////////
-int Cube::CornerIndex(int x,int y,int z){return (z<<2)|(y<<1)|x;}
-void Cube::FactorCornerIndex(int idx,int& x,int& y,int& z){
-	x=(idx>>0)%2;
-	y=(idx>>1)%2;
-	z=(idx>>2)%2;
-}
-int Cube::EdgeIndex(int orientation,int i,int j){return (i | (j<<1))|(orientation<<2);}
-void Cube::FactorEdgeIndex( int idx , int& orientation , int& i , int &j )
-{
-	orientation=idx>>2;
-	i = (idx&1);
-	j = (idx&2)>>1;
-}
-int Cube::FaceIndex(int x,int y,int z){
-	if		(x<0)	{return  0;}
-	else if	(x>0)	{return  1;}
-	else if	(y<0)	{return  2;}
-	else if	(y>0)	{return  3;}
-	else if	(z<0)	{return  4;}
-	else if	(z>0)	{return  5;}
-	else			{return -1;}
-}
-int Cube::FaceIndex(int dir,int offSet){return (dir<<1)|offSet;}
 
-void Cube::FactorFaceIndex(int idx,int& x,int& y,int& z){
-	x=y=z=0;
-	switch(idx){
-		case 0:		x=-1;	break;
-		case 1:		x= 1;	break;
-		case 2:		y=-1;	break;
-		case 3:		y= 1;	break;
-		case 4:		z=-1;	break;
-		case 5:		z= 1;	break;
+int Cube::FaceIndex(int x, int y, int z) {
+	return x < 0 ? 0 :
+		x > 0 ? 1 :
+		y < 0 ? 2 :
+		y > 0 ? 3 :
+		z < 0 ? 4 :
+		z > 0 ? 5 :
+		-1;
+}
+
+std::tuple<int, int, int> Cube::FactorFaceIndexXYZ(int idx) {
+	switch(idx) {
+		case 0: return std::make_tuple(-1, 0, 0);
+		case 1: return std::make_tuple(1, 0, 0);
+		case 2: return std::make_tuple(0, -1, 0);
+		case 3: return std::make_tuple(0, 1, 0);
+		case 4: return std::make_tuple(0, 0, -1);
+		case 5: return std::make_tuple(0, 0, 1);
+		default: return std::make_tuple(0, 0, 0);
 	};
 }
-void Cube::FactorFaceIndex(int idx,int& dir,int& offSet){
-	dir  = idx>>1;
-	offSet=idx &1;
-}
 
-int Cube::FaceAdjacentToEdges(int eIndex1,int eIndex2){
-	int f1,f2,g1,g2;
-	FacesAdjacentToEdge(eIndex1,f1,f2);
-	FacesAdjacentToEdge(eIndex2,g1,g2);
-	if(f1==g1 || f1==g2){return f1;}
-	if(f2==g1 || f2==g2){return f2;}
+int Cube::FaceAdjacentToEdges(int eIndex1, int eIndex2) {
+	int f1;
+	int f2;
+	int g1;
+	int g2;
+	std::tie(f1, f2) = FacesAdjacentToEdge(eIndex1);
+	std::tie(g1, g2) = FacesAdjacentToEdge(eIndex2);
+	if(f1 == g1 || f1 == g2) return f1;
+	if(f2 == g1 || f2 == g2) return f2;
 	return -1;
 }
 
-void Cube::FacesAdjacentToEdge(int eIndex,int& f1Index,int& f2Index){
-	int orientation,i1,i2;
-	FactorEdgeIndex(eIndex,orientation,i1,i2);
-	i1<<=1;
-	i2<<=1;
-	i1--;
-	i2--;
-	switch(orientation){
-		case 0:
-			f1Index=FaceIndex( 0,i1, 0);
-			f2Index=FaceIndex( 0, 0,i2);
-			break;
-		case 1:
-			f1Index=FaceIndex(i1, 0, 0);
-			f2Index=FaceIndex( 0, 0,i2);
-			break;
-		case 2:
-			f1Index=FaceIndex(i1, 0, 0);
-			f2Index=FaceIndex( 0,i2, 0);
-			break;
+std::tuple<int, int> Cube::FacesAdjacentToEdge(int eIndex) {
+	int orientation;
+	int i1;
+	int i2;
+	std::tie(orientation, i1, i2) = FactorEdgeIndex(eIndex);
+	i1 <<= 1;
+	i2 <<= 1;
+	--i1;
+	--i2;
+	switch(orientation) {
+		case 0: return std::make_tuple(FaceIndex(0, i1, 0), FaceIndex(0, 0, i2));
+		case 1: return std::make_tuple(FaceIndex(i1, 0, 0), FaceIndex(0, 0, i2));
+		case 2: return std::make_tuple(FaceIndex(i1, 0, 0), FaceIndex(0, i2, 0));
+		default: return std::make_tuple(0, 0);
 	};
 }
-void Cube::EdgeCorners(int idx,int& c1,int& c2){
-	int orientation,i1,i2;
-	FactorEdgeIndex(idx,orientation,i1,i2);
-	switch(orientation){
-		case 0:
-			c1=CornerIndex(0,i1,i2);
-			c2=CornerIndex(1,i1,i2);
-			break;
-		case 1:
-			c1=CornerIndex(i1,0,i2);
-			c2=CornerIndex(i1,1,i2);
-			break;
-		case 2:
-			c1=CornerIndex(i1,i2,0);
-			c2=CornerIndex(i1,i2,1);
-			break;
+
+std::tuple<int, int> Cube::EdgeCorners(int idx) {
+	int orientation;
+	int i1;
+	int i2;
+	std::tie(orientation, i1, i2) = FactorEdgeIndex(idx);
+	switch(orientation) {
+		case 0: return std::make_tuple(CornerIndex(0, i1, i2), CornerIndex(1, i1, i2));
+		case 1: return std::make_tuple(CornerIndex(i1, 0, i2), CornerIndex(i1, 1, i2));
+		case 2: return std::make_tuple(CornerIndex(i1, i2, 0), CornerIndex(i1, i2, 1));
+		default: return std::make_tuple(0, 0);
 	};
 }
-void Cube::FaceCorners(int idx,int& c1,int& c2,int& c3,int& c4){
-	int i=idx%2;
-	switch(idx/2){
-	case 0:
-		c1=CornerIndex(i,0,0);
-		c2=CornerIndex(i,1,0);
-		c3=CornerIndex(i,0,1);
-		c4=CornerIndex(i,1,1);
-		return;
-	case 1:
-		c1=CornerIndex(0,i,0);
-		c2=CornerIndex(1,i,0);
-		c3=CornerIndex(0,i,1);
-		c4=CornerIndex(1,i,1);
-		return;
-	case 2:
-		c1=CornerIndex(0,0,i);
-		c2=CornerIndex(1,0,i);
-		c3=CornerIndex(0,1,i);
-		c4=CornerIndex(1,1,i);
-		return;
+
+std::tuple<int, int, int, int> Cube::FaceCorners(int idx) {
+	int i = idx % 2;
+	switch(idx / 2) {
+		case 0: return std::make_tuple(CornerIndex(i, 0, 0), CornerIndex(i, 1, 0),
+			CornerIndex(i, 0, 1), CornerIndex(i, 1, 1));
+		case 1: return std::make_tuple(CornerIndex(0, i, 0), CornerIndex(1, i, 0),
+			CornerIndex(0, i, 1), CornerIndex(1, i, 1));
+		case 2: return std::make_tuple(CornerIndex(0, 0, i), CornerIndex(1, 0, i),
+			CornerIndex(0, 1, i), CornerIndex(1, 1, i));
+		default: return std::make_tuple(0, 0, 0, 0);
 	}
 }
-int Cube::AntipodalCornerIndex(int idx){
-	int x,y,z;
-	FactorCornerIndex(idx,x,y,z);
-	return CornerIndex((x+1)%2,(y+1)%2,(z+1)%2);
+
+int Cube::AntipodalCornerIndex(int idx) {
+	int x;
+	int y;
+	int z;
+	std::tie(x, y, z) = FactorCornerIndex(idx);
+	return CornerIndex((x + 1) % 2, (y + 1) % 2, (z + 1) % 2);
 }
-int Cube::FaceReflectFaceIndex(int idx,int faceIndex){
-	if(idx/2!=faceIndex/2){return idx;}
-	else{
-		if(idx%2)	{return idx-1;}
-		else		{return idx+1;}
-	}
+
+int Cube::FaceReflectFaceIndex(int idx, int faceIndex) {
+	if(idx / 2 != faceIndex / 2) return idx;
+	if(idx % 2) return idx - 1;
+	return idx + 1;
 }
-int Cube::FaceReflectEdgeIndex(int idx,int faceIndex){
-	int orientation=faceIndex/2;
-	int o,i,j;
-	FactorEdgeIndex(idx,o,i,j);
-	if(o==orientation){return idx;}
-	switch(orientation){
-		case 0:	return EdgeIndex(o,(i+1)%2,j);
+
+int Cube::FaceReflectEdgeIndex(int idx, int faceIndex) {
+	int o;
+	int i;
+	int j;
+	std::tie(o, i, j) = FactorEdgeIndex(idx);
+	if(o == faceIndex / 2) return idx;
+	switch(faceIndex / 2) {
+		case 0: return EdgeIndex(o, (i + 1) % 2, j);
 		case 1:
-			switch(o){
-				case 0:	return EdgeIndex(o,(i+1)%2,j);
-				case 2:	return EdgeIndex(o,i,(j+1)%2);
+			switch(o) {
+				case 0: return EdgeIndex(o, (i + 1) % 2, j);
+				case 2: return EdgeIndex(o, i, (j + 1) % 2);
+				default: return -1;
 			};
-		case 2:	return EdgeIndex(o,i,(j+1)%2);
+		case 2: return EdgeIndex(o, i, (j + 1) % 2);
+		default: return -1;
 	};
-	return -1;
-}
-int Cube::FaceReflectCornerIndex(int idx,int faceIndex){
-	int orientation=faceIndex/2;
-	int x,y,z;
-	FactorCornerIndex(idx,x,y,z);
-	switch(orientation){
-		case 0:	return CornerIndex((x+1)%2,y,z);
-		case 1:	return CornerIndex(x,(y+1)%2,z);
-		case 2: return CornerIndex(x,y,(z+1)%2);
-	};
-	return -1;
-}
-int Cube::EdgeReflectCornerIndex(int idx,int edgeIndex){
-	int orientation,x,y,z;
-	FactorEdgeIndex(edgeIndex,orientation,x,y);
-	FactorCornerIndex(idx,x,y,z);
-	switch(orientation){
-		case 0:	return CornerIndex( x     ,(y+1)%2,(z+1)%2);
-		case 1:	return CornerIndex((x+1)%2, y     ,(z+1)%2);
-		case 2:	return CornerIndex((x+1)%2,(y+1)%2, z     );
-	};
-	return -1;
-}
-int	Cube::EdgeReflectEdgeIndex(int edgeIndex){
-	int o,i1,i2;
-	FactorEdgeIndex(edgeIndex,o,i1,i2);
-	return Cube::EdgeIndex(o,(i1+1)%2,(i2+1)%2);
 }
 
-
-/////////////////////
-// MarchingSquares //
-/////////////////////
-/*
-0} // (0,0) -> (1,0)
-1} // (1,0) -> (1,1)
-2} // (0,1) -> (1,1)
-3} // (0,0) -> (0,1)
-*/
-const int MarchingSquares::edgeMask[1<<Square::CORNERS]={
-	    0, //  0 ->         ->                         ->
-	    9, //  1 -> 0       -> (0,0)                   -> 0,3     ->  9 
-	    3, //  2 -> 1       -> (1,0)                   -> 0,1     ->  3
-	   10, //  3 -> 0,1     -> (0,0) (1,0)             -> 1,3     -> 10
-	   12, //  4 -> 2       -> (0,1)                   -> 2,3     -> 12
-	    5, //  5 -> 0,2     -> (0,0) (0,1)             -> 0,2     ->  5
-	   15, //  6 -> 1,2     -> (1,0) (0,1)             -> 0,1,2,3 -> 15
-	    6, //  7 -> 0,1,2   -> (0,0) (1,0) (0,1)       -> 1,2     ->  6
-	    6, //  8 -> 3       -> (1,1)                   -> 1,2     ->  6
-	   15, //  9 -> 0,3     -> (0,0) (1,1)             -> 0,1,2,3 -> 15 
-	    5, // 10 -> 1,3     -> (1,0) (1,1)             -> 0,2     ->  5
-	   12, // 11 -> 0,1,3   -> (0,0) (1,0) (1,1)       -> 2,3     -> 12
-	   10, // 12 -> 2,3     -> (0,1) (1,1)             -> 1,3     -> 10
-	    3, // 13 -> 0,2,3   -> (0,0) (0,1) (1,1)       -> 0,1     ->  3
-	    9, // 14 -> 1,2,3   -> (1,0) (0,1) (1,1)       -> 0,3     ->  9
-	    0, // 15 -> 0,1,2,3 -> (0,0) (1,0) (0,1) (1,1) -> 
-};
-const int MarchingSquares::edges[1<<Square::CORNERS][MAX_EDGES*2+1] = {
-	{ -1,  -1,  -1,  -1,  -1}, //
-	{  3,   0,  -1,  -1,  -1}, // (0,0)
-	{  0,   1,  -1,  -1,  -1}, // (1,0)
-	{  3,   1,  -1,  -1,  -1}, // (0,0) (1,0)
-	{  2,   3,  -1,  -1,  -1}, // (0,1)
-	{  2,   0,  -1,  -1,  -1}, // (0,0) (0,1)
-	{  0,   1,   2,   3,  -1}, // (1,0) (0,1)
-	{  1,   2,  -1,  -1,  -1}, // (0,0) (1,0) (0,1)
-	{  2,   1,  -1,  -1,  -1}, // (1,1)
-	{  3,   0,   1,   2,  -1}, // (0,0) (1,1)
-	{  0,   2,  -1,  -1,  -1}, // (1,0) (1,1)
-	{  3,   2,  -1,  -1,  -1}, // (0,0) (1,0) (1,1)
-	{  1,   3,  -1,  -1,  -1}, // (0,1) (1,1)
-	{  1,   0,  -1,  -1,  -1}, // (0,0) (0,1) (1,1)
-	{  0,   3,  -1,  -1,  -1}, // (1,0) (0,1) (1,1)
-	{ -1,  -1,  -1,  -1,  -1}, // (0,0) (1,0) (0,1) (1,1)
-};
-
-double MarchingSquares::vertexList[Square::EDGES][2];
-int MarchingSquares::GetIndex(const double v[Square::CORNERS],double iso){
-	int idx=0;
-	for(unsigned i=0;i<Square::CORNERS;i++){if(v[i]<iso){idx|=(1<<i);}}
-	return idx;
+int Cube::EdgeReflectEdgeIndex(int edgeIndex) {
+	int o;
+	int i1;
+	int i2;
+	std::tie(o, i1, i2) = FactorEdgeIndex(edgeIndex);
+	return Cube::EdgeIndex(o, (i1 + 1) % 2, (i2 + 1) % 2);
 }
-
-int MarchingSquares::IsAmbiguous(const double v[Square::CORNERS],double isoValue){
-	int idx=GetIndex(v,isoValue);
-	return (idx==5) || (idx==10);
-}
-int MarchingSquares::AddEdges(const double v[Square::CORNERS],double iso,Edge* isoEdges){
-	int idx,nEdges=0;
-	Edge e;
-
-	idx=GetIndex(v,iso);
-
-	/* Cube is entirely in/out of the surface */
-	if (!edgeMask[idx]) return 0;
-
-	/* Find the vertices where the surface intersects the cube */
-	int i,j,ii=1;
-	for(i=0;i<12;i++){
-		if(edgeMask[idx] & ii){SetVertex(i,v,iso);}
-		ii<<=1;
-	}
-	/* Create the triangle */
-	for (i=0;edges[idx][i]!=-1;i+=2) {
-		for(j=0;j<2;j++){
-			e.p[0][j]=vertexList[edges[idx][i+0]][j];
-			e.p[1][j]=vertexList[edges[idx][i+1]][j];
-		}
-		isoEdges[nEdges++]=e;
-	}
-	return nEdges;
-}
-
-int MarchingSquares::AddEdgeIndices(const double v[Square::CORNERS],double iso,int* isoIndices){
-	int idx,nEdges=0;
-
-	idx=GetIndex(v,iso);
-
-	/* Cube is entirely in/out of the surface */
-	if (!edgeMask[idx]) return 0;
-
-	/* Create the triangle */
-	for(int i=0;edges[idx][i]!=-1;i+=2){
-		for(int j=0;j<2;j++){isoIndices[i+j]=edges[idx][i+j];}
-		nEdges++;
-	}
-	return nEdges;
-}
-void MarchingSquares::SetVertex(int e,const double values[Square::CORNERS],double iso){
-	int o,i,c1,c2;
-	Square::FactorEdgeIndex(e,o,i);
-	Square::EdgeCorners(e,c1,c2);
-	switch(o){
-		case 0:
-			vertexList[e][0]=Interpolate(values[c1]-iso,values[c2]-iso);
-			vertexList[e][1]=i;
-			break;
-		case 1:
-			vertexList[e][1]=Interpolate(values[c1]-iso,values[c2]-iso);
-			vertexList[e][0]=i;
-			break;
-	}
-}
-double MarchingSquares::Interpolate(double v1,double v2){return v1/(v1-v2);}
-
 
 ///////////////////
 // MarchingCubes //
 ///////////////////
-const int MarchingCubes::edgeMask[1<<Cube::CORNERS]={
+int const MarchingCubes::edgeMask[1 << Cube::CORNERS] = {
 	    0,  273,  545,  816, 2082, 2355, 2563, 2834,
 	 1042, 1283, 1587, 1826, 3120, 3361, 3601, 3840,
 	  324,   85,  869,  628, 2406, 2167, 2887, 2646,
@@ -423,7 +198,8 @@ const int MarchingCubes::edgeMask[1<<Cube::CORNERS]={
 	 3840, 3601, 3361, 3120, 1826, 1587, 1283, 1042,
 	 2834, 2563, 2355, 2082,  816,  545,  273,    0
 };
-const int MarchingCubes::triangles[1<<Cube::CORNERS][MAX_TRIANGLES*3+1] = {
+
+int const MarchingCubes::triangles[1 << Cube::CORNERS][MAX_TRIANGLES * 3 + 1] = {
 	{  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1},
 	{   0,   4,   8,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1},
 	{   5,   0,   9,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1},
@@ -681,271 +457,29 @@ const int MarchingCubes::triangles[1<<Cube::CORNERS][MAX_TRIANGLES*3+1] = {
 	{   8,   4,   0,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1},
 	{  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1,  -1}
 };
-const int MarchingCubes::cornerMap[Cube::CORNERS]={0,1,3,2,4,5,7,6};
-double MarchingCubes::vertexList[Cube::EDGES][3];
 
-int MarchingCubes::GetIndex(const double v[Cube::CORNERS],double iso){
-	int idx=0;
-	if (v[Cube::CornerIndex(0,0,0)] < iso) idx |=   1;
-	if (v[Cube::CornerIndex(1,0,0)] < iso) idx |=   2;
-	if (v[Cube::CornerIndex(1,1,0)] < iso) idx |=   4;
-	if (v[Cube::CornerIndex(0,1,0)] < iso) idx |=   8;
-	if (v[Cube::CornerIndex(0,0,1)] < iso) idx |=  16;
-	if (v[Cube::CornerIndex(1,0,1)] < iso) idx |=  32;
-	if (v[Cube::CornerIndex(1,1,1)] < iso) idx |=  64;
-	if (v[Cube::CornerIndex(0,1,1)] < iso) idx |= 128;
-	return idx;
-}
-int MarchingCubes::GetFaceIndex(const double values[Cube::CORNERS],double iso,int faceIndex){
-	int i,j,x,y,z,idx=0;
-	double v[2][2];
-	Cube::FactorFaceIndex(faceIndex,x,y,z);
-	if		(x<0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=values[Cube::CornerIndex(0,i,j)];}}}
-	else if	(x>0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=values[Cube::CornerIndex(1,i,j)];}}}
-	else if	(y<0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=values[Cube::CornerIndex(i,0,j)];}}}
-	else if	(y>0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=values[Cube::CornerIndex(i,1,j)];}}}
-	else if	(z<0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=values[Cube::CornerIndex(i,j,0)];}}}
-	else if	(z>0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=values[Cube::CornerIndex(i,j,1)];}}}
-	if (v[0][0] < iso) idx |=   1;
-	if (v[1][0] < iso) idx |=   2;
-	if (v[1][1] < iso) idx |=   4;
-	if (v[0][1] < iso) idx |=   8;
-	return idx;
-}
-int MarchingCubes::IsAmbiguous(const double v[Cube::CORNERS],double isoValue,int faceIndex){
-	int idx=GetFaceIndex(v,isoValue,faceIndex);
-	return (idx==5) || (idx==10);
-}
-int MarchingCubes::HasRoots(const double v[Cube::CORNERS],double isoValue,int faceIndex){
-	int idx=GetFaceIndex(v,isoValue,faceIndex);
-	return (idx!=0) && (idx !=15);
-}
-int MarchingCubes::HasRoots(const double v[Cube::CORNERS],double isoValue){
-	int idx=GetIndex(v,isoValue);
-	if(idx==0 || idx==255){return 0;}
-	else{return 1;}
-}
-int MarchingCubes::HasRoots(int mcIndex){
-	if(mcIndex==0 || mcIndex==255){return 0;}
-	else{return 1;}
-}
-int MarchingCubes::AddTriangles( const double v[Cube::CORNERS] , double iso , Triangle* isoTriangles )
-{
-	int idx,ntriang=0;
-	Triangle tri;
+int const MarchingCubes::cornerMap[Cube::CORNERS] = { 0, 1, 3, 2, 4, 5, 7, 6 };
 
-	idx=GetIndex(v,iso);
+int MarchingCubes::HasEdgeRoots(int mcIndex, int edgeIndex) {
+	int c1;
+	int c2;
+	std::tie(c1, c2) = Cube::EdgeCorners(edgeIndex);
+	bool r1 = (mcIndex & (1 << MarchingCubes::cornerMap[c1]));
+	bool r2 = (mcIndex & (1 << MarchingCubes::cornerMap[c2]));
 
+	return r1 != r2;
+}
+
+int MarchingCubes::AddTriangleIndices(int idx, int* isoIndices) {
 	/* Cube is entirely in/out of the surface */
-	if (!edgeMask[idx]) return 0;
+	if(!edgeMask[idx]) return 0;
 
-	/* Find the vertices where the surface intersects the cube */
-	int i,j,ii=1;
-	for(i=0;i<12;i++){
-		if(edgeMask[idx] & ii){SetVertex(i,v,iso);}
-		ii<<=1;
-	}
+	int ntriang = 0;
 	/* Create the triangle */
-	for( i=0 ; triangles[idx][i]!=-1 ; i+=3 )
-	{
-		for(j=0;j<3;j++){
-			tri.p[0][j]=vertexList[triangles[idx][i+0]][j];
-			tri.p[1][j]=vertexList[triangles[idx][i+1]][j];
-			tri.p[2][j]=vertexList[triangles[idx][i+2]][j];
-		}
-		isoTriangles[ntriang++]=tri;
+	for(int i = 0; triangles[idx][i] != -1; i += 3) {
+		for(int j = 0; j < 3; ++j)
+			isoIndices[i + j] = triangles[idx][i + j];
+		++ntriang;
 	}
 	return ntriang;
 }
-
-int MarchingCubes::AddTriangleIndices(const double v[Cube::CORNERS],double iso,int* isoIndices){
-	int idx,ntriang=0;
-
-	idx=GetIndex(v,iso);
-
-	/* Cube is entirely in/out of the surface */
-	if (!edgeMask[idx]) return 0;
-
-	/* Create the triangle */
-	for(int i=0;triangles[idx][i]!=-1;i+=3){
-		for(int j=0;j<3;j++){isoIndices[i+j]=triangles[idx][i+j];}
-		ntriang++;
-	}
-	return ntriang;
-}
-
-void MarchingCubes::SetVertex( int e , const double values[Cube::CORNERS] , double iso )
-{
-	double t;
-	int o , i1 , i2;
-	Cube::FactorEdgeIndex( e , o , i1 , i2 );
-	switch( o )
-	{
-	case 0:
-		t = Interpolate( values[ Cube::CornerIndex( 0 , i1 , i2 ) ] - iso , values[ Cube::CornerIndex( 1 , i1 , i2 ) ] - iso );
-		vertexList[e][0] = t , vertexList[e][1] = i1  , vertexList[e][2] = i2;
-		break;
-	case 1:
-		t = Interpolate( values[ Cube::CornerIndex( i1 , 0 , i2 ) ] - iso , values[ Cube::CornerIndex( i1 , 1 , i2 ) ] - iso );
-		vertexList[e][0] = i1 , vertexList[e][1] = t  , vertexList[e][2] = i2;
-		break;
-	case 2:
-		t = Interpolate( values[ Cube::CornerIndex( i1 , i2 , 0 ) ] - iso , values[ Cube::CornerIndex( i1 , i2 , 1 ) ] - iso );
-		vertexList[e][0] = i1 , vertexList[e][1] = i2  , vertexList[e][2] = t;
-		break;
-	}
-}
-double MarchingCubes::Interpolate( double v1 , double v2 ) { return v1/(v1-v2); }
-
-
-///////////////////////////////////
-int MarchingCubes::GetIndex(const float v[Cube::CORNERS],float iso){
-	int idx=0;
-	if (v[Cube::CornerIndex(0,0,0)] < iso) idx |=   1;
-	if (v[Cube::CornerIndex(1,0,0)] < iso) idx |=   2;
-	if (v[Cube::CornerIndex(1,1,0)] < iso) idx |=   4;
-	if (v[Cube::CornerIndex(0,1,0)] < iso) idx |=   8;
-	if (v[Cube::CornerIndex(0,0,1)] < iso) idx |=  16;
-	if (v[Cube::CornerIndex(1,0,1)] < iso) idx |=  32;
-	if (v[Cube::CornerIndex(1,1,1)] < iso) idx |=  64;
-	if (v[Cube::CornerIndex(0,1,1)] < iso) idx |= 128;
-	return idx;
-}
-int MarchingCubes::GetFaceIndex(const float values[Cube::CORNERS],float iso,int faceIndex){
-	int i,j,x,y,z,idx=0;
-	double v[2][2];
-	Cube::FactorFaceIndex(faceIndex,x,y,z);
-	if		(x<0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=values[Cube::CornerIndex(0,i,j)];}}}
-	else if	(x>0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=values[Cube::CornerIndex(1,i,j)];}}}
-	else if	(y<0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=values[Cube::CornerIndex(i,0,j)];}}}
-	else if	(y>0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=values[Cube::CornerIndex(i,1,j)];}}}
-	else if	(z<0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=values[Cube::CornerIndex(i,j,0)];}}}
-	else if	(z>0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=values[Cube::CornerIndex(i,j,1)];}}}
-	if (v[0][0] < iso) idx |=   1;
-	if (v[1][0] < iso) idx |=   2;
-	if (v[1][1] < iso) idx |=   4;
-	if (v[0][1] < iso) idx |=   8;
-	return idx;
-}
-int MarchingCubes::GetFaceIndex(int mcIndex,int faceIndex){
-	int i,j,x,y,z,idx=0;
-	int v[2][2];
-	Cube::FactorFaceIndex(faceIndex,x,y,z);
-	if		(x<0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=mcIndex&(1<<MarchingCubes::cornerMap[Cube::CornerIndex(0,i,j)]);}}}
-	else if	(x>0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=mcIndex&(1<<MarchingCubes::cornerMap[Cube::CornerIndex(1,i,j)]);}}}
-	else if	(y<0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=mcIndex&(1<<MarchingCubes::cornerMap[Cube::CornerIndex(i,0,j)]);}}}
-	else if	(y>0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=mcIndex&(1<<MarchingCubes::cornerMap[Cube::CornerIndex(i,1,j)]);}}}
-	else if	(z<0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=mcIndex&(1<<MarchingCubes::cornerMap[Cube::CornerIndex(i,j,1)]);}}}
-	else if	(z>0){for(i=0;i<2;i++){for(j=0;j<2;j++){v[i][j]=mcIndex&(1<<MarchingCubes::cornerMap[Cube::CornerIndex(i,j,1)]);}}}
-	if (v[0][0]) idx |=   1;
-	if (v[1][0]) idx |=   2;
-	if (v[1][1]) idx |=   4;
-	if (v[0][1]) idx |=   8;
-	return idx;
-}
-int MarchingCubes::IsAmbiguous(const float v[Cube::CORNERS],float isoValue,int faceIndex){
-	int idx=GetFaceIndex(v,isoValue,faceIndex);
-	return (idx==5) || (idx==10);
-}
-int MarchingCubes::IsAmbiguous(int mcIndex,int faceIndex){
-	int idx=GetFaceIndex(mcIndex,faceIndex);
-	return (idx==5) || (idx==10);
-}
-int MarchingCubes::HasRoots(const float v[Cube::CORNERS],float isoValue){
-	int idx=GetIndex(v,isoValue);
-	if(idx==0 || idx==255){return 0;}
-	else{return 1;}
-}
-int MarchingCubes::HasRoots(const float v[Cube::CORNERS],float isoValue,int faceIndex){
-	int idx=GetFaceIndex(v,isoValue,faceIndex);
-	return (idx!=0) && (idx!=15);
-}
-int MarchingCubes::HasFaceRoots(int mcIndex,int faceIndex){
-	int idx=GetFaceIndex(mcIndex,faceIndex);
-	return (idx!=0) && (idx!=15);
-}
-int MarchingCubes::HasEdgeRoots(int mcIndex,int edgeIndex){
-	int c1,c2;
-	Cube::EdgeCorners(edgeIndex,c1,c2);
-	if(	( (mcIndex&(1<<MarchingCubes::cornerMap[c1])) &&  (mcIndex&(1<<MarchingCubes::cornerMap[c2]))) ||
-		(!(mcIndex&(1<<MarchingCubes::cornerMap[c1])) && !(mcIndex&(1<<MarchingCubes::cornerMap[c2])))){return 0;}
-	else{return 1;}
-}
-int MarchingCubes::AddTriangles(const float v[Cube::CORNERS],float iso,Triangle* isoTriangles){
-	int idx,ntriang=0;
-	Triangle tri;
-
-	idx=GetIndex(v,iso);
-
-	/* Cube is entirely in/out of the surface */
-	if (!edgeMask[idx]) return 0;
-
-	/* Find the vertices where the surface intersects the cube */
-	int i,j,ii=1;
-	for( i=0 ; i<12 ; i++ )
-	{
-		if(edgeMask[idx] & ii) SetVertex( i , v , iso );
-		ii<<=1;
-	}
-	/* Create the triangle */
-	for (i=0;triangles[idx][i]!=-1;i+=3) {
-		for(j=0;j<3;j++){
-			tri.p[0][j]=vertexList[triangles[idx][i+0]][j];
-			tri.p[1][j]=vertexList[triangles[idx][i+1]][j];
-			tri.p[2][j]=vertexList[triangles[idx][i+2]][j];
-		}
-		isoTriangles[ntriang++]=tri;
-	}
-	return ntriang;
-}
-
-int MarchingCubes::AddTriangleIndices( const float v[Cube::CORNERS] , float iso , int* isoIndices )
-{
-	int idx,ntriang=0;
-	idx=GetIndex(v,iso);
-	/* Cube is entirely in/out of the surface */
-	if (!edgeMask[idx]) return 0;
-	/* Create the triangle */
-	for(int i=0;triangles[idx][i]!=-1;i+=3){
-		for(int j=0;j<3;j++){isoIndices[i+j]=triangles[idx][i+j];}
-		ntriang++;
-	}
-	return ntriang;
-}
-int MarchingCubes::AddTriangleIndices( int idx , int* isoIndices )
-{
-	int ntriang=0;
-
-	/* Cube is entirely in/out of the surface */
-	if (!edgeMask[idx]) return 0;
-
-	/* Create the triangle */
-	for(int i=0;triangles[idx][i]!=-1;i+=3){
-		for(int j=0;j<3;j++){isoIndices[i+j]=triangles[idx][i+j];}
-		ntriang++;
-	}
-	return ntriang;
-}
-
-void MarchingCubes::SetVertex( int e , const float values[Cube::CORNERS] , float iso )
-{
-	double t;
-	int o , i1 , i2;
-	Cube::FactorEdgeIndex( e , o , i1 , i2 );
-	switch( o )
-	{
-	case 0:
-		t = Interpolate( values[ Cube::CornerIndex( 0 , i1 , i2 ) ] - iso , values[ Cube::CornerIndex( 1 , i1 , i2 ) ] - iso );
-		vertexList[e][0] = t , vertexList[e][1] = i1  , vertexList[e][2] = i2;
-		break;
-	case 1:
-		t = Interpolate( values[ Cube::CornerIndex( i1 , 0 , i2 ) ] - iso , values[ Cube::CornerIndex( i1 , 1 , i2 ) ] - iso );
-		vertexList[e][0] = i1 , vertexList[e][1] = t  , vertexList[e][2] = i2;
-		break;
-	case 2:
-		t = Interpolate( values[ Cube::CornerIndex( i1 , i2 , 0 ) ] - iso , values[ Cube::CornerIndex( i1 , i2 , 1 ) ] - iso );
-		vertexList[e][0] = i1 , vertexList[e][1] = i2  , vertexList[e][2] = t;
-		break;
-	}
-}
-float MarchingCubes::Interpolate( float v1 , float v2 ){ return v1/(v1-v2); }

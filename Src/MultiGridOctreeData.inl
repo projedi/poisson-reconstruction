@@ -142,11 +142,11 @@ void SortedTreeNodes< OutputDensity >::setCornerTable( CornerTableData& cData , 
 				bool cornerOwner = true;
 				int x , y , z;
 				unsigned ac = Cube::AntipodalCornerIndex( c ); // The index of the node relative to the corner
-				Cube::FactorCornerIndex( c , x , y , z );
+				std::tie(x, y, z) = Cube::FactorCornerIndex(c);
 				for( unsigned cc=0 ; cc<Cube::CORNERS ; cc++ ) // Iterate over the corner's cells
 				{
 					int xx , yy , zz;
-					Cube::FactorCornerIndex( cc , xx , yy , zz );
+					std::tie(xx, yy, zz) = Cube::FactorCornerIndex(cc);
 					xx += x , yy += y , zz += z;
 					if( neighbors.neighbors[xx][yy][zz] && neighbors.neighbors[xx][yy][zz]->nodeData.nodeIndex!=-1 )
 						if( cc<ac || ( d<maxDepth && neighbors.neighbors[xx][yy][zz]->children ) )
@@ -175,7 +175,7 @@ void SortedTreeNodes< OutputDensity >::setCornerTable( CornerTableData& cData , 
 						for( unsigned cc=0 ; cc<Cube::CORNERS ; cc++ )
 						{
 							int xx , yy , zz;
-							Cube::FactorCornerIndex( cc , xx , yy , zz );
+							std::tie(xx, yy, zz) = Cube::FactorCornerIndex(cc);
 							xx += x , yy += y , zz += z;
 							if( neighborKey.neighbors[d].neighbors[xx][yy][zz] && neighborKey.neighbors[d].neighbors[xx][yy][zz]->nodeData.nodeIndex!=-1 )
 								cData[ neighbors.neighbors[xx][yy][zz] ][ Cube::AntipodalCornerIndex(cc) ] = myCount;
@@ -234,11 +234,11 @@ int SortedTreeNodes< OutputDensity >::getMaxCornerCount( int depth , int maxDept
 			bool cornerOwner = true;
 			int x , y , z;
 			unsigned ac = Cube::AntipodalCornerIndex( c ); // The index of the node relative to the corner
-			Cube::FactorCornerIndex( c , x , y , z );
+			std::tie(x, y, z) = Cube::FactorCornerIndex(c);
 			for( unsigned cc=0 ; cc<Cube::CORNERS ; cc++ ) // Iterate over the corner's cells
 			{
 				int xx , yy , zz;
-				Cube::FactorCornerIndex( cc , xx , yy , zz );
+				std::tie(xx, yy, zz) = Cube::FactorCornerIndex(cc);
 				xx += x , yy += y , zz += z;
 				if( neighbors.neighbors[xx][yy][zz] && neighbors.neighbors[xx][yy][zz]->nodeData.nodeIndex!=-1 )
 					if( cc<ac || ( d<maxDepth && neighbors.neighbors[xx][yy][zz]->children ) )
@@ -314,12 +314,12 @@ void SortedTreeNodes< OutputDensity >::setEdgeTable( EdgeTableData& eData , cons
 			{
 				bool edgeOwner = true;
 				int o , _i , _j;
-				Cube::FactorEdgeIndex( e , o , _i , _j );
+				std::tie(o, _i, _j) = Cube::FactorEdgeIndex(e);
 				unsigned ac = Square::AntipodalCornerIndex( Square::CornerIndex( _i , _j ) );
 				for( unsigned cc=0 ; cc<Square::CORNERS ; cc++ )
 				{
-					int ii , jj , x , y , z;
-					Square::FactorCornerIndex( cc , ii , jj );
+					int ii, jj, x , y , z;
+					std::tie(ii, jj) = Square::FactorCornerIndex(cc);
 					ii += _i , jj += _j;
 					switch( o )
 					{
@@ -336,9 +336,10 @@ void SortedTreeNodes< OutputDensity >::setEdgeTable( EdgeTableData& eData , cons
 					// Set all edge indices
 					for( unsigned cc=0 ; cc<Square::CORNERS ; cc++ )
 					{
-						int ii , jj , aii , ajj , x , y , z;
-						Square::FactorCornerIndex( cc , ii , jj );
-						Square::FactorCornerIndex( Square::AntipodalCornerIndex( cc ) , aii , ajj );
+						int ii, jj, aii, ajj, x , y , z;
+						std::tie(ii, jj) = Square::FactorCornerIndex(cc);
+						std::tie(aii, ajj) =
+							Square::FactorCornerIndex(Square::AntipodalCornerIndex(cc));
 						ii += _i , jj += _j;
 						switch( o )
 						{
@@ -386,12 +387,12 @@ int SortedTreeNodes< OutputDensity >::getMaxEdgeCount( const TreeOctNode* , int 
 		{
 			bool edgeOwner = true;
 			int o , i , j;
-			Cube::FactorEdgeIndex( e , o , i , j );
+			std::tie(o, i, j) = Cube::FactorEdgeIndex(e);
 			unsigned ac = Square::AntipodalCornerIndex( Square::CornerIndex( i , j ) );
 			for( unsigned cc=0 ; cc<Square::CORNERS ; cc++ )
 			{
-				int ii , jj , x , y , z;
-				Square::FactorCornerIndex( cc , ii , jj );
+				int ii, jj, x , y , z;
+				std::tie(ii, jj) = Square::FactorCornerIndex(cc);
 				ii += i , jj += j;
 				switch( o )
 				{
@@ -1434,8 +1435,11 @@ void Octree< Degree , OutputDensity >::UpdateCoarserSupportBounds( const TreeOct
 {
 	if( node->parent )
 	{
-		int x , y , z , c = int( node - node->parent->children );
-		Cube::FactorCornerIndex( c , x , y , z );
+		int x;
+		int y;
+		int z;
+		int c = int( node - node->parent->children );
+		std::tie(x, y, z) = Cube::FactorCornerIndex(c);
 		if( x==0 ) endX = 4;
 		else     startX = 1;
 		if( y==0 ) endY = 4;
@@ -1832,7 +1836,7 @@ int Octree< Degree , OutputDensity >::GetFixedDepthLaplacian( SparseSymmetricMat
 		if( node->parent )
 		{
 			c = int( node - node->parent->children );
-			Cube::FactorCornerIndex( c , x , y , z );
+			std::tie(x, y, z) = Cube::FactorCornerIndex(c);
 		}
 		else x = y = z = 0;
 		if( insetSupported )
@@ -1897,7 +1901,7 @@ int Octree< Degree , OutputDensity>::GetRestrictedFixedDepthLaplacian( SparseSym
 		if( node->parent )
 		{
 			c = int( node - node->parent->children );
-			Cube::FactorCornerIndex( c , x , y , z );
+			std::tie(x, y, z) = Cube::FactorCornerIndex(c);
 		}
 		else x = y = z = 0;
 		if( insetSupported )
@@ -2233,7 +2237,7 @@ void Octree< Degree , OutputDensity >::SetLaplacianConstraints( void )
 				if( d )
 				{
 					int c = int( node - node->parent->children );
-					Cube::FactorCornerIndex( c , cx , cy , cz );
+					std::tie(cx, cy, cz) = Cube::FactorCornerIndex(c);
 				}
 				else cx = cy = cz = 0;
 				Stencil< Point3D< double > , 5 >& _stencil = stencils[cx][cy][cz];
@@ -2352,7 +2356,7 @@ void Octree< Degree , OutputDensity >::SetLaplacianConstraints( void )
 			if( d )
 			{
 				int c = int( node - node->parent->children );
-				Cube::FactorCornerIndex( c , cx , cy , cz );
+				std::tie(cx, cy, cz) = Cube::FactorCornerIndex(c);
 			}
 			else cx = cy = cz = 0;
 			Stencil< Point3D< double > , 5 >& _stencil = stencils[cx][cy][cz];
@@ -2733,7 +2737,7 @@ Real Octree< Degree , OutputDensity >::getCornerValue( const typename TreeOctNod
 
 	int cx , cy , cz;
 	int startX = 0 , endX = 3 , startY = 0 , endY = 3 , startZ = 0 , endZ = 3;
-	Cube::FactorCornerIndex( corner , cx , cy , cz );
+	std::tie(cx, cy, cz) = Cube::FactorCornerIndex(corner);
 	{
 		typename TreeOctNode::ConstNeighbors3& neighbors = neighborKey3.neighbors[d];
 		if( cx==0 ) endX = 2;
@@ -2764,7 +2768,7 @@ Real Octree< Degree , OutputDensity >::getCornerValue( const typename TreeOctNod
 	{
 		int _corner = int( node - node->parent->children );
 		int _cx , _cy , _cz;
-		Cube::FactorCornerIndex( _corner , _cx , _cy , _cz );
+		std::tie(_cx, _cy, _cz) = Cube::FactorCornerIndex(_corner);
 		if( cx!=_cx ) startX = 0 , endX = 3;
 		if( cy!=_cy ) startY = 0 , endY = 3;
 		if( cz!=_cz ) startZ = 0 , endZ = 3;
@@ -2800,7 +2804,7 @@ Point3D< Real > Octree< Degree , OutputDensity >::getCornerNormal( const typenam
 
 	int cx , cy , cz;
 	int startX = 0 , endX = 5 , startY = 0 , endY = 5 , startZ = 0 , endZ = 5;
-	Cube::FactorCornerIndex( corner , cx , cy , cz );
+	std::tie(cx, cy, cz) = Cube::FactorCornerIndex(corner);
 	{
 		if( cx==0 ) endX = 4;
 		else      startX = 1;
@@ -2831,7 +2835,7 @@ Point3D< Real > Octree< Degree , OutputDensity >::getCornerNormal( const typenam
 	if( d>_minDepth )
 	{
 		int _cx , _cy , _cz , _corner = int( node - node->parent->children );
-		Cube::FactorCornerIndex( _corner , _cx , _cy , _cz );
+		std::tie(_cx, _cy, _cz) = Cube::FactorCornerIndex(_corner);
 		if( cx!=_cx ) startX = 0 , endX = 5;
 		if( cy!=_cy ) startY = 0 , endY = 5;
 		if( cz!=_cz ) startZ = 0 , endZ = 5;
@@ -2897,7 +2901,7 @@ Real Octree< Degree , OutputDensity >::GetIsoValue( void )
 				nKey.getNeighbors( node );
 				int c=0 , x , y , z;
 				if( node->parent ) c = int( node - node->parent->children );
-				Cube::FactorCornerIndex( c , x , y , z );
+				std::tie(x, y, z) = Cube::FactorCornerIndex(c);
 
 				int d , off[3];
 				node->depthAndOffset( d , off );
@@ -2981,8 +2985,9 @@ int Octree< Degree , OutputDensity >::InteriorFaceRootCount( const TreeOctNode* 
 	int c1,c2,e1,e2,dir,off,cnt=0;
 	int corners[Cube::CORNERS/2];
 	if(node->children){
-		Cube::FaceCorners(faceIndex,corners[0],corners[1],corners[2],corners[3]);
-		Cube::FactorFaceIndex(faceIndex,dir,off);
+		std::tie(corners[0], corners[1], corners[2], corners[3]) =
+			Cube::FaceCorners(faceIndex);
+		std::tie(dir, off) = Cube::FactorFaceIndex(faceIndex);
 		c1=corners[0];
 		c2=corners[3];
 		switch(dir){
@@ -3024,7 +3029,7 @@ int Octree< Degree , OutputDensity >::EdgeRootCount( const TreeOctNode* node , i
 {
 	int f1,f2,c1,c2;
 	const TreeOctNode* temp;
-	Cube::FacesAdjacentToEdge(edgeIndex,f1,f2);
+	std::tie(f1, f2) = Cube::FacesAdjacentToEdge(edgeIndex);
 
 	int eIndex;
 	const TreeOctNode* finest=node;
@@ -3051,7 +3056,7 @@ int Octree< Degree , OutputDensity >::EdgeRootCount( const TreeOctNode* node , i
 		}
 	}
 
-	Cube::EdgeCorners(eIndex,c1,c2);
+	std::tie(c1, c2) = Cube::EdgeCorners(eIndex);
 	if(finest->children) return EdgeRootCount(&finest->children[c1],eIndex,maxDepth)+EdgeRootCount(&finest->children[c2],eIndex,maxDepth);
 	else return MarchingCubes::HasEdgeRoots(finest->nodeData.mcIndex,eIndex);
 }
@@ -3062,7 +3067,7 @@ int Octree< Degree , OutputDensity >::IsBoundaryFace( const TreeOctNode* node , 
 
 	if(subdivideDepth<0) return 0;
 	if(node->depth()<=subdivideDepth) return 1;
-	Cube::FactorFaceIndex( faceIndex , dir , offset );
+	std::tie(dir, offset) = Cube::FactorFaceIndex(faceIndex);
 	node->depthAndOffset(d,o);
 
 	idx=(int(o[dir])<<1) + (offset<<1);
@@ -3072,7 +3077,7 @@ template< int Degree , bool OutputDensity >
 int Octree< Degree , OutputDensity >::IsBoundaryEdge( const TreeOctNode* node , int edgeIndex , int subdivideDepth )
 {
 	int dir,x,y;
-	Cube::FactorEdgeIndex(edgeIndex,dir,x,y);
+	std::tie(dir, x, y) = Cube::FactorEdgeIndex(edgeIndex);
 	return IsBoundaryEdge(node,dir,x,y,subdivideDepth);
 }
 template< int Degree , bool OutputDensity >
@@ -3109,7 +3114,7 @@ void Octree< Degree , OutputDensity >::GetRootSpan( const RootInfo< OutputDensit
 	Real width;
 	Point3D< Real > c;
 
-	Cube::FactorEdgeIndex( ri.edgeIndex , o , i1 , i2 );
+	std::tie(o, i1, i2) = Cube::FactorEdgeIndex(ri.edgeIndex);
 	ri.node->centerAndWidth( c , width );
 	switch(o)
 	{
@@ -3145,7 +3150,7 @@ int Octree< Degree , OutputDensity >::GetRoot( const RootInfo< OutputDensity >& 
 	Point3D< Real > position;
 	if( !MarchingCubes::HasRoots( ri.node->nodeData.mcIndex ) ) return 0;
 	int c1 , c2;
-	Cube::EdgeCorners( ri.edgeIndex , c1 , c2 );
+	std::tie(c1, c2) = Cube::EdgeCorners(ri.edgeIndex);
 	if( !MarchingCubes::HasEdgeRoots( ri.node->nodeData.mcIndex , ri.edgeIndex ) ) return 0;
 
 	long long key1 , key2;
@@ -3157,7 +3162,7 @@ int Octree< Degree , OutputDensity >::GetRoot( const RootInfo< OutputDensity >& 
 	double x0 , x1;
 	Real center , width;
 	Real averageRoot=0;
-	Cube::FactorEdgeIndex( ri.edgeIndex , o , i1 , i2 );
+	std::tie(o, i1, i2) = Cube::FactorEdgeIndex(ri.edgeIndex);
 	int idx1[3] , idx2[3];
 	key1 = VertexData< OutputDensity >::CornerIndex( ri.node , c1 , fData.depth() , idx1 );
 	key2 = VertexData< OutputDensity >::CornerIndex( ri.node , c2 , fData.depth() , idx2 );
@@ -3305,7 +3310,7 @@ int Octree< Degree , OutputDensity >::GetRootIndex( const TreeOctNode* node , in
 	// The assumption is that the super-edge has a root along it. 
 	if( !(MarchingCubes::edgeMask[node->nodeData.mcIndex] & (1<<edgeIndex) ) ) return 0;
 
-	Cube::FacesAdjacentToEdge( edgeIndex , f1 , f2 );
+	std::tie(f1, f2) = Cube::FacesAdjacentToEdge(edgeIndex);
 
 	finest = node;
 	finestIndex = edgeIndex;
@@ -3313,19 +3318,19 @@ int Octree< Degree , OutputDensity >::GetRootIndex( const TreeOctNode* node , in
 	{
 		typename TreeOctNode::ConstNeighbors3& neighbors = neighborKey3.getNeighbors( node );
 		int x , y , z;
-		Cube::FactorFaceIndex( f1 , x , y , z );
+		std::tie(x, y, z) = Cube::FactorFaceIndexXYZ(f1);
 		temp = neighbors.neighbors[x+1][y+1][z+1];
 		if( temp && temp->nodeData.nodeIndex!=-1 && temp->children ) finest = temp , finestIndex = Cube::FaceReflectEdgeIndex( edgeIndex , f1 );
 		else
 		{
 			int x , y , z;
-			Cube::FactorFaceIndex( f2 , x , y , z );
+			std::tie(x, y, z) = Cube::FactorFaceIndexXYZ(f2);
 			temp = neighbors.neighbors[x+1][y+1][z+1];
 			if( temp && temp->nodeData.nodeIndex!=-1 && temp->children ) finest = temp , finestIndex = Cube::FaceReflectEdgeIndex( edgeIndex , f2 );
 			else
 			{
 				int orientation , d1 , d2;
-				Cube::FactorEdgeIndex( edgeIndex , orientation , d1 , d2 );
+				std::tie(orientation, d1, d2) = Cube::FactorEdgeIndex(edgeIndex);
 				switch( orientation )
 				{
 				case 0: temp = neighbors.neighbors[1][d1<<1][d2<<1] ; break;
@@ -3337,7 +3342,7 @@ int Octree< Degree , OutputDensity >::GetRootIndex( const TreeOctNode* node , in
 		}
 	}
 
-	Cube::EdgeCorners( finestIndex , c1 , c2 );
+	std::tie(c1, c2) = Cube::EdgeCorners(finestIndex);
 	if( finest->children )
 	{
 		if     ( GetRootIndex( finest->children + c1 , finestIndex , maxDepth , neighborKey3 , ri ) ) return 1;
@@ -3359,7 +3364,7 @@ int Octree< Degree , OutputDensity >::GetRootIndex( const TreeOctNode* node , in
 	else
 	{
 		int o,i1,i2;
-		Cube::FactorEdgeIndex(finestIndex,o,i1,i2);
+		std::tie(o, i1, i2) = Cube::FactorEdgeIndex(finestIndex);
 		int d,off[3];
 		finest->depthAndOffset(d,off);
 		ri.node=finest;
@@ -3390,7 +3395,7 @@ int Octree< Degree , OutputDensity >::GetRootPair( const RootInfo< OutputDensity
 {
 	const TreeOctNode* node = ri.node;
 	int c1 , c2 , c;
-	Cube::EdgeCorners( ri.edgeIndex , c1 , c2 );
+	std::tie(c1, c2) = Cube::EdgeCorners(ri.edgeIndex);
 	while( node->parent )
 	{
 		c = int(node-node->parent->children);
@@ -3563,7 +3568,7 @@ void Octree< Degree , OutputDensity >::GetMCIsoEdges( TreeOctNode* node , typena
 		for( unsigned f=0 ; f<Cube::NEIGHBORS ; f++ )
 		{
 			int x , y , z;
-			Cube::FactorFaceIndex( f , x , y , z );
+			std::tie(x, y, z) = Cube::FactorFaceIndexXYZ(f);
 			_temp[f] = neighbors.neighbors[x+1][y+1][z+1];
 		}
 	}
@@ -3950,7 +3955,7 @@ template< bool OutputDensity >
 long long VertexData< OutputDensity >::CornerIndex( const TreeOctNode* node , int cIndex , int maxDepth , int idx[DIMENSION] )
 {
 	int x[DIMENSION];
-	Cube::FactorCornerIndex( cIndex , x[0] , x[1] , x[2] );
+	std::tie(x[0], x[1], x[2]) = Cube::FactorCornerIndex(cIndex);
 	int d , o[3];
 	node->depthAndOffset( d , o );
 	for( int i=0 ; i<DIMENSION ; i++ ) idx[i] = BinaryNode<Real>::CornerIndex( maxDepth+1 , d , o[i] , x[i] );
@@ -3960,7 +3965,7 @@ template< bool OutputDensity >
 long long VertexData< OutputDensity >::CornerIndex( int depth , const int offSet[DIMENSION] , int cIndex , int maxDepth , int idx[DIMENSION] )
 {
 	int x[DIMENSION];
-	Cube::FactorCornerIndex( cIndex , x[0] , x[1] , x[2] );
+	std::tie(x[0], x[1], x[2]) = Cube::FactorCornerIndex(cIndex);
 	for( int i=0 ; i<DIMENSION ; i++ ) idx[i] = BinaryNode<Real>::CornerIndex( maxDepth+1 , depth , offSet[i] , x[i] );
 	return CornerIndexKey( idx );
 }
@@ -3978,7 +3983,7 @@ template< bool OutputDensity >
 long long VertexData< OutputDensity >::FaceIndex(const TreeOctNode* node,int fIndex,int maxDepth,int idx[DIMENSION])
 {
 	int dir,offset;
-	Cube::FactorFaceIndex(fIndex,dir,offset);
+	std::tie(dir, offset) = Cube::FactorFaceIndex(fIndex);
 	int d,o[3];
 	node->depthAndOffset(d,o);
 	for(int i=0;i<DIMENSION;i++){idx[i]=BinaryNode<Real>::CornerIndex(maxDepth+1,d+1,o[i]<<1,1);}
@@ -3998,7 +4003,7 @@ long long VertexData< OutputDensity >::EdgeIndex(const TreeOctNode* node,int eIn
 	int d,off[3];
 	node->depthAndOffset(d,off);
 	for(int i=0;i<DIMENSION;i++){idx[i]=BinaryNode<Real>::CornerIndex(maxDepth+1,d+1,off[i]<<1,1);}
-	Cube::FactorEdgeIndex(eIndex,o,i1,i2);
+	std::tie(o, i1, i2) = Cube::FactorEdgeIndex(eIndex);
 	switch(o){
 		case 0:
 			idx[1]=BinaryNode<Real>::CornerIndex(maxDepth+1,d,off[1],i1);

@@ -316,7 +316,7 @@ void OctNode<NodeData,Real>::processNodeFaces(OctNode* node,NodeAdjacencyFunctio
 	if(processCurrent){F->Function(this,node);}
 	if(children){
 		int c1,c2,c3,c4;
-		Cube::FaceCorners(fIndex,c1,c2,c3,c4);
+		std::tie(c1, c2, c3, c4) = Cube::FaceCorners(fIndex);
 		__processNodeFaces(node,F,c1,c2,c3,c4);
 	}
 }
@@ -328,7 +328,7 @@ void OctNode< NodeData , Real >::processNodeFaces( const OctNode* node , NodeAdj
 	if(children)
 	{
 		int c1 , c2 , c3 , c4;
-		Cube::FaceCorners( fIndex , c1 , c2 , c3 , c4 );
+		std::tie(c1, c2, c3, c4) = Cube::FaceCorners(fIndex);
 		__processNodeFaces( node , F , c1 , c2 , c3 , c4 );
 	}
 }
@@ -338,7 +338,7 @@ void OctNode<NodeData,Real>::processNodeEdges(OctNode* node,NodeAdjacencyFunctio
 	if(processCurrent){F->Function(this,node);}
 	if(children){
 		int c1,c2;
-		Cube::EdgeCorners(eIndex,c1,c2);
+		std::tie(c1, c2) = Cube::EdgeCorners(eIndex);
 		__processNodeEdges(node,F,c1,c2);
 	}
 }
@@ -749,8 +749,8 @@ template <class NodeData,class Real>
 int OctNode<NodeData,Real>::CommonEdge(const OctNode<NodeData,Real>* node1,int eIndex1,const OctNode<NodeData,Real>* node2,int eIndex2){
 	int o1,o2,i1,i2,j1,j2;
 
-	Cube::FactorEdgeIndex(eIndex1,o1,i1,j1);
-	Cube::FactorEdgeIndex(eIndex2,o2,i2,j2);
+	std::tie(o1, i1, j1) = Cube::FactorEdgeIndex(eIndex1);
+	std::tie(o2, i2, j2) = Cube::FactorEdgeIndex(eIndex2);
 	if(o1!=o2){return 0;}
 
 	int dir[2];
@@ -916,7 +916,7 @@ const OctNode<NodeData,Real>* OctNode<NodeData,Real>::__faceNeighbor(int dir,int
 template <class NodeData,class Real>
 OctNode<NodeData,Real>* OctNode<NodeData,Real>::edgeNeighbor(int edgeIndex,int forceChildren){
 	int idx[2],o,i[2];
-	Cube::FactorEdgeIndex(edgeIndex,o,i[0],i[1]);
+	std::tie(o, i[0], i[1]) = Cube::FactorEdgeIndex(edgeIndex);
 	switch(o){
 		case 0:	idx[0]=1;	idx[1]=2;	break;
 		case 1:	idx[0]=0;	idx[1]=2;	break;
@@ -927,7 +927,7 @@ OctNode<NodeData,Real>* OctNode<NodeData,Real>::edgeNeighbor(int edgeIndex,int f
 template <class NodeData,class Real>
 const OctNode<NodeData,Real>* OctNode<NodeData,Real>::edgeNeighbor(int edgeIndex) const {
 	int idx[2],o,i[2];
-	Cube::FactorEdgeIndex(edgeIndex,o,i[0],i[1]);
+	std::tie(o, i[0], i[1]) = Cube::FactorEdgeIndex(edgeIndex);
 	switch(o){
 		case 0:	idx[0]=1;	idx[1]=2;	break;
 		case 1:	idx[0]=0;	idx[1]=2;	break;
@@ -941,7 +941,7 @@ const OctNode<NodeData,Real>* OctNode<NodeData,Real>::__edgeNeighbor(int o,const
 	int pIndex=int(this-parent->children);
 	int aIndex,x[DIMENSION];
 
-	Cube::FactorCornerIndex(pIndex,x[0],x[1],x[2]);
+	std::tie(x[0], x[1], x[2]) = Cube::FactorCornerIndex(pIndex);
 	aIndex=(~((i[0] ^ x[idx[0]]) | ((i[1] ^ x[idx[1]])<<1))) & 3;
 	pIndex^=(7 ^ (1<<o));
 	if(aIndex==1)	{	// I can get the neighbor from the parent's face adjacent neighbor
@@ -970,7 +970,7 @@ OctNode<NodeData,Real>* OctNode<NodeData,Real>::__edgeNeighbor(int o,const int i
 	int pIndex=int(this-parent->children);
 	int aIndex,x[DIMENSION];
 
-	Cube::FactorCornerIndex(pIndex,x[0],x[1],x[2]);
+	std::tie(x[0], x[1], x[2]) = Cube::FactorCornerIndex(pIndex);
 	aIndex=(~((i[0] ^ x[idx[0]]) | ((i[1] ^ x[idx[1]])<<1))) & 3;
 	pIndex^=(7 ^ (1<<o));
 	if(aIndex==1)	{	// I can get the neighbor from the parent's face adjacent neighbor
@@ -1150,8 +1150,8 @@ typename OctNode<NodeData,Real>::Neighbors3& OctNode<NodeData,Real>::NeighborKey
 			Real w;
 			temp.neighbors[1][1][1]->centerAndWidth( c , w );
 			int idx = CornerIndex( c , p );
-			Cube::FactorCornerIndex(   idx    , x1 , y1 , z1 );
-			Cube::FactorCornerIndex( (~idx)&7 , x2 , y2 , z2 );
+			std::tie(x1, y1, z1) = Cube::FactorCornerIndex(idx);
+			std::tie(x2, y2, z2) = Cube::FactorCornerIndex((~idx) & 7);
 
 			if( !temp.neighbors[1][1][1]->children ) temp.neighbors[1][1][1]->initChildren();
 			for( i=0 ; i<2 ; i++ ) for( j=0 ; j<2 ; j++ ) for( k=0 ; k<2 ; k++ )
@@ -1226,8 +1226,8 @@ typename OctNode<NodeData,Real>::Neighbors3& OctNode<NodeData,Real>::NeighborKey
 			Real w;
 			temp.neighbors[1][1][1]->centerAndWidth( c , w );
 			int idx = CornerIndex( c , p );
-			Cube::FactorCornerIndex(   idx    , x1 , y1 , z1 );
-			Cube::FactorCornerIndex( (~idx)&7 , x2 , y2 , z2 );
+			std::tie(x1, y1, z1) = Cube::FactorCornerIndex(idx);
+			std::tie(x2, y2, z2) = Cube::FactorCornerIndex((~idx) & 7);
 
 			if( !temp.neighbors[1][1][1] || !temp.neighbors[1][1][1]->children )
 			{
@@ -1288,8 +1288,8 @@ typename OctNode<NodeData,Real>::Neighbors3& OctNode<NodeData,Real>::NeighborKey
 		{
 			int i,j,k,x1,y1,z1,x2,y2,z2;
 			int idx=int(node-node->parent->children);
-			Cube::FactorCornerIndex(  idx   ,x1,y1,z1);
-			Cube::FactorCornerIndex((~idx)&7,x2,y2,z2);
+			std::tie(x1, y1, z1) = Cube::FactorCornerIndex(idx);
+			std::tie(x2, y2, z2) = Cube::FactorCornerIndex((~idx) & 7);
 			for(i=0;i<2;i++){
 				for(j=0;j<2;j++){
 					for(k=0;k<2;k++){
@@ -1364,8 +1364,8 @@ typename OctNode<NodeData,Real>::Neighbors3& OctNode<NodeData,Real>::NeighborKey
 		{
 			int x1,y1,z1,x2,y2,z2;
 			int idx=int(node-node->parent->children);
-			Cube::FactorCornerIndex(  idx   ,x1,y1,z1);
-			Cube::FactorCornerIndex((~idx)&7,x2,y2,z2);
+			std::tie(x1, y1, z1) = Cube::FactorCornerIndex(idx);
+			std::tie(x2, y2, z2) = Cube::FactorCornerIndex((~idx) & 7);
 			for( int i=0 ; i<2 ; i++ )
 				for( int j=0 ; j<2 ; j++ )
 					for( int k=0 ; k<2 ; k++ )
@@ -1450,8 +1450,8 @@ typename OctNode<NodeData,Real>::Neighbors3& OctNode<NodeData,Real>::NeighborKey
 		else{
 			int i,j,k,x1,y1,z1,x2,y2,z2;
 			int idx=int(node-node->parent->children);
-			Cube::FactorCornerIndex(  idx   ,x1,y1,z1);
-			Cube::FactorCornerIndex((~idx)&7,x2,y2,z2);
+			std::tie(x1, y1, z1) = Cube::FactorCornerIndex(idx);
+			std::tie(x2, y2, z2) = Cube::FactorCornerIndex((~idx) & 7);
 			for(i=0;i<2;i++){
 				for(j=0;j<2;j++){
 					for(k=0;k<2;k++){
@@ -1805,8 +1805,8 @@ typename OctNode<NodeData,Real>::ConstNeighbors3& OctNode<NodeData,Real>::ConstN
 		else{
 			int i,j,k,x1,y1,z1,x2,y2,z2;
 			int idx=int(node-node->parent->children);
-			Cube::FactorCornerIndex(  idx   ,x1,y1,z1);
-			Cube::FactorCornerIndex((~idx)&7,x2,y2,z2);
+			std::tie(x1, y1, z1) = Cube::FactorCornerIndex(idx);
+			std::tie(x2, y2, z2) = Cube::FactorCornerIndex((~idx) & 7);
 			for(i=0;i<2;i++){
 				for(j=0;j<2;j++){
 					for(k=0;k<2;k++){
@@ -1867,8 +1867,8 @@ typename OctNode<NodeData,Real>::ConstNeighbors3& OctNode<NodeData,Real>::ConstN
 		{
 			int i,j,k,x1,y1,z1,x2,y2,z2;
 			int idx = int(node-node->parent->children);
-			Cube::FactorCornerIndex(  idx   ,x1,y1,z1);
-			Cube::FactorCornerIndex((~idx)&7,x2,y2,z2);
+			std::tie(x1, y1, z1) = Cube::FactorCornerIndex(idx);
+			std::tie(x2, y2, z2) = Cube::FactorCornerIndex((~idx) & 7);
 
 			ConstNeighbors3& temp=getNeighbors( node->parent , minDepth );
 
@@ -1980,10 +1980,10 @@ typename OctNode< NodeData , Real >::Neighbors5& OctNode< NodeData , Real >::Nei
 			Neighbors5& temp = neighbors[d-1];
 			int x1 , y1 , z1 , x2 , y2 , z2;
 			int idx = int( node - node->parent->children );
-			Cube::FactorCornerIndex( idx , x1 , y1 , z1 );
+			std::tie(x1, y1, z1) = Cube::FactorCornerIndex(idx);
+			std::tie(x2, y2, z2) = Cube::FactorCornerIndex((~idx) & 7);
 
 			Neighbors5& n = neighbors[d];
-			Cube::FactorCornerIndex( (~idx)&7 , x2 , y2 , z2 );
 			int i , j , k;
 			int fx0 = x2+1 , fy0 = y2+1 , fz0 = z2+1;	// Indices of the bottom left corner of the parent within the 5x5x5
 			int cx1 = x1*2+1 , cy1 = y1*2+1 , cz1 = z1*2+1;
@@ -2096,7 +2096,7 @@ typename OctNode< NodeData , Real >::Neighbors5& OctNode< NodeData , Real >::Nei
 			Neighbors5& temp = neighbors[d-1];
 			int x1 , y1 , z1 , x2 , y2 , z2 , ii , jj , kk;
 			int idx = int( node-node->parent->children );
-			Cube::FactorCornerIndex( idx , x1 , y1 , z1 );
+			std::tie(x1, y1, z1) = Cube::FactorCornerIndex(idx);
 
 			for( int i=xStart ; i<xEnd ; i++ )
 			{
@@ -2140,7 +2140,7 @@ typename OctNode< NodeData , Real >::ConstNeighbors5& OctNode< NodeData , Real >
 			ConstNeighbors5& temp = neighbors[d-1];
 			int x1,y1,z1,x2,y2,z2,ii,jj,kk;
 			int idx=int(node-node->parent->children);
-			Cube::FactorCornerIndex(idx,x1,y1,z1);
+			std::tie(x1, y1, z1) = Cube::FactorCornerIndex(idx);
 
 			for(int i=0;i<5;i++)
 			{
