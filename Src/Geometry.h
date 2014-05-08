@@ -28,6 +28,7 @@ DAMAGE.
 
 #pragma once
 
+#include <array>
 #include <cmath>
 #include <vector>
 #include <unordered_map>
@@ -130,7 +131,7 @@ struct CoredPointIndex {
 };
 
 struct TriangleIndex {
-	int idx[3];
+	std::array<int, 3> idx;
 };
 
 struct CoredVertexIndex {
