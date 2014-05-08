@@ -25,187 +25,97 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
 ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-//////////////////////////////
-// MinimalAreaTriangulation //
-//////////////////////////////
+
 template <class Real>
-MinimalAreaTriangulation<Real>::MinimalAreaTriangulation(void)
-{
-	bestTriangulation=NULL;
-	midPoint=NULL;
-}
-template <class Real>
-MinimalAreaTriangulation<Real>::~MinimalAreaTriangulation(void)
-{
-	if(bestTriangulation)
-		delete[] bestTriangulation;
-	bestTriangulation=NULL;
-	if(midPoint)
-		delete[] midPoint;
-	midPoint=NULL;
-}
-template <class Real>
-void MinimalAreaTriangulation<Real>::GetTriangulation(const std::vector<Point3D<Real> >& vertices,std::vector<TriangleIndex>& triangles)
-{
-	if(vertices.size()==3)
-	{
-		triangles.resize(1);
-		triangles[0].idx[0]=0;
-		triangles[0].idx[1]=1;
-		triangles[0].idx[2]=2;
+void MinimalAreaTriangulation<Real>::GetTriangulation(
+		std::vector<Point3D<Real>> const& vertices, std::vector<TriangleIndex>& triangles) {
+	if(vertices.size() == 3) {
+		triangles.clear();
+		triangles.push_back({ { 0, 1, 2 } });
 		return;
 	}
-	else if(vertices.size()==4)
-	{
-		TriangleIndex tIndex[2][2];
-		Real area[2];
+	if(vertices.size() == 4) {
+		TriangleIndex tIndex[2][2] {
+			{ { { 0, 1, 2 } }, { { 2, 3, 0 } } },
+			{ { { 0, 1, 3 } }, { { 3, 1, 2 } } }
+		};
+		Real area[2]{};
 
-		area[0]=area[1]=0;
-		triangles.resize(2);
-
-		tIndex[0][0].idx[0]=0;
-		tIndex[0][0].idx[1]=1;
-		tIndex[0][0].idx[2]=2;
-		tIndex[0][1].idx[0]=2;
-		tIndex[0][1].idx[1]=3;
-		tIndex[0][1].idx[2]=0;
-
-		tIndex[1][0].idx[0]=0;
-		tIndex[1][0].idx[1]=1;
-		tIndex[1][0].idx[2]=3;
-		tIndex[1][1].idx[0]=3;
-		tIndex[1][1].idx[1]=1;
-		tIndex[1][1].idx[2]=2;
-
-		Point3D<Real> p1,p2;
-		for(int i=0;i<2;i++)
-			for(int j=0;j<2;j++)
-			{
-				p1=vertices[tIndex[i][j].idx[1]]-vertices[tIndex[i][j].idx[0]];
-				p2=vertices[tIndex[i][j].idx[2]]-vertices[tIndex[i][j].idx[0]];
-				area[i] += Real( Length(CrossProduct(p1, p2)) );
-			}
-		if(area[0]>area[1])
-		{
-			triangles[0]=tIndex[1][0];
-			triangles[1]=tIndex[1][1];
-		}
-		else
-		{
-			triangles[0]=tIndex[0][0];
-			triangles[1]=tIndex[0][1];
-		}
+		for(int i = 0; i != 2; ++i)
+			for(int j = 0; j != 2; ++j)
+				area[i] += (Real)Length(CrossProduct(
+					vertices[tIndex[i][j].idx[1]] - vertices[tIndex[i][j].idx[0]],
+					vertices[tIndex[i][j].idx[2]] - vertices[tIndex[i][j].idx[0]]));
+		triangles.clear();
+		int i = area[0] > area[1] ? 1 : 0;
+		triangles.assign(tIndex[i], tIndex[i] + 2);
 		return;
 	}
-	if(bestTriangulation)
-		delete[] bestTriangulation;
-	if(midPoint)
-		delete[] midPoint;
-	bestTriangulation=NULL;
-	midPoint=NULL;
-	size_t eCount=vertices.size();
-	bestTriangulation=new Real[eCount*eCount];
-	midPoint=new int[eCount*eCount];
-	for(size_t i=0;i<eCount*eCount;i++)
-		bestTriangulation[i]=-1;
-	memset(midPoint,-1,sizeof(int)*eCount*eCount);
-	GetArea(0,1,vertices);
+	data_.clear();
+	data_.resize(vertices.size() * vertices.size(), { -1, -1 });
+	GetArea(0, 1, vertices);
 	triangles.clear();
-	GetTriangulation(0,1,vertices,triangles);
+	GetTriangulation(0, 1, vertices, triangles);
 }
+
 template <class Real>
-Real MinimalAreaTriangulation<Real>::GetArea(const std::vector<Point3D<Real> >& vertices)
-{
-	if(bestTriangulation)
-		delete[] bestTriangulation;
-	if(midPoint)
-		delete[] midPoint;
-	bestTriangulation=NULL;
-	midPoint=NULL;
-	int eCount=vertices.size();
-	bestTriangulation=new double[eCount*eCount];
-	midPoint=new int[eCount*eCount];
-	for(int i=0;i<eCount*eCount;i++)
-		bestTriangulation[i]=-1;
-	memset(midPoint,-1,sizeof(int)*eCount*eCount);
-	return GetArea(0,1,vertices);
+Real MinimalAreaTriangulation<Real>::GetArea(std::vector<Point3D<Real>> const& vertices) {
+	data_.clear();
+	data_.resize(vertices.size() * vertices.size(), { -1, -1 });
+	return GetArea(0, 1, vertices);
 }
+
 template<class Real>
-void MinimalAreaTriangulation<Real>::GetTriangulation(const size_t& i,const size_t& j,const std::vector<Point3D<Real> >& vertices,std::vector<TriangleIndex>& triangles)
-{
-	TriangleIndex tIndex;
-	size_t eCount=vertices.size();
-	size_t ii=i;
-	if(i<j)
-		ii+=eCount;
-	if(j+1>=ii)
-		return;
-	ii=midPoint[i*eCount+j];
-	if(ii>=0)
-	{
-		tIndex.idx[0] = int( i );
-		tIndex.idx[1] = int( j );
-		tIndex.idx[2] = int( ii );
-		triangles.push_back(tIndex);
-		GetTriangulation(i,ii,vertices,triangles);
-		GetTriangulation(ii,j,vertices,triangles);
+void MinimalAreaTriangulation<Real>::GetTriangulation(int i, int j,
+		std::vector<Point3D<Real>> const& vertices, std::vector<TriangleIndex>& triangles) {
+	if((i < j && i + vertices.size() <= (size_t)j + 1) || i == j || i == j + 1) return;
+
+	int m = data_[i * vertices.size() + j].midPoint;
+	if(m >= 0) {
+		triangles.push_back({ i, j, m });
+		GetTriangulation(i, m, vertices, triangles);
+		GetTriangulation(m, j, vertices, triangles);
 	}
 }
 
 template<class Real>
-Real MinimalAreaTriangulation<Real>::GetArea(const size_t& i,const size_t& j,const std::vector<Point3D<Real> >& vertices)
-{
-	Real a=FLT_MAX,temp;
-	size_t eCount=vertices.size();
-	size_t idx=i*eCount+j;
-	size_t ii=i;
-	if(i<j)
-		ii+=eCount;
-	if(j+1>=ii)
-	{
-		bestTriangulation[idx]=0;
+Real MinimalAreaTriangulation<Real>::GetArea(size_t i, size_t j,
+		std::vector<Point3D<Real>> const& vertices) {
+	size_t eCount = vertices.size();
+	size_t idx = i * eCount + j;
+	size_t ii = i < j ? i + eCount : i;
+	if(j + 1 >= ii) {
+		data_[idx].bestTriangulation = 0;
 		return 0;
 	}
-	if(midPoint[idx]!=-1)
-		return bestTriangulation[idx];
-	int mid=-1;
-	for(size_t r=j+1;r<ii;r++)
-	{
-		size_t rr=r%eCount;
-		size_t idx1=i*eCount+rr,idx2=rr*eCount+j;
-		Point3D<Real> p1,p2;
-		p1=vertices[i]-vertices[rr];
-		p2=vertices[j]-vertices[rr];
-		temp = Real( Length(CrossProduct(p1, p2)) );
-		if(bestTriangulation[idx1]>=0)
-		{
-			temp+=bestTriangulation[idx1];
-			if(temp>a)
-				continue;
-			if(bestTriangulation[idx2]>0)
-				temp+=bestTriangulation[idx2];
-			else
-				temp+=GetArea(rr,j,vertices);
-		}
-		else
-		{
-			if(bestTriangulation[idx2]>=0)
-				temp+=bestTriangulation[idx2];
-			else
-				temp+=GetArea(rr,j,vertices);
-			if(temp>a)
-				continue;
-			temp+=GetArea(i,rr,vertices);
+	if(data_[idx].midPoint != -1) return data_[idx].bestTriangulation;
+
+	Real a = FLT_MAX;
+	int mid = -1;
+	for(size_t r = j + 1; r < ii; ++r) {
+		size_t rr = r % eCount;
+		Real temp = Real(Length(CrossProduct(vertices[i] - vertices[rr],
+			vertices[j] - vertices[rr])));
+		size_t idx1 = i * eCount + rr;
+		size_t idx2 = rr * eCount + j;
+		if(data_[idx1].bestTriangulation >= 0) {
+			temp += data_[idx1].bestTriangulation;
+			if(temp > a) continue;
+			temp += data_[idx2].bestTriangulation > 0 ?
+				data_[idx2].bestTriangulation : GetArea(rr, j, vertices);
+		} else {
+			temp += data_[idx2].bestTriangulation >= 0 ?
+				data_[idx2].bestTriangulation : GetArea(rr, j, vertices);
+			if(temp > a) continue;
+			temp += GetArea(i, rr, vertices);
 		}
 
-		if(temp<a)
-		{
-			a=temp;
-			mid=int(rr);
+		if(temp < a) {
+			a = temp;
+			mid = rr;
 		}
 	}
-	bestTriangulation[idx]=a;
-	midPoint[idx]=mid;
+	data_[idx] = { a, mid };
 
 	return a;
 }

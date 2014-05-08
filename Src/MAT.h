@@ -25,24 +25,26 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
 ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGE.
 */
-#ifndef MAT_INCLUDED
-#define MAT_INCLUDED
+#pragma once
+
 #include "Geometry.h"
 
-template <class Real>
-class MinimalAreaTriangulation
-{
-	Real* bestTriangulation;
-	int* midPoint;
-	Real GetArea(const size_t& i,const size_t& j,const std::vector<Point3D<Real> >& vertices);
-	void GetTriangulation(const size_t& i,const size_t& j,const std::vector<Point3D<Real> >& vertices,std::vector<TriangleIndex>& triangles);
+template<class Real>
+class MinimalAreaTriangulation {
 public:
-	MinimalAreaTriangulation(void);
-	~MinimalAreaTriangulation(void);
-	Real GetArea(const std::vector<Point3D<Real> >& vertices);
-	void GetTriangulation(const std::vector<Point3D<Real> >& vertices,std::vector<TriangleIndex>& triangles);
+	Real GetArea(std::vector<Point3D<Real>> const& vertices);
+	void GetTriangulation(std::vector<Point3D<Real>> const& vertices,
+			std::vector<TriangleIndex>& triangles);
+private:
+	Real GetArea(size_t i, size_t j, std::vector<Point3D<Real>> const& vertices);
+	void GetTriangulation(int i, int j, std::vector<Point3D<Real>> const& vertices,
+			std::vector<TriangleIndex>& triangles);
+private:
+	struct TriangulationData {
+		Real bestTriangulation;
+		int midPoint;
+	};
+	std::vector<TriangulationData> data_;
 };
 
 #include "MAT.inl"
-
-#endif // MAT_INCLUDED
