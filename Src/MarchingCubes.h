@@ -26,90 +26,76 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#ifndef MARCHING_CUBES_INCLUDED
-#define MARCHING_CUBES_INCLUDED
+#pragma once
+
 #include <vector>
+
 #include "Geometry.h"
 
-class Square{
-public:
-	const static unsigned int CORNERS=4,EDGES=4,NEIGHBORS=4;
-	static int  CornerIndex			(int x,int y);
-	static int  AntipodalCornerIndex(int idx);
-	static void FactorCornerIndex	(int idx,int& x,int& y);
-	static int  EdgeIndex			(int orientation,int i);
-	static void FactorEdgeIndex		(int idx,int& orientation,int& i);
-
-	static int  ReflectCornerIndex	(int idx,int edgeIndex);
-	static int  ReflectEdgeIndex	(int idx,int edgeIndex);
-
-	static void EdgeCorners(int idx,int& c1,int &c2);
+struct Square {
+	static unsigned const CORNERS = 4;
+	static int CornerIndex(int x, int y) { return (y << 1) | x; }
+	static int AntipodalCornerIndex(int idx);
+	static std::tuple<int, int> FactorCornerIndex(int idx)
+		{ return std::make_tuple(idx % 2, (idx >> 1) % 2); }
 };
 
-class Cube{
-public:
-	const static unsigned int CORNERS=8,EDGES=12,NEIGHBORS=6;
+struct Cube {
+	static unsigned const CORNERS = 8;
+	static unsigned const EDGES = 12;
+	static unsigned const NEIGHBORS = 6;
 
-	static int  CornerIndex			(int x,int y,int z);
-	static void FactorCornerIndex	(int idx,int& x,int& y,int& z);
-	static int  EdgeIndex			(int orientation,int i,int j);
-	static void FactorEdgeIndex		(int idx,int& orientation,int& i,int &j);
-	static int  FaceIndex			(int dir,int offSet);
-	static int  FaceIndex			(int x,int y,int z);
-	static void FactorFaceIndex		(int idx,int& x,int &y,int& z);
-	static void FactorFaceIndex		(int idx,int& dir,int& offSet);
+	static int CornerIndex(int x, int y, int z) { return (z << 2) | (y << 1) | x; }
+	static int EdgeIndex(int orient, int i, int j) { return (orient << 2) | (j << 1) | i; }
 
-	static int  AntipodalCornerIndex	(int idx);
-	static int  FaceReflectCornerIndex	(int idx,int faceIndex);
-	static int  FaceReflectEdgeIndex	(int idx,int faceIndex);
-	static int	FaceReflectFaceIndex	(int idx,int faceIndex);
-	static int	EdgeReflectCornerIndex	(int idx,int edgeIndex);
-	static int	EdgeReflectEdgeIndex	(int edgeIndex);
+	static std::tuple<int, int, int> FactorCornerIndex(int idx)
+		{ return std::make_tuple(idx % 2, (idx >> 1) % 2, (idx >> 2) % 2); }
+	static std::tuple<int, int, int> FactorEdgeIndex(int idx)
+		{ return std::make_tuple(idx >> 2, idx & 1, (idx & 2) >> 1); }
+	static std::tuple<int, int> FactorFaceIndex(int idx)
+		{ return std::make_tuple(idx >> 1, idx & 1); }
+	static std::tuple<int, int, int> FactorFaceIndexXYZ(int idx);
 
-	static int  FaceAdjacentToEdges	(int eIndex1,int eIndex2);
-	static void FacesAdjacentToEdge	(int eIndex,int& f1Index,int& f2Index);
+	static int AntipodalCornerIndex(int idx);
+	static int FaceReflectEdgeIndex(int idx, int faceIndex);
+	static int FaceReflectFaceIndex(int idx, int faceIndex);
+	static int EdgeReflectEdgeIndex(int edgeIndex);
 
-	static void EdgeCorners(int idx,int& c1,int &c2);
-	static void FaceCorners(int idx,int& c1,int &c2,int& c3,int& c4);
+	static int FaceAdjacentToEdges(int eIndex1, int eIndex2);
+	static std::tuple<int, int> FacesAdjacentToEdge(int eIndex);
+
+	static std::tuple<int, int> EdgeCorners(int idx);
+	static std::tuple<int, int, int, int> FaceCorners(int idx);
+private:
+	static int FaceIndex(int x, int y, int z);
 };
 
-class MarchingCubes
-{
-	static void SetVertex(int e,const double values[Cube::CORNERS],double iso);
-	static int GetFaceIndex(const double values[Cube::CORNERS],double iso,int faceIndex);
-
-	static void SetVertex(int e,const float values[Cube::CORNERS],float iso);
-	static int GetFaceIndex(const float values[Cube::CORNERS],float iso,int faceIndex);
-
-	static int GetFaceIndex(int mcIndex,int faceIndex);
+class MarchingCubes {
 public:
-	static double Interpolate(double v1,double v2);
-	static float Interpolate(float v1,float v2);
-	const static unsigned int MAX_TRIANGLES=5;
-	static const int edgeMask[1<<Cube::CORNERS];
-	static const int triangles[1<<Cube::CORNERS][3*MAX_TRIANGLES+1];
-	static const int cornerMap[Cube::CORNERS];
-	static double vertexList[Cube::EDGES][3];
+	static unsigned const MAX_TRIANGLES = 5;
+	static int const edgeMask[1 << Cube::CORNERS];
+	static int const triangles[1 << Cube::CORNERS][3 * MAX_TRIANGLES + 1];
+	static int const cornerMap[Cube::CORNERS];
 
-	static int AddTriangleIndices(int mcIndex,int* triangles);
+	static int AddTriangleIndices(int idx, int* isoIndices);
 
-	static int GetIndex(const double values[Cube::CORNERS],double iso);
-	static int IsAmbiguous(const double v[Cube::CORNERS],double isoValue,int faceIndex);
-	static int HasRoots(const double v[Cube::CORNERS],double isoValue);
-	static int HasRoots(const double v[Cube::CORNERS],double isoValue,int faceIndex);
-	static int AddTriangles(const double v[Cube::CORNERS],double isoValue,Triangle* triangles);
-	static int AddTriangleIndices(const double v[Cube::CORNERS],double isoValue,int* triangles);
+	template<class Real>
+	static int GetIndex(Real const values[Cube::CORNERS], Real iso);
 
-	static int GetIndex(const float values[Cube::CORNERS],float iso);
-	static int IsAmbiguous(const float v[Cube::CORNERS],float isoValue,int faceIndex);
-	static int HasRoots(const float v[Cube::CORNERS],float isoValue);
-	static int HasRoots(const float v[Cube::CORNERS],float isoValue,int faceIndex);
-	static int AddTriangles(const float v[Cube::CORNERS],float isoValue,Triangle* triangles);
-	static int AddTriangleIndices(const float v[Cube::CORNERS],float isoValue,int* triangles);
-
-	static int IsAmbiguous(int mcIndex,int faceIndex);
-	static int HasRoots(int mcIndex);
-	static int HasFaceRoots(int mcIndex,int faceIndex);
-	static int HasEdgeRoots(int mcIndex,int edgeIndex);
+	static bool HasRoots(int mcIndex) { return mcIndex != 0 && mcIndex != 255; }
+	static int HasEdgeRoots(int mcIndex, int edgeIndex);
 };
-#endif //MARCHING_CUBES_INCLUDED
+
+template<class Real>
+int MarchingCubes::GetIndex(Real const v[Cube::CORNERS], Real iso) {
+	int idx = 0;
+	if(v[Cube::CornerIndex(0, 0, 0)] < iso) idx |= 1;
+	if(v[Cube::CornerIndex(1, 0, 0)] < iso) idx |= 2;
+	if(v[Cube::CornerIndex(1, 1, 0)] < iso) idx |= 4;
+	if(v[Cube::CornerIndex(0, 1, 0)] < iso) idx |= 8;
+	if(v[Cube::CornerIndex(0, 0, 1)] < iso) idx |= 16;
+	if(v[Cube::CornerIndex(1, 0, 1)] < iso) idx |= 32;
+	if(v[Cube::CornerIndex(1, 1, 1)] < iso) idx |= 64;
+	if(v[Cube::CornerIndex(0, 1, 1)] < iso) idx |= 128;
+	return idx;
+}
