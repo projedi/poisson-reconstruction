@@ -162,8 +162,8 @@ bool BufferedReadWriteFile::read(std::vector<T>& vs) {
 
 template<class Vertex>
 void CoredFileMeshData<Vertex>::resetIterator() {
-	out_of_core_points_file_.reset();
-	polygons_file_.reset();
+	out_of_core_points_file_->reset();
+	polygons_file_->reset();
 }
 
 template<class Vertex>
@@ -171,7 +171,7 @@ int CoredFileMeshData<Vertex>::addOutOfCorePoint(Vertex const& p) {
 	int sz;
 #pragma omp critical (CoredFileMeshData_addOutOfCorePoint)
 	{
-		out_of_core_points_file_.write(p);
+		out_of_core_points_file_->write(p);
 		sz = out_of_core_points_count_++;
 	}
 	return sz;
@@ -182,7 +182,7 @@ int CoredFileMeshData<Vertex>::addPolygon(std::vector<CoredVertexIndex> const& v
 	int sz;
 #pragma omp critical (CoredFileMeshData_addPolygon)
 	{
-		polygons_file_.write(vertices);
+		polygons_file_->write(vertices);
 		sz = polygon_count_++;
 	}
 	return sz;

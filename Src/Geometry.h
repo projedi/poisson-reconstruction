@@ -167,7 +167,10 @@ private:
 template<class Vertex>
 class CoredFileMeshData {
 public:
-	CoredFileMeshData(): out_of_core_points_count_(0), polygon_count_(0) { }
+	CoredFileMeshData(): out_of_core_points_file_(new BufferedReadWriteFile()),
+		polygons_file_(new BufferedReadWriteFile()),
+		out_of_core_points_count_(0), polygon_count_(0) { }
+	~CoredFileMeshData() { delete out_of_core_points_file_; delete polygons_file_; }
 
 	void resetIterator();
 
@@ -176,16 +179,21 @@ public:
 	int inCorePointCount() { return in_core_points_.size(); }
 
 	int addOutOfCorePoint(Vertex const& p);
-	bool nextOutOfCorePoint(Vertex& p) { return out_of_core_points_file_.read(p); }
+	bool nextOutOfCorePoint(Vertex& p) { return out_of_core_points_file_->read(p); }
 	int outOfCorePointCount() { return out_of_core_points_count_; }
 
 	int addPolygon(std::vector<CoredVertexIndex> const& vertices);
-	bool nextPolygon(std::vector<CoredVertexIndex>& vs) { return polygons_file_.read(vs); }
+	bool nextPolygon(std::vector<CoredVertexIndex>& vs) { return polygons_file_->read(vs); }
 	int polygonCount() { return polygon_count_; }
 private:
 	std::vector<Vertex> in_core_points_;
-	BufferedReadWriteFile out_of_core_points_file_;
-	BufferedReadWriteFile polygons_file_;
+	// This fields are here to ensure this structure has the exact same memory layout as
+	// before refactoring. Apparently it's used somewhere.
+	// TODO: Find and eliminate.
+	char pointFileName[1024];
+	char polygonFileName[1024];
+	BufferedReadWriteFile* out_of_core_points_file_;
+	BufferedReadWriteFile* polygons_file_;
 	int out_of_core_points_count_;
 	int polygon_count_;
 };
