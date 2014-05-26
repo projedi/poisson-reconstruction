@@ -26,8 +26,7 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#ifndef MEMORY_USAGE_INCLUDED
-#define MEMORY_USAGE_INCLUDED
+#pragma once
 
 #ifdef WIN32
 
@@ -76,21 +75,7 @@ public:
 	} 
 };
 
-#else // !WIN32
-
-#ifndef __APPLE__               // Linux variants
-
-#include <sys/time.h>
-#include <sys/resource.h>
-
-struct MemoryInfo {
-	static size_t Usage() {
-		struct rusage usage;
-		getrusage(RUSAGE_SELF, &usage);
-		return usage.ru_maxrss * 1024;
-	}
-};
-#else // __APPLE__: has no "/proc" pseudo-file system
+#elif defined(__APPLE__)
 
 // Thanks to David O'Gwynn for providing this fix.
 // This comes from a post by Michael Knight:
@@ -131,8 +116,16 @@ class MemoryInfo
 
 };
 
-#endif // !__APPLE__  
+#else // Linux variants
 
-#endif // WIN32
+#include <sys/resource.h>
 
-#endif // MEMORY_USAGE_INCLUDE
+struct MemoryInfo {
+	static size_t Usage() {
+		struct rusage usage;
+		getrusage(RUSAGE_SELF, &usage);
+		return usage.ru_maxrss * 1024;
+	}
+};
+
+#endif
