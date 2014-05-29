@@ -167,7 +167,6 @@ void BSplineData<Degree, Real>::set(int maxDepth, BoundaryType boundaryType) {
 				-(Degree + 1) / 2 + i - 0.5);
 	StartingPolynomial<Degree> sPolys[Degree + 4];
 
-	PPolynomial<Degree> leftBaseFunction;
 	for(int i = 0; i < Degree + 3; ++i) {
 		sPolys[i].start = -(Degree + 1) / 2 + i - 1.5;
 		sPolys[i].p *= 0;
@@ -175,9 +174,8 @@ void BSplineData<Degree, Real>::set(int maxDepth, BoundaryType boundaryType) {
 		if(i >= 1 && i <= Degree + 1) sPolys[i].p += baseBSpline[i - 1];
 		for(int j = 0; j < i; ++j) sPolys[i].p -= sPolys[j].p;
 	}
-	leftBaseFunction.set(sPolys, Degree + 3);
+	PPolynomial<Degree> leftBaseFunction(sPolys, Degree + 3);
 
-	PPolynomial<Degree> rightBaseFunction;
 	for(int i = 0; i < Degree + 3; ++i) {
 		sPolys[i].start = -(Degree + 1) / 2 + i - 0.5;
 		sPolys[i].p *= 0;
@@ -186,9 +184,8 @@ void BSplineData<Degree, Real>::set(int maxDepth, BoundaryType boundaryType) {
 			sPolys[i].p += baseBSpline[i - 1].shift(1) * (int)_boundaryType;
 		for(int j = 0; j < i; ++j) sPolys[i].p -= sPolys[j].p;
 	}
-	rightBaseFunction.set(sPolys, Degree + 3);
+	PPolynomial<Degree> rightBaseFunction(sPolys, Degree + 3);
 
-	PPolynomial<Degree> leftRightBaseFunction;
 	for(int i = 0; i < Degree + 4; ++i) {
 		sPolys[i].start = -(Degree + 1) / 2 + i - 1.5;
 		sPolys[i].p *= 0;
@@ -201,7 +198,7 @@ void BSplineData<Degree, Real>::set(int maxDepth, BoundaryType boundaryType) {
 			(int)_boundaryType; 
 		for(int j = 0; j < i; ++j) sPolys[i].p -= sPolys[j].p;
 	}
-	leftRightBaseFunction.set(sPolys, Degree + 4);
+	PPolynomial<Degree> leftRightBaseFunction(sPolys, Degree + 4);
 
 	BSplineComponents leftBSpline;
 	BSplineComponents rightBSpline;

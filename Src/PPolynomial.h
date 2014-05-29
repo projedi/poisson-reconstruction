@@ -26,88 +26,72 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#ifndef P_POLYNOMIAL_INCLUDED
-#define P_POLYNOMIAL_INCLUDED
+#pragma once
+
 #include <vector>
+
 #include "Polynomial.h"
 
 template<int Degree>
-class StartingPolynomial{
-public:
+struct StartingPolynomial {
 	Polynomial<Degree> p;
 	double start;
 
+	StartingPolynomial(): start(0) { }
+
+	StartingPolynomial(Polynomial<Degree> const& p, double start):
+		p(p), start(start) { }
+
 	template<int Degree2>
-	StartingPolynomial<Degree+Degree2>  operator * (const StartingPolynomial<Degree2>& p) const;
-	StartingPolynomial scale(double s) const;
-	StartingPolynomial shift(double t) const;
-	int operator < (const StartingPolynomial& sp) const;
-	static int Compare(const void* v1,const void* v2);
+	StartingPolynomial(StartingPolynomial<Degree2> const& p):
+		p(p.p), start(p.start) { }
+
+	StartingPolynomial scale(double s) const
+		{ return StartingPolynomial(p.scale(s), start * s); }
+	StartingPolynomial shift(double t) const
+		{ return StartingPolynomial(p.shift(t), start + t); }
 };
+
+template<int D>
+bool operator<(StartingPolynomial<D> const& p1, StartingPolynomial<D> const& p2)
+	{ return p1.start < p2.start; }
 
 template<int Degree>
-class PPolynomial
-{
+class PPolynomial {
 public:
-	size_t polyCount;
-	StartingPolynomial<Degree>* polys;
-
-	PPolynomial(void);
-	PPolynomial(const PPolynomial<Degree>& p);
-	~PPolynomial(void);
-
-	PPolynomial& operator = (const PPolynomial& p);
-
-	int size(void) const;
-
-	void set( size_t size );
-	// Note: this method will sort the elements in sps
-	void set( StartingPolynomial<Degree>* sps , int count );
-	void reset( size_t newSize );
-
-
-	double operator()( double t ) const;
-	double integral( double tMin , double tMax ) const;
-	double Integral( void ) const;
+	static PPolynomial BSpline(double radius = 0.5);
+public:
+	PPolynomial() { }
+	// Note: this constructor will sort the elements in sps
+	PPolynomial(StartingPolynomial<Degree>* sps, int count);
 
 	template<int Degree2>
-	PPolynomial<Degree>& operator = (const PPolynomial<Degree2>& p);
-
-	PPolynomial  operator + (const PPolynomial& p) const;
-	PPolynomial  operator - (const PPolynomial& p) const;
+	PPolynomial(PPolynomial<Degree2> const&);
 
 	template<int Degree2>
-	PPolynomial<Degree+Degree2> operator * (const Polynomial<Degree2>& p) const;
+	PPolynomial& operator=(PPolynomial<Degree2> const& p);
 
+	void swap(PPolynomial& p);
+
+	double operator()(double) const;
+
+	PPolynomial scale(double) const;
+	PPolynomial shift(double) const;
+
+	PPolynomial<Degree - 1> derivative() const;
+
+	PPolynomial<Degree + 1> MovingAverage(double radius) const;
+private:
+	explicit PPolynomial(size_t size);
+
+	PPolynomial& operator/=(double);
+
+	friend PPolynomial operator/(PPolynomial p, double s) { return p /= s; }
+private:
 	template<int Degree2>
-	PPolynomial<Degree+Degree2> operator * (const PPolynomial<Degree2>& p) const;
+	friend class PPolynomial;
 
-
-	PPolynomial& operator += ( double s );
-	PPolynomial& operator -= ( double s );
-	PPolynomial& operator *= ( double s );
-	PPolynomial& operator /= ( double s );
-	PPolynomial  operator +  ( double s ) const;
-	PPolynomial  operator -  ( double s ) const;
-	PPolynomial  operator *  ( double s ) const;
-	PPolynomial  operator /  ( double s ) const;
-
-	PPolynomial& addScaled(const PPolynomial& poly,double scale);
-
-	PPolynomial scale( double s ) const;
-	PPolynomial shift( double t ) const;
-
-	PPolynomial< Degree-1 > derivative(void) const;
-	PPolynomial< Degree+1 > integral(void) const;
-
-	void getSolutions(double c,std::vector<double>& roots,double EPS,double min=-DBL_MAX,double max=DBL_MAX) const;
-
-	void printnl( void ) const;
-
-	PPolynomial< Degree+1 > MovingAverage( double radius ) const;
-	static PPolynomial BSpline( double radius=0.5 );
-
-	void write( FILE* fp , int samples , double min , double max ) const;
+	std::vector<StartingPolynomial<Degree>> polys_;
 };
+
 #include "PPolynomial.inl"
-#endif // P_POLYNOMIAL_INCLUDED
