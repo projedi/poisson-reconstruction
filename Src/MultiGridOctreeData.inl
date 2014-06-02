@@ -1826,11 +1826,11 @@ int Octree< Degree , OutputDensity >::GetFixedDepthLaplacian( SparseSymmetricMat
 		matrix.SetRowSize( i , count );
 
 		// Set the row entries
-		if( insetSupported ) matrix.rowSizes[i] = SetMatrixRow( neighbors5 , matrix[i] , sNodes.nodeCount[depth] , integrator , stencil , true );
+		if( insetSupported ) matrix.rowSize(i) = SetMatrixRow( neighbors5 , matrix[i] , sNodes.nodeCount[depth] , integrator , stencil , true );
 		else
 		{
 			matrix[i][0] = MatrixEntry< Real >( i , Real(1) );
-			matrix.rowSizes[i] = 1;
+			matrix.rowSize(i) = 1;
 		}
 
 		// Offset the constraints using the solution from lower resolutions.
@@ -1891,11 +1891,11 @@ int Octree< Degree , OutputDensity>::GetRestrictedFixedDepthLaplacian( SparseSym
 		matrix.SetRowSize( i , count );
 
 		// Set the matrix row entries
-		if( insetSupported ) matrix.rowSizes[i] = SetMatrixRow( neighbors5 , matrix[i] , 0 , integrator , stencil , xStart , xEnd , yStart , yEnd , zStart , zEnd , true );
+		if( insetSupported ) matrix.rowSize(i) = SetMatrixRow( neighbors5 , matrix[i] , 0 , integrator , stencil , xStart , xEnd , yStart , yEnd , zStart , zEnd , true );
 		else
 		{
 			matrix[i][0] = MatrixEntry< Real >( i , Real(1) );
-			matrix.rowSizes[i] = 1;
+			matrix.rowSize(i) = 1;
 		}
 
 		// Adjust the system constraints
@@ -1979,28 +1979,28 @@ int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const 
 
 	solveTime = Time();
 	// Solve the linear system
-	Real _accuracy = Real( accuracy / 100000 ) * M.rows;
+	Real _accuracy = Real( accuracy / 100000 ) * M.Rows();
 	int res = 1<<depth;
-#if !NEW_MATRIX_CODE
+#ifndef NEW_MATRIX_CODE
 	MapReduceVector< Real > mrVector;
-	mrVector.resize( threads , M.rows );
-#endif // !NEW_MATRIX_CODE
+	mrVector.resize( threads , M.Rows() );
+#endif
 
 	if( _boundaryType==0 && depth>3 ) res -= 1<<(depth-2);
 	if( !noSolve ) {
-#if NEW_MATRIX_CODE
-		if( fixedIters>=0 ) iter += SparseSymmetricMatrix< Real >::Solve( M , B , fixedIters                                                           , X , Real(1e-10) , 0 , threads , M.rows==res*res*res && !_constrainValues && _boundaryType!=-1 );
-		else                iter += SparseSymmetricMatrix< Real >::Solve( M , B , std::max< int >( int( pow( M.rows , ITERATION_POWER ) ) , minIters ) , X , _accuracy   , 0 , threads , M.rows==res*res*res && !_constrainValues && _boundaryType!=-1 );
-#else // !NEW_MATRIX_CODE
-		if( fixedIters>=0 ) iter += SparseSymmetricMatrix< Real >::Solve( M , B , fixedIters                                                           , X , mrVector , Real(1e-10) , 0 , M.rows==res*res*res && !_constrainValues && _boundaryType!=-1 );
-		else                iter += SparseSymmetricMatrix< Real >::Solve( M , B , std::max< int >( int( pow( M.rows , ITERATION_POWER ) ) , minIters ) , X , mrVector ,_accuracy    , 0 , M.rows==res*res*res && !_constrainValues && _boundaryType!=-1 );
-#endif // NEW_MATRIX_CODE
+#ifdef NEW_MATRIX_CODE
+		if( fixedIters>=0 ) iter += SparseSymmetricMatrix< Real >::Solve( M , B , fixedIters                                                           , X , Real(1e-10) , 0 , threads , M.Rows()==res*res*res && !_constrainValues && _boundaryType!=-1 );
+		else                iter += SparseSymmetricMatrix< Real >::Solve( M , B , std::max< int >( int( pow( M.Rows() , ITERATION_POWER ) ) , minIters ) , X , _accuracy   , 0 , threads , M.Rows()==res*res*res && !_constrainValues && _boundaryType!=-1 );
+#else
+		if( fixedIters>=0 ) iter += SparseSymmetricMatrix< Real >::Solve( M , B , fixedIters                                                           , X , mrVector , Real(1e-10) , 0 , M.Rows()==res*res*res && !_constrainValues && _boundaryType!=-1 );
+		else                iter += SparseSymmetricMatrix< Real >::Solve( M , B , std::max< int >( int( pow( M.Rows() , ITERATION_POWER ) ) , minIters ) , X , mrVector ,_accuracy    , 0 , M.Rows()==res*res*res && !_constrainValues && _boundaryType!=-1 );
+#endif
 	}
 	solveTime = Time()-solveTime;
 	if( showResidual )
 	{
 		double mNorm = 0;
-		for( int i=0 ; i<M.rows ; i++ ) for( int j=0 ; j<M.rowSizes[i] ; j++ ) mNorm += M[i][j].Value * M[i][j].Value;
+		for( int i=0 ; i<M.Rows() ; i++ ) for( int j=0 ; j<M.rowSize(i) ; j++ ) mNorm += M[i][j].Value * M[i][j].Value;
 		double bNorm = B.Norm( 2 ) , rNorm = ( B - M * X ).Norm( 2 );
 		DumpOutput::instance()( "#\tResidual: (%d %g) %g -> %g (%f) [%d]\n" , M.Entries() , sqrt(mNorm) , bNorm , rNorm , rNorm/bNorm , iter );
 	}
@@ -2079,10 +2079,10 @@ int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const 
 		maxDimension = std::max< int >( maxDimension , subDimension[i-sNodes.nodeCount[d]] );
 	}
 	asf.adjacencies = new int[maxDimension];
-#if !NEW_MATRIX_CODE
+#ifndef NEW_MATRIX_CODE
 	MapReduceVector< Real > mrVector;
 	mrVector.resize( threads , maxDimension );
-#endif // !NEW_MATRIX_CODE
+#endif
 	// Iterate through the coarse-level nodes
 	for( int i=sNodes.nodeCount[d] ; i<sNodes.nodeCount[d+1] ; i++ )
 	{
@@ -2126,22 +2126,22 @@ int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const 
 		// Solve the matrix
 		// Since we don't have the full matrix, the system shouldn't be singular, so we shouldn't have to correct it
 		sTime=Time();
-		Real _accuracy = Real( accuracy / 100000 ) * _M.rows;
+		Real _accuracy = Real( accuracy / 100000 ) * _M.Rows();
 		if( !noSolve ) {
-#if NEW_MATRIX_CODE
-			if( fixedIters>=0 ) iter += SparseSymmetricMatrix< Real >::Solve( _M , _B , fixedIters                                                            , _X ,  Real(1e-10) , 0 , threads );
-			else                iter += SparseSymmetricMatrix< Real >::Solve( _M , _B , std::max< int >( int( pow( _M.rows , ITERATION_POWER ) ) , minIters ) , _X , _accuracy    , 0 , threads );
-#else // !NEW_MATRIX_CODE
-			if( fixedIters>=0 ) iter += SparseSymmetricMatrix< Real >::Solve( _M , _B , fixedIters                                                            , _X , mrVector ,  Real(1e-10) , 0 );
-			else                iter += SparseSymmetricMatrix< Real >::Solve( _M , _B , std::max< int >( int( pow( _M.rows , ITERATION_POWER ) ) , minIters ) , _X , mrVector , _accuracy    , 0 );
-#endif // NEW_MATRIX_CODE
+#ifdef NEW_MATRIX_CODE
+			if( fixedIters>=0 ) iter += SparseSymmetricMatrix< Real >::Solve( _M , _B , fixedIters                                                            , _X ,  Real(1e-10) , 0 , threads, false );
+			else                iter += SparseSymmetricMatrix< Real >::Solve( _M , _B , std::max< int >( int( pow( _M.Rows() , ITERATION_POWER ) ) , minIters ) , _X , _accuracy    , 0 , threads, false );
+#else
+			if( fixedIters>=0 ) iter += SparseSymmetricMatrix< Real >::Solve( _M , _B , fixedIters                                                            , _X , mrVector ,  Real(1e-10) , 0, false );
+			else                iter += SparseSymmetricMatrix< Real >::Solve( _M , _B , std::max< int >( int( pow( _M.Rows() , ITERATION_POWER ) ) , minIters ) , _X , mrVector , _accuracy    , 0, false );
+#endif
 		}
 		sTime=Time()-sTime;
 
 		if( showResidual )
 		{
 			double mNorm = 0;
-			for( int i=0 ; i<_M.rows ; i++ ) for( int j=0 ; j<_M.rowSizes[i] ; j++ ) mNorm += _M[i][j].Value * _M[i][j].Value;
+			for( int i=0 ; i<_M.Rows() ; i++ ) for( int j=0 ; j<_M.rowSize(i) ; j++ ) mNorm += _M[i][j].Value * _M[i][j].Value;
 			double bNorm = _B.Norm( 2 ) , rNorm = ( _B - _M * _X ).Norm( 2 );
 			DumpOutput::instance()( "#\t\tResidual: (%d %g) %g -> %g (%f) [%d]\n" , _M.Entries() , sqrt(mNorm) , bNorm , rNorm , rNorm/bNorm , iter );
 		}
