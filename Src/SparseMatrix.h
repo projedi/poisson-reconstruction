@@ -26,154 +26,59 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#ifndef __SPARSEMATRIX_HPP
-#define __SPARSEMATRIX_HPP
+#pragma once
 
 #include "Vector.h"
 #include "Array.h"
 
-template <class T>
-struct MatrixEntry
-{
-	MatrixEntry( void )		    { N =-1; Value = 0; }
-	MatrixEntry( int i )	    { N = i; Value = 0; }
-	MatrixEntry( int i , T v )	{ N = i; Value = v; }
+template<class T>
+struct MatrixEntry {
+	MatrixEntry(): N(-1), Value(0) { }
+	MatrixEntry(int i, T v = T()): N(i), Value(v) { }
 	int N;
 	T Value;
 };
 
-template<class T> class SparseMatrix
-{
-private:
-	bool _contiguous;
-	int _maxEntriesPerRow;
-	void _init( void );
+template<class T>
+class SparseSymmetricMatrix {
 public:
-	int rows;
 	int Rows() const { return rows; }
 	int Columns() const { return _maxEntriesPerRow; }
-	Pointer( int ) rowSizes;
-	Pointer( Pointer( MatrixEntry< T > ) ) m_ppElements;
-	Pointer( MatrixEntry< T > ) operator[] ( int idx ) { return m_ppElements[idx]; }
-	ConstPointer( MatrixEntry< T > ) operator[] ( int idx ) const { return m_ppElements[idx]; }
 
-	SparseMatrix( void );
-	SparseMatrix( int rows );
-	SparseMatrix( int rows , int maxEntriesPerRow );
-	void Resize( int rows );
-	void Resize( int rows , int maxEntriesPerRow );
-	void SetRowSize( int row , int count );
-	int Entries( void ) const;
+	Pointer(MatrixEntry<T>) operator[](int idx) { return m_ppElements[idx]; }
+	ConstPointer(MatrixEntry<T>) operator[](int idx) const { return m_ppElements[idx]; }
 
-	SparseMatrix( const SparseMatrix& M );
-	~SparseMatrix();
+	int& rowSize(int i) { return rowSizes_[i]; }
 
-	void SetZero();
-	void SetIdentity();
+	SparseSymmetricMatrix();
+	SparseSymmetricMatrix(SparseSymmetricMatrix const& M);
 
-	SparseMatrix<T>& operator = (const SparseMatrix<T>& M);
+	~SparseSymmetricMatrix();
 
-	SparseMatrix<T> operator * (const T& V) const;
-	SparseMatrix<T>& operator *= (const T& V);
+	SparseSymmetricMatrix<T>& operator=(SparseSymmetricMatrix<T> M) { swap(M); return *this; }
 
+	void swap(SparseSymmetricMatrix<T>& M);
 
-	SparseMatrix<T> operator * (const SparseMatrix<T>& M) const;
-	SparseMatrix<T> Multiply( const SparseMatrix<T>& M ) const;
-	SparseMatrix<T> MultiplyTranspose( const SparseMatrix<T>& Mt ) const;
+	void Resize(int rows);
+	void SetRowSize(int row, int count);
+	int Entries() const;
 
 	template<class T2>
-	Vector<T2> operator * (const Vector<T2>& V) const;
-	template<class T2>
-	Vector<T2> Multiply( const Vector<T2>& V ) const;
-	template<class T2>
-	void Multiply( const Vector<T2>& In , Vector<T2>& Out , int threads=1 ) const;
+	Vector<T2> operator*(Vector<T2> const& V) const;
 
-
-	SparseMatrix<T> Transpose() const;
-
-	static int Solve			(const SparseMatrix<T>& M,const Vector<T>& b, int iters,Vector<T>& solution,const T eps=1e-8);
+	T Norm(size_t Ln) const;
 
 	template<class T2>
-	static int SolveSymmetric( const SparseMatrix<T>& M , const Vector<T2>& b , int iters , Vector<T2>& solution , const T2 eps=1e-8 , int reset=1 , int threads=1 );
-
-	bool write( FILE* fp ) const;
-	bool write( const char* fileName ) const;
-	bool read( FILE* fp );
-	bool read( const char* fileName );
-};
-
-
-template< class T2 >
-struct MapReduceVector
-{
+	static int Solve(SparseSymmetricMatrix<T> const& M, Vector<T2> const& b, int iters, Vector<T2>& solution,
+			T2 eps, bool reset, int threads, bool addDCTerm);
 private:
-	int _dim;
-public:
-	std::vector< T2* > out;
-	MapReduceVector( void ) { _dim = 0; }
-	~MapReduceVector( void )
-	{
-		if( _dim ) for( int t=0 ; t<int(out.size()) ; t++ ) delete[] out[t];
-		out.resize( 0 );
-	}
-	T2* operator[]( int t ) { return out[t]; }
-	const T2* operator[]( int t ) const { return out[t]; }
-	int threads( void ) const { return int( out.size() ); }
-	void resize( unsigned threads , int dim )
-	{
-		if( threads!=out.size() || _dim<dim )
-		{
-			for( int t=0 ; t<int(out.size()) ; t++ ) delete[] out[t];
-			out.resize( threads );
-			for( int t=0 ; t<int(out.size()) ; t++ ) out[t] = new T2[dim];
-			_dim = dim;
-		}
-	}
-
-};
-
-template< class T >
-class SparseSymmetricMatrix : public SparseMatrix< T >
-{
-public:
-
-	template< class T2 >
-	Vector< T2 > operator * ( const Vector<T2>& V ) const;
-
-	template< class T2 >
-	Vector< T2 > Multiply( const Vector<T2>& V ) const;
-
-#if NEW_MATRIX_CODE
-	template< class T2 >
-	void Multiply( const Vector<T2>& In, Vector<T2>& Out , bool addDCTerm=false , int threads=1 ) const;
-#else // !NEW_MATRIX_CODE
-	template< class T2 >
-	void Multiply( const Vector<T2>& In, Vector<T2>& Out , bool addDCTerm=false ) const;
-#endif // NEW_MATRIX_CODE
-
-	template< class T2 >
-	void Multiply( const Vector<T2>& In, Vector<T2>& Out , MapReduceVector< T2 >& OutScratch , bool addDCTerm=false ) const;
-
-	template< class T2 >
-	void Multiply( const Vector<T2>& In, Vector<T2>& Out , std::vector< T2* >& OutScratch , const std::vector< int >& bounds ) const;
-
-	template< class T2 >
-	static int Solve( const SparseSymmetricMatrix<T>& M , const Vector<T2>& b , int iters , Vector<T2>& solution , T2 eps=1e-8 , int reset=1 , int threads=0  , bool addDCTerm=false , bool solveNormal=false );
-
-	template< class T2 >
-	static int Solve( const SparseSymmetricMatrix<T>& M , const Vector<T2>& b , int iters , Vector<T2>& solution , MapReduceVector<T2>& scratch , T2 eps=1e-8 , int reset=1 , bool addDCTerm=false , bool solveNormal=false );
-#ifdef WIN32
-	template< class T2 >
-	static int SolveAtomic( const SparseSymmetricMatrix<T>& M , const Vector<T2>& b , int iters , Vector<T2>& solution , T2 eps=1e-8 , int reset=1 , int threads=0  , bool solveNormal=false );
-#endif // WIN32
 	template<class T2>
-	static int Solve( const SparseSymmetricMatrix<T>& M , const Vector<T2>& diagonal , const Vector<T2>& b , int iters , Vector<T2>& solution , int reset=1 );
-
-	template< class T2 >
-	void getDiagonal( Vector< T2 >& diagonal ) const;
+	void Multiply(Vector<T2> const& In, Vector<T2>& Out, bool addDCTerm, int threads) const;
+private:
+	Pointer(int) rowSizes_;
+	Pointer(Pointer(MatrixEntry<T>)) m_ppElements;
+	int _maxEntriesPerRow;
+	int rows;
 };
 
 #include "SparseMatrix.inl"
-
-#endif
-
