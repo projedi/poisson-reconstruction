@@ -26,67 +26,78 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#ifndef POLYNOMIAL_INCLUDED
-#define POLYNOMIAL_INCLUDED
+#pragma once
 
 #include <vector>
 
-template< int Degree >
-class Polynomial{
+template<int Degree>
+class Polynomial {
 public:
-	double coefficients[Degree+1];
-
-	Polynomial(void);
-	template<int Degree2>
-	Polynomial(const Polynomial<Degree2>& P);
-	double operator()( double t ) const;
-	double integral( double tMin , double tMax ) const;
-
-	int operator == (const Polynomial& p) const;
-	int operator != (const Polynomial& p) const;
-	int isZero(void) const;
-	void setZero(void);
+	Polynomial(): coefficients{{}} { }
 
 	template<int Degree2>
-	Polynomial& operator  = (const Polynomial<Degree2> &p);
-	Polynomial& operator += (const Polynomial& p);
-	Polynomial& operator -= (const Polynomial& p);
-	Polynomial  operator -  (void) const;
-	Polynomial  operator +  (const Polynomial& p) const;
-	Polynomial  operator -  (const Polynomial& p) const;
+	Polynomial(Polynomial<Degree2> const& P);
+
 	template<int Degree2>
-	Polynomial<Degree+Degree2>  operator *  (const Polynomial<Degree2>& p) const;
+	Polynomial& operator=(Polynomial<Degree2> const& p);
 
-	Polynomial& operator += ( double s );
-	Polynomial& operator -= ( double s );
-	Polynomial& operator *= ( double s );
-	Polynomial& operator /= ( double s );
-	Polynomial  operator +  ( double s ) const;
-	Polynomial  operator -  ( double s ) const;
-	Polynomial  operator *  ( double s ) const;
-	Polynomial  operator /  ( double s ) const;
+	void swap(Polynomial& p);
 
-	Polynomial scale( double s ) const;
-	Polynomial shift( double t ) const;
+	double& operator[](size_t i) { return coefficients[i]; }
+	double const& operator[](size_t i) const { return coefficients[i]; }
 
-	Polynomial<Degree-1> derivative(void) const;
-	Polynomial<Degree+1> integral(void) const;
+	double operator()(double t) const;
+	double integral(double tMin, double tMax) const;
 
-	void printnl(void) const;
+	bool operator==(Polynomial const& p) const
+		{ return std::equal(coefficients.begin(), coefficients.end(), p.coefficients.begin()); }
+	bool operator!=(Polynomial const& p) const { return !(*this == p); }
 
-	Polynomial& addScaled(const Polynomial& p,double scale);
+	bool isZero() const
+		{ return std::all_of(coefficients.begin(), coefficients.end(), [](double p) { return p == 0; }); }
+	void setZero() { std::fill(coefficients.begin(), coefficients.end(), 0); }
 
-	static void Negate(const Polynomial& in,Polynomial& out);
-	static void Subtract(const Polynomial& p1,const Polynomial& p2,Polynomial& q);
-	static void Scale(const Polynomial& p,double w,Polynomial& q);
-	static void AddScaled(const Polynomial& p1,double w1,const Polynomial& p2,double w2,Polynomial& q);
-	static void AddScaled(const Polynomial& p1,const Polynomial& p2,double w2,Polynomial& q);
-	static void AddScaled(const Polynomial& p1,double w1,const Polynomial& p2,Polynomial& q);
+	Polynomial& operator+=(Polynomial const& p);
+	Polynomial& operator-=(Polynomial const& p);
+	Polynomial operator-() const;
 
-	void getSolutions(double c,std::vector<double>& roots,double EPS) const;
+	template<int Degree2>
+	Polynomial<Degree + Degree2> operator*(Polynomial<Degree2> const& p2) const;
 
-	static Polynomial BSplineComponent( int i );
+	Polynomial& operator+=(double s);
+	Polynomial& operator-=(double s);
+	Polynomial& operator*=(double s);
+	Polynomial& operator/=(double s);
+
+	Polynomial scale(double s) const;
+	Polynomial shift(double t) const;
+
+	Polynomial<Degree - 1> derivative() const;
+	Polynomial<Degree + 1> integral() const;
+
+	std::vector<double> getSolutions(double c, double EPS) const;
+
+	static Polynomial BSplineComponent(int i);
+private:
+	std::array<double, Degree + 1> coefficients;
 };
 
+template<int Degree>
+Polynomial<Degree> operator+(Polynomial<Degree> p1, Polynomial<Degree> const& p2) { return p1 += p2; }
+
+template<int Degree>
+Polynomial<Degree> operator-(Polynomial<Degree> p1, Polynomial<Degree> const& p2) { return p1 -= p2; }
+
+template<int Degree>
+Polynomial<Degree> operator+(Polynomial<Degree> p, double s) { return p += s; }
+
+template<int Degree>
+Polynomial<Degree> operator-(Polynomial<Degree> p, double s) { return p -= s; }
+
+template<int Degree>
+Polynomial<Degree> operator*(Polynomial<Degree> p, double s) { return p *= s; }
+
+template<int Degree>
+Polynomial<Degree> operator/(Polynomial<Degree> p, double s) { return p /= s; }
+
 #include "Polynomial.inl"
-#endif // POLYNOMIAL_INCLUDED

@@ -3160,7 +3160,6 @@ int Octree< Degree , OutputDensity >::GetRoot( const RootInfo< OutputDensity >& 
 
 	int i , o , i1 , i2 , rCount=0;
 	Polynomial<2> P;
-	std::vector< double > roots;
 	double x0 , x1;
 	Real center , width;
 	Real averageRoot=0;
@@ -3269,11 +3268,11 @@ int Octree< Degree , OutputDensity >::GetRoot( const RootInfo< OutputDensity >& 
 	dx1 *= scl;
 
 	// Hermite Spline
-	P.coefficients[0] = x0;
-	P.coefficients[1] = dx0;
-	P.coefficients[2] = 3*(x1-x0)-dx1-2*dx0;
+	P[0] = x0;
+	P[1] = dx0;
+	P[2] = 3*(x1-x0)-dx1-2*dx0;
 
-	P.getSolutions( isoValue , roots , EPSILON );
+	std::vector< double > roots = P.getSolutions( isoValue , EPSILON );
 	for( i=0 ; i<int(roots.size()) ; i++ )
 		if( roots[i]>=0 && roots[i]<=1 )
 		{

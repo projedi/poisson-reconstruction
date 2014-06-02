@@ -158,7 +158,6 @@ private:
 		Polynomial<Degree> polys[Degree + 1];
 		Polynomial<Degree>& operator[](int idx) { return polys[idx]; }
 		Polynomial<Degree> const& operator[](int idx) const { return polys[idx]; }
-		void printnl() const { for(int d = 0; d <= Degree; ++d) polys[d].printnl(); }
 		BSplineComponents scale(double s) const {
 			BSplineComponents b;
 			for(int d = 0; d <= Degree; ++d)
