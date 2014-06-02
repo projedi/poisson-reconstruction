@@ -31,6 +31,7 @@ DAMAGE.
 #include <array>
 #include <cstring>
 #include <string>
+#include <vector>
 
 class cmdLineReadable {
 public:
@@ -41,7 +42,7 @@ public:
 	char const* name() const { return name_.c_str(); }
 
 	virtual int read(char** /* argv */, int /* argc */) { set_ = true; return 0; }
-	virtual void writeValue(char* str) { *str = 0; }
+	virtual std::string toString() const { return ""; }
 protected:
 	bool set_;
 	std::string name_;
@@ -57,7 +58,7 @@ public:
 	T& value() { return value_; }
 
 	int read(char** argv, int argc) override;
-	void writeValue(char* str) override;
+	std::string toString() const override;
 private:
 	T value_;
 };
@@ -70,14 +71,14 @@ public:
 	std::array<T, Dim> const& values() const { return values_; }
 
 	int read(char** argv, int argc) override;
-	void writeValue(char* str) override;
+	std::string toString() const override;
 private:
 	std::array<T, Dim> values_;
 };
 
 // This reads the arguments in argc, matches them against "names" and sets
 // the values of "r" appropriately. Parameters start with "--"
-void cmdLineParse(int argc, char** argv, int num, cmdLineReadable** r,
+void cmdLineParse(int argc, char** argv, std::vector<cmdLineReadable*> const& r,
 		bool dumpError = true);
 
 #include "CmdLineParser.inl"

@@ -38,10 +38,10 @@ int cmdLine<T>::read(char** argv, int argc) {
 }
 
 template<class T>
-void cmdLine<T>::writeValue(char* str) {
+std::string cmdLine<T>::toString() const {
 	std::stringstream ss;
 	ss << value_;
-	strncpy(str, ss.str().c_str(), ss.str().size());
+	return ss.str();
 }
 
 template<class T, size_t Dim>
@@ -56,8 +56,8 @@ int cmdLine<std::array<T, Dim>>::read(char** argv, int argc) {
 }
 
 template<class T, size_t Dim>
-void cmdLine<std::array<T, Dim>>::writeValue(char* str) {
+std::string cmdLine<std::array<T, Dim>>::toString() const {
 	std::stringstream ss;
 	for(auto v: values_) ss << v << " ";
-	strncpy(str, ss.str().c_str(), ss.str().size());
+	return ss.str();
 }

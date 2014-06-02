@@ -338,6 +338,18 @@ template< class Vertex >
 int PlyWritePolygons( char const* fileName , CoredFileMeshData< Vertex >*  mesh , int file_type , char** comments=NULL , int commentNum=0 , XForm< float, 4 > xForm=XForm< float, 4 >::Identity() );
 
 template<class Vertex>
+int PlyWritePolygons(std::string const& filename, CoredFileMeshData<Vertex>* mesh, int file_type,
+		std::vector<std::string> const& comments, XForm<float, 4> xForm) {
+	char** commentsPtr = new char*[comments.size()];
+	for(size_t i = 0; i != comments.size(); ++i) {
+		commentsPtr[i] = new char[comments[i].size() + 1];
+		strncpy(commentsPtr[i], comments[i].c_str(), comments[i].size());
+		commentsPtr[i][comments[i].size()] = 0;
+	}
+	return PlyWritePolygons(filename.c_str(), mesh, file_type, commentsPtr, comments.size(), xForm);
+}
+
+template<class Vertex>
 int PlyReadPolygons(char const* fileName,
 					std::vector<Vertex>& vertices,std::vector<std::vector<int> >& polygons,
 					PlyProperty* properties,int propertyNum,

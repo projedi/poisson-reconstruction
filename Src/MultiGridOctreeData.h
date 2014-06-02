@@ -76,7 +76,12 @@ DAMAGE.
 #endif // !FORCE_NEUMANN_FIELD
 
 #include <unordered_map>
+#include "Octree.h"
 #include "BSplineData.h"
+#include "PPolynomial.h"
+#include "Ply.h"
+#include "SparseMatrix.h"
+#include "Time.h"
 typedef float Real;
 typedef float MatrixReal;
 

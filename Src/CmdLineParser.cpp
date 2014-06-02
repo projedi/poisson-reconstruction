@@ -30,12 +30,12 @@ DAMAGE.
 
 #include "CmdLineParser.h"
 
-void cmdLineParse(int argc, char** argv, int num, cmdLineReadable** readable,
+void cmdLineParse(int argc, char** argv, std::vector<cmdLineReadable*> const& readable,
 		bool dumpError) {
 	while(argc > 0) {
 		if(argv[0][0] == '-' && argv[0][1] == '-') {
-			int i;
-			for(i = 0; i != num; ++i) {
+			size_t i;
+			for(i = 0; i != readable.size(); ++i) {
 				if(!strcmp(&argv[0][2], readable[i]->name())) {
 					++argv;
 					--argc;
@@ -45,11 +45,11 @@ void cmdLineParse(int argc, char** argv, int num, cmdLineReadable** readable,
 					break;
 				}
 			}
-			if(i == num) {
+			if(i == readable.size()) {
 				if(dumpError) {
 					std::cerr << "Invalid option: " << *argv << std::endl
 						<< "possible options are:" << std::endl;
-					for(int i = 0; i != num; ++i)
+					for(size_t i = 0; i != readable.size(); ++i)
 						std::cerr << "  " << readable[i]->name() << std::endl;
 				}
 				++argv;

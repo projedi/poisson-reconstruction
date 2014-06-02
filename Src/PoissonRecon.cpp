@@ -26,142 +26,76 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <float.h>
+#include <cfloat>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <omp.h>
+
 #ifdef _WIN32
-#include <Windows.h>
 #include <Psapi.h>
+#include <Windows.h>
 #endif // _WIN32
-#include "Time.h"
-#include "MarchingCubes.h"
-#include "Octree.h"
-#include "SparseMatrix.h"
+
 #include "CmdLineParser.h"
+#include "MarchingCubes.h"
+#include "MemoryUsage.h"
+#include "MultiGridOctreeData.h"
+#include "Octree.h"
 #include "PPolynomial.h"
 #include "Ply.h"
-#include "MemoryUsage.h"
-#include "omp.h"
-#include <stdarg.h>
+#include "SparseMatrix.h"
+#include "Time.h"
 
-char* outputFile=NULL;
-int echoStdout=0;
-void DumpOutput( const char* format , ... )
-{
-	if( outputFile )
-	{
-		FILE* fp = fopen( outputFile , "a" );
-		va_list args;
-		va_start( args , format );
-		vfprintf( fp , format , args );
-		fclose( fp );
-		va_end( args );
-	}
-	if( echoStdout )
-	{
-		va_list args;
-		va_start( args , format );
-		vprintf( format , args );
-		va_end( args );
-	}
-}
-void DumpOutput2( char* str , const char* format , ... )
-{
-	if( outputFile )
-	{
-		FILE* fp = fopen( outputFile , "a" );
-		va_list args;
-		va_start( args , format );
-		vfprintf( fp , format , args );
-		fclose( fp );
-		va_end( args );
-	}
-	if( echoStdout )
-	{
-		va_list args;
-		va_start( args , format );
-		vprintf( format , args );
-		va_end( args );
-	}
-	va_list args;
-	va_start( args , format );
-	vsprintf( str , format , args );
-	va_end( args );
-	if( str[strlen(str)-1]=='\n' ) str[strlen(str)-1] = 0;
-}
+cmdLine<std::string> In("in");
+cmdLine<std::string> Out("out");
+cmdLine<std::string> VoxelGrid("voxel");
+cmdLine<std::string> Xform("xForm");
 
-#include "MultiGridOctreeData.h"
-#ifdef MAX_MEMORY_GB
-#undef MAX_MEMORY_GB
-#endif // MAX_MEMORY_GB
-//#define MAX_MEMORY_GB 8
-
-cmdLine<std::string>
-	In( "in" ) ,
-	Out( "out" ) ,
-	VoxelGrid( "voxel" ) ,
-	Xform( "xForm" );
-
-cmdLineReadable
 #ifdef _WIN32
-	Performance( "performance" ) ,
-#endif // _WIN32
-	ShowResidual( "showResidual" ) ,
-	NoComments( "noComments" ) ,
-	PolygonMesh( "polygonMesh" ) ,
-	Confidence( "confidence" ) ,
-	NormalWeights( "normalWeight" ) ,
-	NonManifold( "nonManifold" ) ,
-	ASCII( "ascii" ) ,
-	Density( "density" ) ,
-	Verbose( "verbose" );
-
-cmdLine<int>
-	Depth( "depth" , 8 ) ,
-	SolverDivide( "solverDivide" , 8 ) ,
-	IsoDivide( "isoDivide" , 8 ) ,
-	KernelDepth( "kernelDepth" ) ,
-	AdaptiveExponent( "adaptiveExp" , 1 ) ,
-	MinIters( "minIters" , 24 ) ,
-	FixedIters( "iters" , -1 ) ,
-	VoxelDepth( "voxelDepth" , -1 ) ,
-#if 1
-#ifdef _WIN32
-#pragma message( "[WARNING] Setting default min-depth to 5" )
-#endif // _WIN32
-	MinDepth( "minDepth" , 5 ) ,
-#else
-	MinDepth( "minDepth" , 0 ) ,
+cmdLineReadable Performance("performance");
 #endif
-	MaxSolveDepth( "maxSolveDepth" ) ,
-	BoundaryType( "boundary" , 1 ) ,
-	Threads( "threads" , omp_get_num_procs() );
+cmdLineReadable ShowResidual("showResidual");
+cmdLineReadable NoComments("noComments");
+cmdLineReadable PolygonMesh("polygonMesh");
+cmdLineReadable Confidence("confidence");
+cmdLineReadable NormalWeights("normalWeight");
+cmdLineReadable NonManifold("nonManifold");
+cmdLineReadable ASCII("ascii");
+cmdLineReadable Density("density");
+cmdLineReadable Verbose("verbose");
 
-cmdLine<float>
-	SamplesPerNode( "samplesPerNode" , 1.f ) ,
-	Scale( "scale" , 1.1f ) ,
-	SolverAccuracy( "accuracy" , float(1e-3) ) ,
-	PointWeight( "pointWeight" , 4.f );
+cmdLine<int> Depth("depth", 8);
+cmdLine<int> SolverDivide("solverDivide", 8);
+cmdLine<int> IsoDivide("isoDivide", 8);
+cmdLine<int> KernelDepth("kernelDepth");
+cmdLine<int> AdaptiveExponent("adaptiveExp", 1);
+cmdLine<int> MinIters("minIters", 24);
+cmdLine<int> FixedIters("iters", -1);
+cmdLine<int> VoxelDepth("voxelDepth", -1);
+#pragma message("[WARNING] Setting default min-depth to 5")
+cmdLine<int> MinDepth("minDepth", 5);
+cmdLine<int> MaxSolveDepth("maxSolveDepth" );
+cmdLine<int> BoundaryType("boundary", 1);
+cmdLine<int> Threads("threads", omp_get_num_procs());
 
+cmdLine<float> SamplesPerNode("samplesPerNode", 1);
+cmdLine<float> Scale("scale", 1.1);
+cmdLine<float> SolverAccuracy("accuracy", 1e-3);
+cmdLine<float> PointWeight("pointWeight", 4);
 
-cmdLineReadable* params[] =
-{
-	&In , &Depth , &Out , &Xform ,
-	&SolverDivide , &IsoDivide , &Scale , &Verbose , &SolverAccuracy , &NoComments ,
-	&KernelDepth , &SamplesPerNode , &Confidence , &NormalWeights , &NonManifold , &PolygonMesh , &ASCII , &ShowResidual , &MinIters , &FixedIters , &VoxelDepth ,
-	&PointWeight , &VoxelGrid , &Threads , &MinDepth , &MaxSolveDepth ,
-	&AdaptiveExponent , &BoundaryType ,
-	&Density ,
+std::vector<cmdLineReadable*> params = {
+	&In, &Depth, &Out, &Xform, &SolverDivide, &IsoDivide, &Scale, &Verbose, &SolverAccuracy, &NoComments,
+	&KernelDepth, &SamplesPerNode, &Confidence, &NormalWeights, &NonManifold, &PolygonMesh, &ASCII,
+	&ShowResidual, &MinIters, &FixedIters, &VoxelDepth, &PointWeight, &VoxelGrid, &Threads, &MinDepth,
+	&MaxSolveDepth, &AdaptiveExponent, &BoundaryType, &Density,
 #ifdef _WIN32
-	&Performance ,
-#endif // _WIN32
+	&Performance
+#endif
 };
 
-
-void ShowUsage(char* ex)
-{
-	printf( "Usage: %s\n" , ex );
+void ShowUsage(std::string const& executable) {
+	printf( "Usage: %s\n" , executable.c_str() );
 	printf( "\t --%s  <input points>\n" , In.name() );
 
 	printf( "\t[--%s <ouput triangle mesh>]\n" , Out.name() );
@@ -233,160 +167,140 @@ void ShowUsage(char* ex)
 	printf( "\t[--%s]\n" , Verbose.name() );
 	printf( "\t\t If this flag is enabled, the progress of the reconstructor will be output to STDOUT.\n" );
 }
-template< int Degree , class Vertex , bool OutputDensity >
-int Execute(int, char* argv[] )
-{
-	int i;
-	int paramNum = sizeof(params)/sizeof(cmdLineReadable*);
-	int commentNum=0;
-	char **comments;
 
-	comments = new char*[paramNum+7];
-	for( i=0 ; i<paramNum+7 ; i++ ) comments[i] = new char[1024];
+int ValidateFlags(std::string const& executable) {
+	DumpOutput::instance().setEchoStdout(Verbose.set());
+	DumpOutput::instance().setNoComments(NoComments.set());
 
-	if( Verbose.set() ) echoStdout=1;
-
-	XForm< Real, 4 > xForm , iXForm;
-	if( Xform.set() )
-	{
-		FILE* fp = fopen( Xform.value().c_str() , "r" );
-		if( !fp )
-		{
-			fprintf( stderr , "[WARNING] Could not read x-form from: %s\n" , Xform.value().c_str() );
-			xForm = XForm< Real, 4 >::Identity();
-		}
-		else
-		{
-			for( int i=0 ; i<4 ; i++ ) for( int j=0 ; j<4 ; j++ ) fscanf( fp , " %f " , &xForm( i , j ) );
-			fclose( fp );
-		}
-	}
-	else xForm = XForm< Real, 4 >::Identity();
-	iXForm = xForm.inverse();
-
-	DumpOutput2( comments[commentNum++] , "Running Screened Poisson Reconstruction (Version 5.71)\n" );
-	char str[1024];
-	for( int i=0 ; i<paramNum ; i++ )
-		if( params[i]->set() )
-		{
-			params[i]->writeValue( str );
-			if( strlen( str ) ) DumpOutput2( comments[commentNum++] , "\t--%s %s\n" , params[i]->name() , str );
-			else                DumpOutput2( comments[commentNum++] , "\t--%s\n" , params[i]->name() );
-		}
-
-	double t;
-	double tt=Time();
-	Real isoValue = 0;
-
-	Octree< Degree , OutputDensity > tree;
-	tree.threads = Threads.value();
-	if( !In.set() )
-	{
-		ShowUsage(argv[0]);
-		return 0;
-	}
-	if( !MaxSolveDepth.set() ) MaxSolveDepth.value() = Depth.value();
-	if( SolverDivide.value()<MinDepth.value() )
-	{
-		fprintf( stderr , "[WARNING] %s must be at least as large as %s: %d>=%d\n" , SolverDivide.name() , MinDepth.name() , SolverDivide.value() , MinDepth.value() );
-		SolverDivide.value() = MinDepth.value();
-	}
-	if( IsoDivide.value()<MinDepth.value() )
-	{
-		fprintf( stderr , "[WARNING] %s must be at least as large as %s: %d>=%d\n" , IsoDivide.name() , MinDepth.name() , IsoDivide.value() , IsoDivide.value() );
-		IsoDivide.value() = MinDepth.value();
-	}
-	
-	OctNode< TreeNodeData< OutputDensity > , Real >::SetAllocator( MEMORY_ALLOCATOR_BLOCK_SIZE );
-
-	t=Time();
-	int kernelDepth = KernelDepth.set() ?  KernelDepth.value() : Depth.value()-2;
-
-	tree.setBSplineData( Depth.value() , BoundaryType.value() );
-	if( kernelDepth>Depth.value() )
-	{
-		fprintf( stderr,"[ERROR] %s can't be greater than %s: %d <= %d\n" , KernelDepth.name() , Depth.name() , KernelDepth.value() , Depth.value() );
+	if(!In.set()) {
+		ShowUsage(executable);
 		return EXIT_FAILURE;
 	}
 
-	double maxMemoryUsage;
-	t=Time() , tree.maxMemoryUsage=0;
-	int pointCount = tree.setTree( In.value().c_str() , Depth.value() , MinDepth.value() , kernelDepth , Real(SamplesPerNode.value()) , Scale.value() , Confidence.set() , NormalWeights.set() , PointWeight.value() , AdaptiveExponent.value() , xForm );
+	if(!MaxSolveDepth.set()) MaxSolveDepth.value() = Depth.value();
+
+	if(SolverDivide.value() < MinDepth.value()) {
+		std::cerr << "[WARNING] " << SolverDivide.name() << " must be at least as large as " << MinDepth.name() <<
+			": " << SolverDivide.value() << " >= " << MinDepth.value() << std::endl;
+		SolverDivide.value() = MinDepth.value();
+	}
+
+	if(IsoDivide.value() < MinDepth.value()) {
+		std::cerr << "[WARNING] " << IsoDivide.name() << " must be at least as large as " << MinDepth.name() <<
+			": " << IsoDivide.value() << " >= " << MinDepth.value() << std::endl;
+		IsoDivide.value() = MinDepth.value();
+	}
+
+	if(!KernelDepth.set())
+		KernelDepth.value() = Depth.value() - 2;
+
+	if(KernelDepth.value() > Depth.value()) {
+		std::cerr << "[ERROR] " << KernelDepth.name() << " can't be greater than " << Depth.name() << ": " <<
+			KernelDepth.value() << " <= " << Depth.value();
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
+}
+
+template<int Degree, class Real, class Vertex, bool OutputDensity>
+int Execute() {
+	DumpOutput::instance()("Running Screened Poisson Reconstruction (Version 5.71)\n");
+	for(size_t i = 0; i != params.size(); ++i)
+		if(params[i]->set())
+			DumpOutput::instance()("\t--%s %s\n", params[i]->name(), params[i]->toString().c_str());
+
+	XForm<Real, 4> xForm;
+	if(Xform.set()) {
+		std::ifstream file(Xform.value());
+		if(!file) {
+			std::cerr << "[WARNING] Could not read x-form from: " << Xform.value() << std::endl;
+			xForm = XForm<Real, 4>::Identity();
+		} else {
+			for(int i = 0; i != 4; ++i)
+				for(int j = 0; j != 4; ++j)
+					file >> xForm(i, j);
+		}
+	}
+	else xForm = XForm<Real, 4>::Identity();
+
+	OctNode<TreeNodeData<OutputDensity>, Real>::SetAllocator(MEMORY_ALLOCATOR_BLOCK_SIZE);
+
+	double tt = Time();
+
+	Octree<Degree, OutputDensity> tree;
+	tree.threads = Threads.value();
+	tree.setBSplineData(Depth.value(), BoundaryType.value());
+
+	double t = Time();
+	tree.maxMemoryUsage = 0;
+	int pointCount = tree.setTree(In.value().c_str(), Depth.value(), MinDepth.value(), KernelDepth.value(),
+			SamplesPerNode.value(), Scale.value(), Confidence.set(), NormalWeights.set(), PointWeight.value(),
+			AdaptiveExponent.value(), xForm);
 	tree.ClipTree();
-	tree.finalize( IsoDivide.value() );
+	tree.finalize(IsoDivide.value());
 
-	DumpOutput2( comments[commentNum++] , "#             Tree set in: %9.1f (s), %9.1f (MB)\n" , Time()-t , tree.maxMemoryUsage );
-	DumpOutput( "Input Points: %d\n" , pointCount );
-	DumpOutput( "Leaves/Nodes: %lld/%lld\n" , tree.tree.leaves() , tree.tree.nodes() );
-	DumpOutput( "Memory Usage: %.3f MB\n" , float( MemoryInfo::Usage() )/(1<<20) );
+	DumpOutput::instance()("#             Tree set in: %9.1f (s), %9.1f (MB)\n", Time() - t, tree.maxMemoryUsage);
+	DumpOutput::instance()("#               Input Points: %d\n", pointCount);
+	DumpOutput::instance()("#               Leaves/Nodes: %lld/%lld\n", tree.tree.leaves(), tree.tree.nodes());
+	DumpOutput::instance()("#               Memory Usage: %.3f MB\n", float(MemoryInfo::Usage()) / (1 << 20));
 
-	maxMemoryUsage = tree.maxMemoryUsage;
-	t=Time() , tree.maxMemoryUsage=0;
+	double maxMemoryUsage = tree.maxMemoryUsage;
+	t = Time();
+	tree.maxMemoryUsage = 0;
 	tree.SetLaplacianConstraints();
-	DumpOutput2( comments[commentNum++] , "#      Constraints set in: %9.1f (s), %9.1f (MB)\n" , Time()-t , tree.maxMemoryUsage );
-	DumpOutput( "Memory Usage: %.3f MB\n" , float( MemoryInfo::Usage())/(1<<20) );
-	maxMemoryUsage = std::max< double >( maxMemoryUsage , tree.maxMemoryUsage );
+	DumpOutput::instance()("#      Constraints set in: %9.1f (s), %9.1f (MB)\n", Time() - t, tree.maxMemoryUsage);
+	DumpOutput::instance()("#               Memory Usage: %.3f MB\n", float(MemoryInfo::Usage()) / (1 << 20));
+	maxMemoryUsage = std::max(maxMemoryUsage, tree.maxMemoryUsage);
 
-	t=Time() , tree.maxMemoryUsage=0;
-	tree.LaplacianMatrixIteration( SolverDivide.value(), ShowResidual.set() , MinIters.value() , SolverAccuracy.value() , MaxSolveDepth.value() , FixedIters.value() );
-	DumpOutput2( comments[commentNum++] , "# Linear system solved in: %9.1f (s), %9.1f (MB)\n" , Time()-t , tree.maxMemoryUsage );
-	DumpOutput( "Memory Usage: %.3f MB\n" , float( MemoryInfo::Usage() )/(1<<20) );
-	maxMemoryUsage = std::max< double >( maxMemoryUsage , tree.maxMemoryUsage );
+	t = Time();
+	tree.maxMemoryUsage = 0;
+	tree.LaplacianMatrixIteration(SolverDivide.value(), ShowResidual.set(), MinIters.value(), SolverAccuracy.value(),
+			MaxSolveDepth.value(), FixedIters.value());
+	DumpOutput::instance()("# Linear system solved in: %9.1f (s), %9.1f (MB)\n", Time() - t, tree.maxMemoryUsage);
+	DumpOutput::instance()("#            Memory Usage: %.3f MB\n", float(MemoryInfo::Usage()) / (1 << 20));
+	maxMemoryUsage = std::max(maxMemoryUsage, tree.maxMemoryUsage);
 
-	CoredFileMeshData< Vertex > mesh;
 
-	if( Verbose.set() ) tree.maxMemoryUsage=0;
-	t=Time();
-	isoValue = tree.GetIsoValue();
-	DumpOutput( "Got average in: %f\n" , Time()-t );
-	DumpOutput( "Iso-Value: %e\n" , isoValue );
+	t = Time();
+	Real isoValue = tree.GetIsoValue();
+	DumpOutput::instance()("#          Got average in: %f\n", Time() - t);
+	DumpOutput::instance()("#               Iso-Value: %e\n", isoValue);
 
-	if( VoxelGrid.set() )
-	{
+	if(VoxelGrid.set()) {
 		double t = Time();
-		FILE* fp = fopen( VoxelGrid.value().c_str() , "wb" );
-		if( !fp ) fprintf( stderr , "Failed to open voxel file for writing: %s\n" , VoxelGrid.value().c_str() );
-		else
-		{
+		std::ofstream file(VoxelGrid.value(), std::ofstream::out | std::ofstream::binary);
+		if(!file) std::cerr << "Failed to open voxel file for writing: " << VoxelGrid.value() << std::endl;
+		else {
 			int res;
-			Pointer( Real ) values = tree.GetSolutionGrid( res , isoValue , VoxelDepth.value() );
-			fwrite( &res , sizeof(int) , 1 , fp );
-			if( sizeof(Real)==sizeof(float) ) fwrite( values , sizeof(float) , res*res*res , fp );
-			else
-			{
-				float *fValues = new float[res*res*res];
-				for( int i=0 ; i<res*res*res ; i++ ) fValues[i] = float( values[i] );
-				fwrite( fValues , sizeof(float) , res*res*res , fp );
-				delete[] fValues;
+			Pointer(Real) values = tree.GetSolutionGrid(res, isoValue, VoxelDepth.value());
+			file.write(reinterpret_cast<char*>(&res), sizeof(res));
+			for(int i = 0; i != res * res * res; ++i) {
+				float v = (float)values[i];
+				file.write(reinterpret_cast<char*>(&v), sizeof(v));
 			}
-			fclose( fp );
-			DeletePointer( values );
+			DeletePointer(values);
 		}
-		DumpOutput( "Got voxel grid in: %f\n" , Time()-t );
+		DumpOutput::instance()("#       Got voxel grid in: %f\n" , Time()-t );
 	}
 
-	if( Out.set() )
-	{
-		t = Time() , tree.maxMemoryUsage = 0;
-		tree.GetMCIsoTriangles( isoValue , IsoDivide.value() , &mesh , 0 , 1 , !NonManifold.set() , PolygonMesh.set() );
-		if( PolygonMesh.set() ) DumpOutput2( comments[commentNum++] , "#         Got polygons in: %9.1f (s), %9.1f (MB)\n" , Time()-t , tree.maxMemoryUsage );
-		else                  DumpOutput2( comments[commentNum++] , "#        Got triangles in: %9.1f (s), %9.1f (MB)\n" , Time()-t , tree.maxMemoryUsage );
-		maxMemoryUsage = std::max< double >( maxMemoryUsage , tree.maxMemoryUsage );
-		DumpOutput2( comments[commentNum++],"#             Total Solve: %9.1f (s), %9.1f (MB)\n" , Time()-tt , maxMemoryUsage );
-
-		if( NoComments.set() )
-		{
-			if( ASCII.set() ) PlyWritePolygons( Out.value().c_str() , &mesh , PLY_ASCII         , NULL , 0 , iXForm );
-			else            PlyWritePolygons( Out.value().c_str() , &mesh , PLY_BINARY_NATIVE , NULL , 0 , iXForm );
-		}
+	if(Out.set()) {
+		t = Time();
+		CoredFileMeshData<Vertex> mesh;
+		tree.maxMemoryUsage = 0;
+		tree.GetMCIsoTriangles(isoValue, IsoDivide.value(), &mesh, 0, 1, !NonManifold.set(), PolygonMesh.set());
+		if(PolygonMesh.set())
+			DumpOutput::instance()("#         Got polygons in: %9.1f (s), %9.1f (MB)\n", Time() - t, tree.maxMemoryUsage);
 		else
-		{
-			if( ASCII.set() ) PlyWritePolygons( Out.value().c_str() , &mesh , PLY_ASCII         , comments , commentNum , iXForm );
-			else            PlyWritePolygons( Out.value().c_str() , &mesh , PLY_BINARY_NATIVE , comments , commentNum , iXForm );
-		}
+			DumpOutput::instance()("#        Got triangles in: %9.1f (s), %9.1f (MB)\n", Time() - t, tree.maxMemoryUsage);
+		maxMemoryUsage = std::max(maxMemoryUsage, tree.maxMemoryUsage);
+		DumpOutput::instance()("#             Total Solve: %9.1f (s), %9.1f (MB)\n", Time() - tt, maxMemoryUsage);
+
+		PlyWritePolygons(Out.value().c_str(), &mesh, ASCII.set() ? PLY_ASCII : PLY_BINARY_NATIVE,
+				DumpOutput::instance().strings(), xForm.inverse());
 	}
 
-	return 1;
+	return EXIT_SUCCESS;
 }
 
 #ifdef _WIN32
@@ -398,30 +312,11 @@ inline double to_seconds( const FILETIME& ft )
 }
 #endif // _WIN32
 
-int main( int argc , char* argv[] )
-{
-#if defined(WIN32) && defined(MAX_MEMORY_GB)
-	if( MAX_MEMORY_GB>0 )
-	{
-		SIZE_T peakMemory = 1;
-		peakMemory <<= 30;
-		peakMemory *= MAX_MEMORY_GB;
-		printf( "Limiting memory usage to %.2f GB\n" , float( peakMemory>>30 ) );
-		HANDLE h = CreateJobObject( NULL , NULL );
-		AssignProcessToJobObject( h , GetCurrentProcess() );
-
-		JOBOBJECT_EXTENDED_LIMIT_INFORMATION jeli = { 0 };
-		jeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_JOB_MEMORY;
-		jeli.JobMemoryLimit = peakMemory;
-		if( !SetInformationJobObject( h , JobObjectExtendedLimitInformation , &jeli , sizeof( jeli ) ) )
-			fprintf( stderr , "Failed to set memory limit\n" );
-	}
-	double t = Time();
-#endif // defined(WIN32) && defined(MAX_MEMORY_GB)
-
-	cmdLineParse( argc-1 , &argv[1] , sizeof(params)/sizeof(cmdLineReadable*) , params , 1 );
-	if( Density.set() ) Execute< 2 , PlyValueVertex< Real > , true  >( argc , argv );
-	else              Execute< 2 ,      PlyVertex< Real > , false >( argc , argv );
+int main(int argc, char** argv) {
+	cmdLineParse(argc - 1, argv + 1, params);
+	int ret;
+	if((ret = ValidateFlags(argv[0]))) return ret;
+	ret = Density.set() ? Execute<2, Real, PlyValueVertex<Real>, true>() : Execute<2, Real, PlyVertex<Real>, false>();
 #ifdef _WIN32
 	if( Performance.set() )
 	{
@@ -435,5 +330,5 @@ int main( int argc , char* argv[] )
 		if( GetProcessMemoryInfo( h , &pmc , sizeof(pmc) ) ) printf( "Peak Memory (MB): %d\n" , pmc.PeakWorkingSetSize>>20 );
 	}
 #endif // _WIN32
-	return EXIT_SUCCESS;
+	return ret;
 }

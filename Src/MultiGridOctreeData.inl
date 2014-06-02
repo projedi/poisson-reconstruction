@@ -26,6 +26,7 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
+#include "DumpOutput.h"
 #include "Octree.h"
 #include "time.h"
 #include "MemoryUsage.h"
@@ -1929,7 +1930,7 @@ int Octree< Degree , OutputDensity >::LaplacianMatrixIteration( int subdivideDep
 	std::vector< Real > metSolution( _sNodes.nodeCount[ _sNodes.maxDepth ] , 0 );
 	for( int d=(_boundaryType==0?2:0) ; d<_sNodes.maxDepth ; d++ )
 	{
-		DumpOutput( "Depth[%d/%d]: %d\n" , _boundaryType==0 ? d-1 : d , _boundaryType==0 ? _sNodes.maxDepth-2 : _sNodes.maxDepth-1 , _sNodes.nodeCount[d+1]-_sNodes.nodeCount[d] );
+		DumpOutput::instance()("#Depth[%d/%d]: %d\n" , _boundaryType==0 ? d-1 : d , _boundaryType==0 ? _sNodes.maxDepth-2 : _sNodes.maxDepth-1 , _sNodes.nodeCount[d+1]-_sNodes.nodeCount[d] );
 		if( subdivideDepth>0 ) iter += _SolveFixedDepthMatrix( d , integrator , _sNodes , &metSolution[0] , subdivideDepth , showResidual , minIters , accuracy , d>maxSolveDepth , fixedIters );
 		else                   iter += _SolveFixedDepthMatrix( d , integrator , _sNodes , &metSolution[0] ,                  showResidual , minIters , accuracy , d>maxSolveDepth , fixedIters );
 	}
@@ -2001,14 +2002,14 @@ int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const 
 		double mNorm = 0;
 		for( int i=0 ; i<M.rows ; i++ ) for( int j=0 ; j<M.rowSizes[i] ; j++ ) mNorm += M[i][j].Value * M[i][j].Value;
 		double bNorm = B.Norm( 2 ) , rNorm = ( B - M * X ).Norm( 2 );
-		DumpOutput( "\tResidual: (%d %g) %g -> %g (%f) [%d]\n" , M.Entries() , sqrt(mNorm) , bNorm , rNorm , rNorm/bNorm , iter );
+		DumpOutput::instance()( "#\tResidual: (%d %g) %g -> %g (%f) [%d]\n" , M.Entries() , sqrt(mNorm) , bNorm , rNorm , rNorm/bNorm , iter );
 	}
 
 	// Copy the solution back into the tree (over-writing the constraints)
 	for( int i=sNodes.nodeCount[depth] ; i<sNodes.nodeCount[depth+1] ; i++ ) sNodes.treeNodes[i]->nodeData.solution = Real( X[i-sNodes.nodeCount[depth]] );
 
 	MemoryUsage();
-	DumpOutput("\tEvaluated / Got / Solved in: %6.3f / %6.3f / %6.3f\t(%.3f MB)\n" , evaluateTime , systemTime , solveTime , float( maxMemoryUsage ) );
+	DumpOutput::instance()("#\tEvaluated / Got / Solved in: %6.3f / %6.3f / %6.3f\t(%.3f MB)\n" , evaluateTime , systemTime , solveTime , float( maxMemoryUsage ) );
 	maxMemoryUsage = std::max< double >( maxMemoryUsage , _maxMemoryUsage );
 	return iter;
 }
@@ -2142,7 +2143,7 @@ int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const 
 			double mNorm = 0;
 			for( int i=0 ; i<_M.rows ; i++ ) for( int j=0 ; j<_M.rowSizes[i] ; j++ ) mNorm += _M[i][j].Value * _M[i][j].Value;
 			double bNorm = _B.Norm( 2 ) , rNorm = ( _B - _M * _X ).Norm( 2 );
-			DumpOutput( "\t\tResidual: (%d %g) %g -> %g (%f) [%d]\n" , _M.Entries() , sqrt(mNorm) , bNorm , rNorm , rNorm/bNorm , iter );
+			DumpOutput::instance()( "#\t\tResidual: (%d %g) %g -> %g (%f) [%d]\n" , _M.Entries() , sqrt(mNorm) , bNorm , rNorm , rNorm/bNorm , iter );
 		}
 
 		// Update the solution for all nodes in the sub-tree
@@ -2160,7 +2161,7 @@ int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const 
 	}
 	delete[] asf.adjacencies;
 	MemoryUsage();
-	DumpOutput("\tEvaluated / Got / Solved in: %6.3f / %6.3f / %6.3f\t(%.3f MB)\n" , evaluateTime , systemTime , solveTime , float( maxMemoryUsage ) );
+	DumpOutput::instance()("#\tEvaluated / Got / Solved in: %6.3f / %6.3f / %6.3f\t(%.3f MB)\n" , evaluateTime , systemTime , solveTime , float( maxMemoryUsage ) );
 	maxMemoryUsage = std::max< double >( maxMemoryUsage , _maxMemoryUsage );
 	return tIter;
 }
