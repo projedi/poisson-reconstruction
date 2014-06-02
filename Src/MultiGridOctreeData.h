@@ -94,7 +94,12 @@ DAMAGE.
 #endif // !FORCE_NEUMANN_FIELD
 
 #include <unordered_map>
+#include "Octree.h"
 #include "BSplineData.h"
+#include "PPolynomial.h"
+#include "Ply.h"
+#include "SparseMatrix.h"
+#include "Time.h"
 typedef float Real;
 typedef float MatrixReal;
 
@@ -365,13 +370,16 @@ class Octree
 	static bool _IsInsetSupported( const TreeOctNode* node );
 public:
 	int threads;
-	static double maxMemoryUsage;
+	static double maxMemoryUsage_;
 	static double MemoryUsage( void );
 	std::vector< Point3D<Real> >* normals;
 	Real postDerivativeSmooth;
-	TreeOctNode tree;
+	TreeOctNode tree_;
 	BSplineData< Degree , Real > fData;
-	Octree( void );
+	Octree(int threads, int maxDepth, int boundaryType);
+	static double maxMemoryUsage() { return maxMemoryUsage_; }
+	static void resetMaxMemoryUsage() { maxMemoryUsage_ = 0; }
+	TreeOctNode const& tree() const { return tree_; }
 
 	void setBSplineData( int maxDepth , int boundaryType=BSplineElements< Degree >::NONE );
 	void finalize( int subdivisionDepth );

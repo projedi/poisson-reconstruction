@@ -48,7 +48,7 @@ cmdLine<float> Trim( "trim" ) , IslandAreaRatio( "aRatio" , 0.001f );
 cmdLine<std::pair<float, float>> ColorRange( "color" );
 cmdLineReadable PolygonMesh( "polygonMesh" );
 
-cmdLineReadable* params[] =
+std::vector<cmdLineReadable*> params =
 {
 	&In , &Out , &Trim , &PolygonMesh , &ColorRange , &Smooth , &IslandAreaRatio
 };
@@ -306,8 +306,8 @@ double PolygonArea( const std::vector< PlyValueVertex< Real > >& vertices , cons
 }
 int main( int argc , char* argv[] )
 {
-	int paramNum = sizeof(params)/sizeof(cmdLineReadable*);
-	cmdLineParse( argc-1 , &argv[1] , paramNum , params , 0 );
+	int paramNum = params.size();
+	cmdLineParse( argc-1 , &argv[1] , params , false );
 
 #if FOR_RELEASE
 	if( !In.set() || !Trim.set() )
