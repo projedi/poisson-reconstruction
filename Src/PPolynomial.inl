@@ -94,9 +94,9 @@ template<>
 PPolynomial<0> PPolynomial<0>::BSpline(double radius) {
 	PPolynomial q(2);
 	q.polys_[0].start = -radius;
-	q.polys_[0].p.coefficients[0] = 1.0;
+	q.polys_[0].p[0] = 1.0;
 	q.polys_[1].start = radius;
-	q.polys_[1].p.coefficients[0] = -1.0;
+	q.polys_[1].p[0] = -1.0;
 	return q;
 }
 
