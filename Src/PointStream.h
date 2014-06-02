@@ -26,58 +26,61 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#ifndef POINT_STREAM_INCLUDED
-#define POINT_STREAM_INCLUDED
+#pragma once
 
-template< class Real >
-class PointStream
-{
+#include <fstream>
+
+template<class Real>
+class PointStream {
 public:
-	virtual ~PointStream( void ){}
-	virtual void reset( void ) = 0;
-	virtual bool nextPoint( Point3D< Real >& p , Point3D< Real >& n ) = 0;
+	virtual ~PointStream() { }
+	virtual void reset() = 0;
+	virtual bool nextPoint(Point3D<Real>& p, Point3D<Real>& n) = 0;
 };
 
-template< class Real >
-class ASCIIPointStream : public PointStream< Real >
-{
+template<class Real>
+class ASCIIPointStream: public PointStream<Real> {
+public:
+	ASCIIPointStream(std::string const& filename);
+	void reset() override { file_.clear(); file_.seekg(0); }
+	bool nextPoint(Point3D<Real>& p, Point3D<Real>& n) override;
+private:
+	std::ifstream file_;
+};
+
+// TODO: Implementation is untouched because there is no test data
+template<class Real>
+class BinaryPointStream: public PointStream<Real> {
+public:
+	BinaryPointStream(std::string const& filename);
+	~BinaryPointStream();
+	void reset() override;
+	bool nextPoint(Point3D<Real>& p, Point3D<Real>& n) override;
+private:
 	FILE* _fp;
-public:
-	ASCIIPointStream( const char* fileName );
-	~ASCIIPointStream( void );
-	void reset( void );
-	bool nextPoint( Point3D< Real >& p , Point3D< Real >& n );
+	static int const POINT_BUFFER_SIZE = 1024;
+	Real _pointBuffer[POINT_BUFFER_SIZE * 2 * 3];
+	int _pointsInBuffer;
+	int _currentPointIndex;
 };
 
-template< class Real >
-class BinaryPointStream : public PointStream< Real >
-{
-	FILE* _fp;
-	static const int POINT_BUFFER_SIZE=1024;
-	Real _pointBuffer[ POINT_BUFFER_SIZE * 2 * 3 ];
-	int _pointsInBuffer , _currentPointIndex;
+template<class Real>
+class PLYPointStream: public PointStream<Real> {
 public:
-	BinaryPointStream( const char* filename );
-	~BinaryPointStream( void );
-	void reset( void );
-	bool nextPoint( Point3D< Real >& p , Point3D< Real >& n );
-};
-
-template< class Real >
-class PLYPointStream : public PointStream< Real >
-{
-	char* _fileName;
+	PLYPointStream(std::string const& filename): _fileName(filename), _ply(nullptr) { reset(); }
+	~PLYPointStream() { _free(); }
+	void reset() override;
+	bool nextPoint(Point3D<Real>& p, Point3D<Real>& n) override;
+private:
+	void _free( void );
+private:
+	std::string _fileName;
 	PlyFile* _ply;
 	int _nr_elems;
 	char **_elist;
 
-	int _pCount , _pIdx;
-	void _free( void );
-public:
-	PLYPointStream( const char* fileName );
-	~PLYPointStream( void );
-	void reset( void );
-	bool nextPoint( Point3D< Real >& p , Point3D< Real >& n );
+	int _pCount;
+	int _pIdx;
 };
+
 #include "PointStream.inl"
-#endif // POINT_STREAM_INCLUDED
