@@ -10,6 +10,7 @@ public:
 	void setNoComments(bool v) { noComments_ = v; }
 	std::vector<std::string> strings() const { return strings_; }
 	void operator()(char const* format, ...);
+	void resetStrings(std::vector<std::string> const& strs) { strings_ = strs; }
 private:
 	DumpOutput(): echoStdout_(false), noComments_(false) { }
 private:

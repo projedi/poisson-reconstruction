@@ -357,11 +357,40 @@ int PlyReadPolygons(char const* fileName,
 					char*** comments=NULL,int* commentNum=NULL , bool* readFlags=NULL );
 
 template<class Vertex>
+int PlyReadPolygons(std::string const& filename, std::vector<Vertex>& vertices,
+		std::vector<std::vector<int>>& polygons, int& file_type,
+		std::vector<std::string>& comments, bool* readFlags = nullptr) {
+	char** commentsPtr;
+	int commentsSize = 0;
+	int res = PlyReadPolygons(filename.c_str(), vertices, polygons, Vertex::Properties,
+			Vertex::Components, file_type, &commentsPtr, &commentsSize, readFlags);
+	comments.clear();
+	for(int i = 0; i != commentsSize; ++i) {
+		comments.push_back(std::string(commentsPtr[i]));
+	}
+	return res;
+}
+
+template<class Vertex>
 int PlyWritePolygons(char const* fileName,
 					 const std::vector<Vertex>& vertices,const std::vector<std::vector<int> >& polygons,
 					 PlyProperty* properties,int propertyNum,
 					 int file_type,
 					 char** comments=NULL,const int& commentNum=0);
+
+template<class Vertex>
+int PlyWritePolygons(std::string const& filename, std::vector<Vertex> const& vertices,
+		std::vector<std::vector<int>> const& polygons, int file_type,
+		std::vector<std::string> const& comments) {
+	char** commentsPtr = new char*[comments.size()];
+	for(size_t i = 0; i != comments.size(); ++i) {
+		commentsPtr[i] = new char[comments[i].size() + 1];
+		strncpy(commentsPtr[i], comments[i].c_str(), comments[i].size());
+		commentsPtr[i][comments[i].size()] = 0;
+	}
+	return PlyWritePolygons(filename.c_str(), vertices, polygons, Vertex::Properties,
+			Vertex::Components, file_type, commentsPtr, comments.size());
+}
 
 template<class Vertex>
 int PlyWritePolygons(char const* fileName,
