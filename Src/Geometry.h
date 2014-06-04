@@ -109,6 +109,11 @@ double Distance(Point3D<Real> const& p1, Point3D<Real> const& p2)
 template <class Real>
 Point3D<Real> CrossProduct(Point3D<Real> const& p1, Point3D<Real> const& p2);
 
+template<class Real>
+double TriangleArea(Point3D<Real> const& v1, Point3D<Real> const& v2, Point3D<Real> const& v3) {
+	return Length(CrossProduct(v2 - v1, v3 - v1)) / 2;
+}
+
 template<class Real, int Dim>
 struct XForm {
 	XForm(): coords_{} { }
