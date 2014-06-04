@@ -32,8 +32,6 @@ DAMAGE.
 #include "Vector.h"
 #include "Array.h"
 
-#define NEW_MATRIX_CODE 0
-
 template <class T>
 struct MatrixEntry
 {

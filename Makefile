@@ -40,6 +40,11 @@ release: LFLAGS += $(LFLAGS_RELEASE)
 release: $(BIN)$(PR_TARGET)
 release: $(BIN)$(ST_TARGET)
 
+newmatrix: CFLAGS += $(CFLAGS_DEBUG) -DNEW_MATRIX_CODE
+newmatrix: LFLAGS += $(LFLAGS_DEBUG)
+newmatrix: $(BIN)$(PR_TARGET)
+newmatrix: $(BIN)$(ST_TARGET)
+
 clean:
 	rm -f $(BIN)$(PR_TARGET)
 	rm -f $(BIN)$(ST_TARGET)
@@ -67,7 +72,7 @@ test-release: release
 	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig-release"
 
 # NEW_MATRIX_CODE 1
-test-newmatrix: all
+test-newmatrix: newmatrix
 	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig-newmatrix"
 	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig-newmatrix"
 
