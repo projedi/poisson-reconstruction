@@ -40,6 +40,16 @@ release: LFLAGS += $(LFLAGS_RELEASE)
 release: $(BIN)$(PR_TARGET)
 release: $(BIN)$(ST_TARGET)
 
+newmatrix: CFLAGS += $(CFLAGS_DEBUG) -DNEW_MATRIX_CODE
+newmatrix: LFLAGS += $(LFLAGS_DEBUG)
+newmatrix: $(BIN)$(PR_TARGET)
+newmatrix: $(BIN)$(ST_TARGET)
+
+release-newmatrix: CFLAGS += $(CFLAGS_RELEASE) -DNEW_MATRIX_CODE
+release-newmatrix: LFLAGS += $(LFLAGS_RELEASE)
+release-newmatrix: $(BIN)$(PR_TARGET)
+release-newmatrix: $(BIN)$(ST_TARGET)
+
 clean:
 	rm -f $(BIN)$(PR_TARGET)
 	rm -f $(BIN)$(ST_TARGET)
