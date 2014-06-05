@@ -1509,7 +1509,7 @@ template< int Degree , bool OutputDensity >
 void Octree< Degree , OutputDensity >::UpSampleCoarserSolution( int depth , const SortedTreeNodes< OutputDensity >& sNodes , Vector< Real >& Solution ) const
 {
 	size_t start = sNodes.nodeCount[depth] , end = sNodes.nodeCount[depth+1] , range = end-start;
-	Solution.Resize( range );
+	Solution = Vector<Real>(range);
 	double cornerValue;
 	if     ( _boundaryType==-1 ) cornerValue = 0.50;
 	else if( _boundaryType== 1 ) cornerValue = 1.00;
@@ -1936,7 +1936,7 @@ int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const 
 	Vector< Real > X , B;
 	SparseSymmetricMatrix< Real > M;
 	double systemTime=0. , solveTime=0. ,  evaluateTime = 0.;
-	X.Resize( sNodes.nodeCount[depth+1]-sNodes.nodeCount[depth] );
+	X = Vector<Real>( sNodes.nodeCount[depth+1]-sNodes.nodeCount[depth] );
 	if( depth<=_minDepth ) UpSampleCoarserSolution( depth , sNodes , X );
 	else
 	{
@@ -1959,7 +1959,7 @@ int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const 
 		// Get the system matrix
 		GetFixedDepthLaplacian( M , depth , integrator , sNodes , metSolution );
 		// Set the constraint vector
-		B.Resize( sNodes.nodeCount[depth+1]-sNodes.nodeCount[depth] );
+		B = Vector<Real>( sNodes.nodeCount[depth+1]-sNodes.nodeCount[depth] );
 		for( int i=sNodes.nodeCount[depth] ; i<sNodes.nodeCount[depth+1] ; i++ )
 			if( _boundaryType!=0 || _IsInsetSupported( sNodes.treeNodes[i] ) ) B[i-sNodes.nodeCount[depth]] = sNodes.treeNodes[i]->nodeData.constraint;
 			else                                                               B[i-sNodes.nodeCount[depth]] = Real(0);
@@ -2024,7 +2024,7 @@ int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const 
 		SetCoarserPointValues( depth , sNodes , metSolution );
 		evaluateTime = Time() - evaluateTime;
 	}
-	B.Resize( sNodes.nodeCount[depth+1] - sNodes.nodeCount[depth] );
+	B = Vector<Real>( sNodes.nodeCount[depth+1] - sNodes.nodeCount[depth] );
 
 	// Back-up the constraints
 	for( int i=sNodes.nodeCount[depth] ; i<sNodes.nodeCount[depth+1] ; i++ )

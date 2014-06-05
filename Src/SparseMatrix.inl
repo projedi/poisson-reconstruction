@@ -96,8 +96,8 @@ Vector<T2> SparseSymmetricMatrix<T>::operator*(Vector<T2> const& V) const {
 	for(int i = 0; i != Rows(); ++i) {
 		for(int ii = 0; ii != rowSizes_[i]; ++ii) {
 			auto e = m_ppElements[i][ii];
-			R(i) += e.Value * V.m_pV[e.N];
-			R(e.N) += e.Value * V.m_pV[i];
+			R[i] += e.Value * V[e.N];
+			R[e.N] += e.Value * V[i];
 		}
 	}
 	return R;
@@ -181,7 +181,7 @@ int SparseSymmetricMatrix<T>::Solve(SparseSymmetricMatrix<T> const& A, Vector<T2
 	eps *= eps;
 	int dim = b.Dimensions();
 	if(threads < 1) threads = 1;
-	if(reset) x.Resize(dim);
+	if(reset) x = Vector<T2>(dim);
 
 	Vector<T2> r(dim);
 	A.Multiply(x, r, addDCTerm, threads);

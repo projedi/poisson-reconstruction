@@ -26,73 +26,46 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#ifndef __VECTOR_HPP
-#define __VECTOR_HPP
+#pragma once
 
-#include <cstring>
-#define Assert assert
-#include <assert.h>
-#include "Array.h"
+#include <cmath>
 
-template< class T >
-class Vector
-{
+template<class T>
+class Vector {
 public:
-	Vector( void );
-	Vector( const Vector<T>& V );
-	Vector( size_t N );
-	Vector( size_t N, ConstPointer( T ) pV );
-	~Vector( void );
+	Vector() { }
+	explicit Vector(size_t N): data_(N, 0) { }
 
-	const T& operator () (size_t i) const;
-	T& operator () (size_t i);
-	const T& operator [] (size_t i) const;
-	T& operator [] (size_t i);
+	T const& operator[](size_t i) const { return data_[i]; }
+	T& operator[](size_t i) { return data_[i]; }
 
-	void SetZero();
+	size_t Dimensions() const { return data_.size(); }
 
-	size_t Dimensions() const;
-	void Resize( size_t N );
+	Vector& operator*=(T const& A);
+	Vector& operator/=(T const& A);
+	Vector& operator+=(Vector const& V);
 
-	Vector operator * (const T& A) const;
-	Vector operator / (const T& A) const;
-	Vector operator - (const Vector& V) const;
-	Vector operator + (const Vector& V) const;
-
-	Vector& operator *= ( const T& A );
-	Vector& operator /= ( const T& A );
-	Vector& operator += ( const Vector& V );
-	Vector& operator -= ( const Vector& V );
-
-	Vector& Add( const Vector* V , int count );
-	Vector& AddScaled( const Vector& V , const T& scale );
-	Vector& SubtractScaled( const Vector& V , const T& scale );
-	static void Add( const Vector& V1 , const T& scale1 , const Vector& V2 , const T& scale2 , Vector& Out );
-	static void Add( const Vector& V1 , const T& scale1 , const Vector& V2 , Vector& Out );
-
-	Vector operator - () const;
-
-	Vector& operator = (const Vector& V);
-
-	T Dot( const Vector& V ) const;
-
-	T Length() const;
-
-	T Norm( size_t Ln ) const;
-	void Normalize();
-
-	bool write( FILE* fp ) const;
-	bool write( const char* fileName ) const;
-	bool read( FILE* fp );
-	bool read( const char* fileName );
-
-	Pointer( T ) m_pV;
-protected:
-	size_t m_N;
-
+	T Norm(size_t Ln) const;
+private:
+	std::vector<T> data_;
 };
 
+template<class T>
+Vector<T> operator-(Vector<T> V) { return V *= -1; }
+
+template<class T>
+Vector<T>& operator-=(Vector<T>& V1, Vector<T> const& V2) { return V1 += -V2; }
+
+template<class T>
+Vector<T> operator*(Vector<T> V, T const& A) { return V *= A; }
+
+template<class T>
+Vector<T> operator/(Vector<T> V, T const& A) { return V /= A; }
+
+template<class T>
+Vector<T> operator+(Vector<T> V1, Vector<T> const& V2) { return V1 += V2; }
+
+template<class T>
+Vector<T> operator-(Vector<T> V1, Vector<T> const& V2) { return V1 -= V2; }
 
 #include "Vector.inl"
-
-#endif
