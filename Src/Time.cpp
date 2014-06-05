@@ -26,21 +26,22 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#include <string.h>
-#include <sys/timeb.h>
-#ifndef WIN32
-#include <sys/time.h>
-#endif // WIN32
+#include <cstring>
 
-double Time( void )
-{
+#ifdef WIN32
+#include <sys/timeb.h>
+#else
+#include <sys/time.h>
+#endif
+
+double Time() {
 #ifdef WIN32
 	struct _timeb t;
-	_ftime( &t );
-	return double( t.time ) + double( t.millitm ) / 1000.0;
-#else // WIN32
+	_ftime(&t);
+	return double(t.time) + double(t.millitm) / 1000.0;
+#else
 	struct timeval t;
-	gettimeofday( &t , NULL );
-	return t.tv_sec + double( t.tv_usec ) / 1000000;
+	gettimeofday(&t, nullptr);
+	return t.tv_sec + (double)t.tv_usec / 1000000;
 #endif // WIN32
 }

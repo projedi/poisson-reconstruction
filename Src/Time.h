@@ -26,7 +26,6 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#ifndef TIME_INCLUDED
-#define TIME_INCLUDED
-double Time(void);
-#endif // TIME_INCLUDED
+#pragma once
+
+double Time();
