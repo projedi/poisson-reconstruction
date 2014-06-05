@@ -64,8 +64,6 @@ public:
 	Neighbors3& neighbors(int idx) { return neighbors_[idx]; }
 	Neighbors3 const& neighbors(int idx) const { return neighbors_[idx]; }
 
-	void set(int depth);
-
 	Neighbors3& setNeighbors(OctNode* node, bool flags[3][3][3] = (bool[3][3][3]){
 		{ { true, true, true }, { true, true, true }, { true, true, true } },
 		{ { true, true, true }, { true, true, true }, { true, true, true } },
@@ -120,7 +118,6 @@ public:
 	~OctNode() { if(!UseAlloc && children_) delete[] children_; }
 
 	OctNode* parent() const { return parent_; }
-	OctNode* children() const { return children_; }
 
 	bool hasChildren() const { return children_; }
 	OctNode* child(int idx) const { return children_ + idx; }

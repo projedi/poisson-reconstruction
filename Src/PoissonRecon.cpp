@@ -235,11 +235,11 @@ int Execute() {
 
 	double tt = Time();
 
-	Octree<Degree, OutputDensity> tree(Threads.value(), Depth.value(), BoundaryType.value());
+	Octree<Degree, OutputDensity> tree(Threads.value(), Depth.value(), getBoundaryType(BoundaryType.value()));
 
 	double t = Time();
 	tree.resetMaxMemoryUsage();
-	int pointCount = tree.setTree(In.value().c_str(), Depth.value(), MinDepth.value(), KernelDepth.value(),
+	int pointCount = tree.setTree(In.value(), Depth.value(), MinDepth.value(), KernelDepth.value(),
 			SamplesPerNode.value(), Scale.value(), Confidence.set(), NormalWeights.set(), PointWeight.value(),
 			AdaptiveExponent.value(), xForm);
 	tree.ClipTree();
@@ -283,13 +283,12 @@ int Execute() {
 		if(!file) std::cerr << "Failed to open voxel file for writing: " << VoxelGrid.value() << std::endl;
 		else {
 			int res;
-			Pointer(Real) values = tree.GetSolutionGrid(res, isoValue, VoxelDepth.value());
+			std::vector<Real> values = tree.GetSolutionGrid(res, isoValue, VoxelDepth.value());
 			file.write(reinterpret_cast<char*>(&res), sizeof(res));
 			for(int i = 0; i != res * res * res; ++i) {
 				float v = (float)values[i];
 				file.write(reinterpret_cast<char*>(&v), sizeof(v));
 			}
-			DeletePointer(values);
 		}
 		DumpOutput::instance()("#       Got voxel grid in: %f\n" , Time()-t );
 	}
@@ -298,7 +297,7 @@ int Execute() {
 		t = Time();
 		CoredFileMeshData<Vertex> mesh;
 		tree.resetMaxMemoryUsage();
-		tree.GetMCIsoTriangles(isoValue, IsoDivide.value(), &mesh, 0, 1, !NonManifold.set(),
+		tree.GetMCIsoTriangles(isoValue, IsoDivide.value(), &mesh, 1, !NonManifold.set(),
 				PolygonMesh.set());
 		if(PolygonMesh.set())
 			DumpOutput::instance()("#         Got polygons in: %9.1f (s), %9.1f (MB)\n", Time() - t,
