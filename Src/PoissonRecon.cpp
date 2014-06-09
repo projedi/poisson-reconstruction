@@ -180,14 +180,14 @@ int ValidateFlags(std::string const& executable) {
 	if(!MaxSolveDepth.set()) MaxSolveDepth.value() = Depth.value();
 
 	if(SolverDivide.value() < MinDepth.value()) {
-		std::cerr << "[WARNING] " << SolverDivide.name() << " must be at least as large as " << MinDepth.name() <<
-			": " << SolverDivide.value() << " >= " << MinDepth.value() << std::endl;
+		std::cerr << "[WARNING] " << SolverDivide.name() << " must be at least as large as " <<
+			MinDepth.name() << ": " << SolverDivide.value() << " >= " << MinDepth.value() << std::endl;
 		SolverDivide.value() = MinDepth.value();
 	}
 
 	if(IsoDivide.value() < MinDepth.value()) {
-		std::cerr << "[WARNING] " << IsoDivide.name() << " must be at least as large as " << MinDepth.name() <<
-			": " << IsoDivide.value() << " >= " << MinDepth.value() << std::endl;
+		std::cerr << "[WARNING] " << IsoDivide.name() << " must be at least as large as " <<
+			MinDepth.name() << ": " << IsoDivide.value() << " >= " << MinDepth.value() << std::endl;
 		IsoDivide.value() = MinDepth.value();
 	}
 
@@ -195,8 +195,8 @@ int ValidateFlags(std::string const& executable) {
 		KernelDepth.value() = Depth.value() - 2;
 
 	if(KernelDepth.value() > Depth.value()) {
-		std::cerr << "[ERROR] " << KernelDepth.name() << " can't be greater than " << Depth.name() << ": " <<
-			KernelDepth.value() << " <= " << Depth.value();
+		std::cerr << "[ERROR] " << KernelDepth.name() << " can't be greater than " <<
+			Depth.name() << ": " << KernelDepth.value() << " <= " << Depth.value();
 		return EXIT_FAILURE;
 	}
 
@@ -240,27 +240,32 @@ int Execute() {
 	tree.ClipTree();
 	tree.finalize(IsoDivide.value());
 
-	DumpOutput::instance()("#             Tree set in: %9.1f (s), %9.1f (MB)\n", Time() - t, tree.maxMemoryUsage);
+	DumpOutput::instance()("#             Tree set in: %9.1f (s), %9.1f (MB)\n", Time() - t,
+			tree.maxMemoryUsage);
 	DumpOutput::instance()("#               Input Points: %d\n", pointCount);
-	DumpOutput::instance()("#               Leaves/Nodes: %lld/%lld\n", tree.tree.leaves(), tree.tree.nodes());
-	DumpOutput::instance()("#               Memory Usage: %.3f MB\n", float(MemoryInfo::Usage()) / (1 << 20));
+	DumpOutput::instance()("#               Leaves/Nodes: %lld/%lld\n", tree.tree.leaves(),
+			tree.tree.nodes());
+	DumpOutput::instance()("#               Memory Usage: %.3f MB\n",
+			float(MemoryInfo::Usage()) / (1 << 20));
 
 	double maxMemoryUsage = tree.maxMemoryUsage;
 	t = Time();
 	tree.maxMemoryUsage = 0;
 	tree.SetLaplacianConstraints();
-	DumpOutput::instance()("#      Constraints set in: %9.1f (s), %9.1f (MB)\n", Time() - t, tree.maxMemoryUsage);
-	DumpOutput::instance()("#               Memory Usage: %.3f MB\n", float(MemoryInfo::Usage()) / (1 << 20));
+	DumpOutput::instance()("#      Constraints set in: %9.1f (s), %9.1f (MB)\n", Time() - t,
+			tree.maxMemoryUsage);
+	DumpOutput::instance()("#               Memory Usage: %.3f MB\n",
+			float(MemoryInfo::Usage()) / (1 << 20));
 	maxMemoryUsage = std::max(maxMemoryUsage, tree.maxMemoryUsage);
 
 	t = Time();
 	tree.maxMemoryUsage = 0;
-	tree.LaplacianMatrixIteration(SolverDivide.value(), ShowResidual.set(), MinIters.value(), SolverAccuracy.value(),
-			MaxSolveDepth.value(), FixedIters.value());
-	DumpOutput::instance()("# Linear system solved in: %9.1f (s), %9.1f (MB)\n", Time() - t, tree.maxMemoryUsage);
+	tree.LaplacianMatrixIteration(SolverDivide.value(), ShowResidual.set(), MinIters.value(),
+			SolverAccuracy.value(), MaxSolveDepth.value(), FixedIters.value());
+	DumpOutput::instance()("# Linear system solved in: %9.1f (s), %9.1f (MB)\n", Time() - t,
+			tree.maxMemoryUsage);
 	DumpOutput::instance()("#            Memory Usage: %.3f MB\n", float(MemoryInfo::Usage()) / (1 << 20));
 	maxMemoryUsage = std::max(maxMemoryUsage, tree.maxMemoryUsage);
-
 
 	t = Time();
 	Real isoValue = tree.GetIsoValue();
@@ -288,13 +293,17 @@ int Execute() {
 		t = Time();
 		CoredFileMeshData<Vertex> mesh;
 		tree.maxMemoryUsage = 0;
-		tree.GetMCIsoTriangles(isoValue, IsoDivide.value(), &mesh, 0, 1, !NonManifold.set(), PolygonMesh.set());
+		tree.GetMCIsoTriangles(isoValue, IsoDivide.value(), &mesh, 0, 1, !NonManifold.set(),
+				PolygonMesh.set());
 		if(PolygonMesh.set())
-			DumpOutput::instance()("#         Got polygons in: %9.1f (s), %9.1f (MB)\n", Time() - t, tree.maxMemoryUsage);
+			DumpOutput::instance()("#         Got polygons in: %9.1f (s), %9.1f (MB)\n", Time() - t,
+					tree.maxMemoryUsage);
 		else
-			DumpOutput::instance()("#        Got triangles in: %9.1f (s), %9.1f (MB)\n", Time() - t, tree.maxMemoryUsage);
+			DumpOutput::instance()("#        Got triangles in: %9.1f (s), %9.1f (MB)\n", Time() - t,
+					tree.maxMemoryUsage);
 		maxMemoryUsage = std::max(maxMemoryUsage, tree.maxMemoryUsage);
-		DumpOutput::instance()("#             Total Solve: %9.1f (s), %9.1f (MB)\n", Time() - tt, maxMemoryUsage);
+		DumpOutput::instance()("#             Total Solve: %9.1f (s), %9.1f (MB)\n", Time() - tt,
+				maxMemoryUsage);
 
 		PlyWritePolygons(Out.value().c_str(), &mesh, ASCII.set() ? PLY_ASCII : PLY_BINARY_NATIVE,
 				DumpOutput::instance().strings(), xForm.inverse());
@@ -316,7 +325,8 @@ int main(int argc, char** argv) {
 	cmdLineParse(argc - 1, argv + 1, params);
 	int ret;
 	if((ret = ValidateFlags(argv[0]))) return ret;
-	ret = Density.set() ? Execute<2, Real, PlyValueVertex<Real>, true>() : Execute<2, Real, PlyVertex<Real>, false>();
+	ret = Density.set() ? Execute<2, Real, PlyValueVertex<Real>, true>() :
+		Execute<2, Real, PlyVertex<Real>, false>();
 #ifdef _WIN32
 	if( Performance.set() )
 	{

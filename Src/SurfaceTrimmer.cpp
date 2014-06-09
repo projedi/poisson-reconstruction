@@ -71,7 +71,8 @@ long long EdgeKey(long long key1, long long key2) {
 }
 
 template<class Real>
-PlyValueVertex<Real> InterpolateVertices(PlyValueVertex<Real> const& v1, PlyValueVertex<Real> const& v2, float value) {
+PlyValueVertex<Real> InterpolateVertices(PlyValueVertex<Real> const& v1, PlyValueVertex<Real> const& v2,
+		float value) {
 	if(v1.value == v2.value) return (v1 + v2) / (Real)2;
 
 	Real dx = (v1.value - value) / (v1.value - v2.value);
@@ -82,7 +83,8 @@ PlyValueVertex<Real> InterpolateVertices(PlyValueVertex<Real> const& v1, PlyValu
 }
 
 template<class Real>
-std::vector<PlyColorVertex<Real>> ColorVertices(std::vector<PlyValueVertex<Real>> const& inVertices, float min, float max) {
+std::vector<PlyColorVertex<Real>> ColorVertices(std::vector<PlyValueVertex<Real>> const& inVertices,
+		float min, float max) {
 	std::vector<PlyColorVertex<Real>> outVertices(inVertices.size());
 	for(size_t i = 0; i != inVertices.size(); ++i) {
 		outVertices[i].point = inVertices[i].point;
@@ -95,7 +97,8 @@ std::vector<PlyColorVertex<Real>> ColorVertices(std::vector<PlyValueVertex<Real>
 }
 
 template<class Real>
-void SmoothValues(std::vector<PlyValueVertex<Real>>& vertices, std::vector<std::vector<int>> const& polygons) {
+void SmoothValues(std::vector<PlyValueVertex<Real>>& vertices,
+		std::vector<std::vector<int>> const& polygons) {
 	std::vector<int> count(vertices.size());
 	std::vector<Real> sums(vertices.size(), 0);
 	for(size_t i = 0; i != polygons.size(); ++i) {
@@ -116,8 +119,8 @@ void SmoothValues(std::vector<PlyValueVertex<Real>>& vertices, std::vector<std::
 template<class Real>
 void SplitPolygon(std::vector<int> const& polygon, std::vector<PlyValueVertex<Real>>& vertices, 
 		std::vector<std::vector<int>>& ltPolygons, std::vector<std::vector<int>>& gtPolygons,
-		std::vector<bool>& ltFlags, std::vector<bool>& gtFlags, std::unordered_map<long long, int>& vertexTable,
-		Real trimValue) {
+		std::vector<bool>& ltFlags, std::vector<bool>& gtFlags,
+		std::unordered_map<long long, int>& vertexTable, Real trimValue) {
 	int sz = polygon.size();
 	std::vector<bool> gt(sz);
 	int gtCount = 0;
@@ -271,7 +274,9 @@ std::vector<std::vector<int>> SetConnectedComponents(std::vector<std::vector<int
 template<class Real>
 double PolygonArea(std::vector<PlyValueVertex<Real>> const& vertices, std::vector<int> const& polygon) {
 	if(polygon.size() < 3) return 0;
-	else if(polygon.size() == 3) return TriangleArea(vertices[polygon[0]].point, vertices[polygon[1]].point, vertices[polygon[2]].point);
+	else if(polygon.size() == 3)
+		return TriangleArea(vertices[polygon[0]].point, vertices[polygon[1]].point,
+				vertices[polygon[2]].point);
 	else {
 		Point3D<Real> center;
 		for(size_t i = 0; i != polygon.size(); ++i)
@@ -332,7 +337,8 @@ int main(int argc, char** argv) {
 
 		double t = Time();
 		for(size_t i = 0; i != polygons.size(); ++i)
-			SplitPolygon(polygons[i], vertices, ltPolygons, gtPolygons, ltFlags, gtFlags, vertexTable, Trim.value());
+			SplitPolygon(polygons[i], vertices, ltPolygons, gtPolygons, ltFlags, gtFlags,
+					vertexTable, Trim.value());
 		if(IslandAreaRatio.value() > 0) {
 			std::vector<std::vector<int>> _gtPolygons;
 			std::vector<std::vector<int>> ltComponents = SetConnectedComponents(ltPolygons);
@@ -370,7 +376,8 @@ int main(int argc, char** argv) {
 			}
 			gtPolygons = _gtPolygons;
 		}
-		std::vector<std::vector<int>> polys = PolygonMesh.set() ? gtPolygons : Triangulate(vertices, gtPolygons);
+		std::vector<std::vector<int>> polys =
+			PolygonMesh.set() ? gtPolygons : Triangulate(vertices, gtPolygons);
 
 		RemoveHangingVertices(vertices, polys);
 		DumpOutput::instance()("#Trimmed In: %9.1f (s)", Time() - t);

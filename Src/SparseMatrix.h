@@ -105,7 +105,8 @@ private:
 	void Multiply(Vector<T2> const& In, Vector<T2>& Out, bool addDCTerm, int threads) const;
 #else
 	template<class T2>
-	void Multiply(Vector<T2> const& In, Vector<T2>& Out, MapReduceVector<T2>& OutScratch, bool addDCTerm) const;
+	void Multiply(Vector<T2> const& In, Vector<T2>& Out, MapReduceVector<T2>& OutScratch,
+			bool addDCTerm) const;
 #endif
 private:
 	Pointer(int) rowSizes_;

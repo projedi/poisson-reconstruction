@@ -120,7 +120,8 @@ Vector<T2> SparseSymmetricMatrix<T>::operator*(Vector<T2> const& V) const {
 #ifdef NEW_MATRIX_CODE
 template<class T>
 template<class T2>
-void SparseSymmetricMatrix<T>::Multiply(Vector<T2> const& in, Vector<T2>& out, bool addDCTerm, int threads) const {
+void SparseSymmetricMatrix<T>::Multiply(Vector<T2> const& in, Vector<T2>& out, bool addDCTerm,
+		int threads) const {
 	out = Vector<T2>(Rows());
 #pragma omp parallel for num_threads(threads)
 	for(int i = 0; i < Rows(); ++i) {
@@ -146,7 +147,8 @@ void SparseSymmetricMatrix<T>::Multiply(Vector<T2> const& in, Vector<T2>& out, b
 #else
 template<class T>
 template<class T2>
-void SparseSymmetricMatrix<T>::Multiply(Vector<T2> const& in, Vector<T2>& out, MapReduceVector<T2>& OutScratch, bool addDCTerm) const {
+void SparseSymmetricMatrix<T>::Multiply(Vector<T2> const& in, Vector<T2>& out,
+		MapReduceVector<T2>& OutScratch, bool addDCTerm) const {
 	int threads = OutScratch.threads();
 #pragma omp parallel for num_threads(threads)
 	for(int t = 0; t < threads; ++t) {
