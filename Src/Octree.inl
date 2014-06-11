@@ -337,16 +337,16 @@ void Neighbors<N, T>::clear() {
 				neighbors[i][j][k] = nullptr;
 }
 
-template<class OctNode, class Neighbors3, class Neighbors5>
-NeighborKey3<OctNode, Neighbors3, Neighbors5>::NeighborKey3(NeighborKey3 const& nKey3):
+template<class OctNode>
+NeighborKey3<OctNode>::NeighborKey3(NeighborKey3 const& nKey3):
 	neighbors_(nullptr),
 	_depth(0) {
 	set(nKey3._depth);
 	memcpy(neighbors_, nKey3.neighbors_, sizeof(Neighbors3) * (_depth + 1));
 }
 
-template<class OctNode, class Neighbors3, class Neighbors5>
-void NeighborKey3<OctNode, Neighbors3, Neighbors5>::set(int d) {
+template<class OctNode>
+void NeighborKey3<OctNode>::set(int d) {
 	if(neighbors_) delete[] neighbors_;
 	neighbors_ = nullptr;
 	_depth = d;
@@ -354,8 +354,8 @@ void NeighborKey3<OctNode, Neighbors3, Neighbors5>::set(int d) {
 	neighbors_ = new Neighbors3[d + 1];
 }
 
-template<class OctNode, class Neighbors3, class Neighbors5>
-Neighbors3& NeighborKey3<OctNode, Neighbors3, Neighbors5>::collectNeighbors(
+template<class OctNode>
+typename NeighborKey3<OctNode>::Neighbors3& NeighborKey3<OctNode>::collectNeighbors(
 		OctNode* node, int minDepth, bool flags[3][3][3], bool doReset,
 		std::function<void(OctNode*)> const& emptyChildrenCallback) {
 	int d = node->depth();
@@ -499,22 +499,22 @@ Neighbors3& NeighborKey3<OctNode, Neighbors3, Neighbors5>::collectNeighbors(
 
 // Note the assumption is that if you enable an edge, you also enable adjacent faces.
 // And, if you enable a corner, you enable adjacent edges and faces.
-template<class OctNode, class Neighbors3, class Neighbors5>
-Neighbors3& NeighborKey3<OctNode, Neighbors3, Neighbors5>::setNeighbors(OctNode* node,
+template<class OctNode>
+typename NeighborKey3<OctNode>::Neighbors3& NeighborKey3<OctNode>::setNeighbors(OctNode* node,
 		bool flags[3][3][3]) {
 	return collectNeighbors(node, 0, flags, true,
 			[](OctNode* node) { node->initChildren(); });
 }
 
-template<class OctNode, class Neighbors3, class Neighbors5>
-Neighbors3& NeighborKey3<OctNode, Neighbors3, Neighbors5>::getNeighbors3(OctNode* node,
+template<class OctNode>
+typename NeighborKey3<OctNode>::Neighbors3& NeighborKey3<OctNode>::getNeighbors3(OctNode* node,
 		int minDepth) {
 	bool flags[3][3][3] = { };
 	return collectNeighbors(node, minDepth, flags, false, [](OctNode*) { return; });
 }
 
-template<class OctNode, class Neighbors3, class Neighbors5>
-Neighbors5 NeighborKey3<OctNode, Neighbors3, Neighbors5>::getNeighbors5(OctNode* node) {
+template<class OctNode>
+typename NeighborKey3<OctNode>::Neighbors5 NeighborKey3<OctNode>::getNeighbors5(OctNode* node) {
 	Neighbors5 neighbors;
 	if(!node) return neighbors;
 	if(!node->parent()) {

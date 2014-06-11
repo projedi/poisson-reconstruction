@@ -42,9 +42,12 @@ public:
 	void clear();
 };
 
-template<class OctNode, class Neighbors3, class Neighbors5>
+template<class OctNode>
 class NeighborKey3 {
 public:
+	typedef Neighbors<3, OctNode> Neighbors3;
+	typedef Neighbors<5, OctNode> Neighbors5;
+
 	NeighborKey3(): neighbors_(nullptr), _depth(-1) { }
 	NeighborKey3(NeighborKey3 const& nKey3);
 	~NeighborKey3() { if(neighbors_) delete[] neighbors_; }
@@ -75,14 +78,13 @@ private:
 template<class NodeData, class Real>
 class OctNode {
 public:
-	typedef octree_internals::Neighbors<3, OctNode> Neighbors3;
-	typedef octree_internals::Neighbors<3, OctNode const> ConstNeighbors3;
-	typedef octree_internals::Neighbors<5, OctNode> Neighbors5;
-	typedef octree_internals::Neighbors<5, OctNode const> ConstNeighbors5;
+	typedef octree_internals::NeighborKey3<OctNode> NeighborKey3;
+	typedef octree_internals::NeighborKey3<OctNode const> ConstNeighborKey3;
 
-	typedef octree_internals::NeighborKey3<OctNode, Neighbors3, Neighbors5> NeighborKey3;
-	typedef octree_internals::NeighborKey3<OctNode const, ConstNeighbors3, ConstNeighbors5>
-		ConstNeighborKey3;
+	typedef typename NeighborKey3::Neighbors3 Neighbors3;
+	typedef typename NeighborKey3::Neighbors5 Neighbors5;
+	typedef typename ConstNeighborKey3::Neighbors3 ConstNeighbors3;
+	typedef typename ConstNeighborKey3::Neighbors5 ConstNeighbors5;
 
 	typedef std::function<void(OctNode const*, OctNode const*)> NodeAdjacencyFunction;
 public:
