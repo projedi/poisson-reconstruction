@@ -149,3 +149,21 @@ bool PLYPointStream<Real>::nextPoint(Point3D<Real>& p, Point3D<Real>& n) {
 	++_pIdx;
 	return true;
 }
+
+bool strcaseequal(std::string const& s1, std::string const& s2) {
+#ifdef WIN32
+	int res = _stricmp(s1.c_str(), s2.c_str());
+#else
+	int res = strcasecmp(s1.c_str(), s2.c_str());
+#endif
+	return !res;
+}
+
+template<class Real>
+PointStream<Real>* PointStream<Real>::open(std::string const& filename) {
+	size_t last_dot = filename.find_last_of('.');
+	std::string ext = last_dot == std::string::npos ? "" : filename.substr(last_dot + 1);
+	if(strcaseequal(ext, "bnpts")) return new BinaryPointStream<Real>(filename);
+	if(strcaseequal(ext, "ply")) return new PLYPointStream<Real>(filename);
+	else return new ASCIIPointStream<Real>(filename);
+}

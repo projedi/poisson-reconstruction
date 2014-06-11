@@ -750,10 +750,6 @@ bool Octree< Degree , OutputDensity >::_inBounds( Point3D< Real > p ) const
 	return true;
 }
 
-#ifdef WIN32
-inline int strcasecmp(char const* c1, char const* c2) { return _stricmp(c1, c2); }
-#endif
-
 template< int Degree , bool OutputDensity >
 int Octree< Degree , OutputDensity >::setTree( char const* fileName , int maxDepth , int minDepth , 
 							int splatDepth , Real samplesPerNode , Real scaleFactor ,
@@ -779,13 +775,7 @@ int Octree< Degree , OutputDensity >::setTree( char const* fileName , int maxDep
 
 	TreeNeighborKey3 neighborKey;
 	neighborKey.set( maxDepth );
-	PointStream< Real >* pointStream;
-	std::string fn(fileName);
-	size_t last_dot = fn.find_last_of('.');
-	std::string ext = last_dot == std::string::npos ? "" : fn.substr(last_dot + 1);
-	if     ( !strcasecmp( ext.c_str() , "bnpts" ) ) pointStream = new BinaryPointStream< Real >( fileName );
-	else if( !strcasecmp( ext.c_str() , "ply"   ) ) pointStream = new    PLYPointStream< Real >( fileName );
-	else                                    pointStream = new  ASCIIPointStream< Real >( fileName );
+	PointStream< Real >* pointStream = PointStream<Real>::open(fileName);
 
 	tree_.setFullDepth( _minDepth );
 	// Read through once to get the center and scale

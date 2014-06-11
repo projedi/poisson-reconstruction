@@ -36,6 +36,8 @@ public:
 	virtual ~PointStream() { }
 	virtual void reset() = 0;
 	virtual bool nextPoint(Point3D<Real>& p, Point3D<Real>& n) = 0;
+
+	static PointStream* open(std::string const& filename);
 };
 
 template<class Real>
