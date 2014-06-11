@@ -30,7 +30,10 @@ DAMAGE.
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+
+#ifndef NO_OMP
 #include <omp.h>
+#endif
 
 #ifdef _WIN32
 #include <Psapi.h>
@@ -77,7 +80,11 @@ cmdLine<int> VoxelDepth("voxelDepth", -1);
 cmdLine<int> MinDepth("minDepth", 5);
 cmdLine<int> MaxSolveDepth("maxSolveDepth" );
 cmdLine<int> BoundaryType("boundary", 1);
+#ifndef NO_OMP
 cmdLine<int> Threads("threads", omp_get_num_procs());
+#else
+cmdLine<int> Threads("threads", 1);
+#endif
 
 cmdLine<float> SamplesPerNode("samplesPerNode", 1);
 cmdLine<float> Scale("scale", 1.1);

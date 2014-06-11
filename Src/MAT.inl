@@ -31,13 +31,13 @@ void MinimalAreaTriangulation<Real>::GetTriangulation(
 		std::vector<Point3D<Real>> const& vertices, std::vector<TriangleIndex>& triangles) {
 	if(vertices.size() == 3) {
 		triangles.clear();
-		triangles.push_back({ { 0, 1, 2 } });
+		triangles.push_back({ { { 0, 1, 2 } } });
 		return;
 	}
 	if(vertices.size() == 4) {
 		TriangleIndex tIndex[2][2] {
-			{ { { 0, 1, 2 } }, { { 2, 3, 0 } } },
-			{ { { 0, 1, 3 } }, { { 3, 1, 2 } } }
+			{ { { { 0, 1, 2 } } }, { { { 2, 3, 0 } } } },
+			{ { { { 0, 1, 3 } } }, { { { 3, 1, 2 } } } }
 		};
 		Real area[2]{};
 
@@ -72,7 +72,7 @@ void MinimalAreaTriangulation<Real>::GetTriangulation(int i, int j,
 
 	int m = data_[i * vertices.size() + j].midPoint;
 	if(m >= 0) {
-		triangles.push_back({ i, j, m });
+		triangles.push_back({ { { i, j, m } } });
 		GetTriangulation(i, m, vertices, triangles);
 		GetTriangulation(m, j, vertices, triangles);
 	}

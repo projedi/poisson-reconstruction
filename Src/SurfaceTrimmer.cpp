@@ -30,7 +30,10 @@ DAMAGE.
 #include <cstdlib>
 #include <cfloat>
 #include <iostream>
+
+#ifndef NO_OMP
 #include <omp.h>
+#endif
 
 #include "CmdLineParser.h"
 #include "DumpOutput.h"

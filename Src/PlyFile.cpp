@@ -1470,9 +1470,8 @@ Open a polygon file for reading.
    other_elems - data structure to free up
   ******************************************************************************/
   
-  void ply_free_other_elements (PlyOtherElems *other_elems)
+  void ply_free_other_elements (PlyOtherElems *)
   {
-	  other_elems = other_elems;
   }
   
   

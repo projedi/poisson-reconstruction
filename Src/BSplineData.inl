@@ -466,7 +466,7 @@ void BSplineElements<Degree>::_addRight(int offset, BoundaryType boundary) {
 }
 
 template<int Degree>
-void BSplineElements<Degree>::upSample(BSplineElements<Degree>& high) const {
+void BSplineElements<Degree>::upSample(BSplineElements<Degree>&) const {
 	std::cerr << "[ERROR] B-spline up-sampling not supported for degree "
 		<< Degree << std::endl;
 	exit(0);

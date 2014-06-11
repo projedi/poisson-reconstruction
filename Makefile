@@ -35,6 +35,12 @@ all: LFLAGS += $(LFLAGS_DEBUG)
 all: $(BIN)$(PR_TARGET)
 all: $(BIN)$(ST_TARGET)
 
+clang-noomp: CFLAGS = -std=c++11 -Wall -Wextra -Werror -DNO_OMP $(CFLAGS_DEBUG)
+clang-noomp: LFLAGS = $(LFLAGS_DEBUG)
+clang-noomp: CXX = clang++
+clang-noomp: $(BIN)$(PR_TARGET)
+clang-noomp: $(BIN)$(ST_TARGET)
+
 release: CFLAGS += $(CFLAGS_RELEASE)
 release: LFLAGS += $(LFLAGS_RELEASE)
 release: $(BIN)$(PR_TARGET)
