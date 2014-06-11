@@ -52,6 +52,13 @@ public:
 	NeighborKey3(NeighborKey3 const& nKey3);
 	~NeighborKey3() { if(neighbors_) delete[] neighbors_; }
 
+	operator NeighborKey3<OctNode const>() {
+		NeighborKey3<OctNode const> r;
+		r.neighbors_ = neighbors_;
+		r._depth = _depth;
+		return r;
+	}
+
 	Neighbors3* neighbors() const { return neighbors_; }
 
 	void set(int depth);
@@ -64,6 +71,8 @@ public:
 	Neighbors3& getNeighbors3(OctNode* node, int minDepth = 0);
 	Neighbors5 getNeighbors5(OctNode* node);
 private:
+	friend class NeighborKey3<OctNode const>;
+
 	Neighbors3& collectNeighbors(OctNode*, int minDepth, bool flags[3][3][3], bool doReset,
 			std::function<void(OctNode*)> const& emptyChildrenCallback);
 private:
