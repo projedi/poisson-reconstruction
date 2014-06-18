@@ -33,14 +33,12 @@ template<class T>
 SparseSymmetricMatrix<T>::SparseSymmetricMatrix():
 	rowSizes_(NullPointer<int>()),
 	m_ppElements(NullPointer<Pointer(MatrixEntry<T>)>()),
-	_contiguous(false),
 	_maxEntriesPerRow(0),
 	rows(0) { }
 
 template<class T>
 SparseSymmetricMatrix<T>::SparseSymmetricMatrix(SparseSymmetricMatrix const& M): SparseSymmetricMatrix() {
-	if(M._contiguous) Resize(M.rows, M._maxEntriesPerRow);
-	else Resize(M.rows);
+	Resize(M.rows);
 	for(int i = 0; i != rows; ++i) {
 		SetRowSize(i, M.rowSizes_[i]);
 		memcpy((*this)[i], M[i], sizeof(MatrixEntry<T>) * rowSizes_[i]);
@@ -52,7 +50,6 @@ void SparseSymmetricMatrix<T>::swap(SparseSymmetricMatrix<T>& M) {
 	using std::swap;
 	swap(rowSizes_, M.rowSizes_);
 	swap(m_ppElements, M.m_ppElements);
-	swap(_contiguous, M._contiguous);
 	swap(_maxEntriesPerRow, M._maxEntriesPerRow);
 	swap(rows, M.rows);
 }
@@ -70,11 +67,8 @@ int SparseSymmetricMatrix<T>::Entries() const {
 template<class T>
 void SparseSymmetricMatrix<T>::Resize(int r) {
 	if(rows > 0) {
-		if(_contiguous) {
-			if(_maxEntriesPerRow) FreePointer(m_ppElements[0]);
-		} else
-			for(int i = 0; i != rows; ++i)
-				if(rowSizes_[i]) FreePointer(m_ppElements[i]);
+		for(int i = 0; i != rows; ++i)
+			if(rowSizes_[i]) FreePointer(m_ppElements[i]);
 		FreePointer(m_ppElements);
 		FreePointer(rowSizes_);
 	}
@@ -84,20 +78,12 @@ void SparseSymmetricMatrix<T>::Resize(int r) {
 		m_ppElements = AllocPointer<Pointer(MatrixEntry<T>)>(r);
 		memset(rowSizes_, 0, sizeof(int) * r);
 	}
-	_contiguous = false;
 	_maxEntriesPerRow = 0;
 }
 
 template<class T>
 void SparseSymmetricMatrix<T>::SetRowSize(int row, int count) {
-	if(_contiguous) {
-		if(count > _maxEntriesPerRow) {
-			std::cerr << "[ERROR] Cannot set row size on contiguous matrix: " << count <<
-				" <= " << _maxEntriesPerRow << std::endl;
-			std::exit(1);
-		}
-		rowSizes_[row] = count;
-	} else if(row >= 0 && row < rows) {
+	if(row >= 0 && row < rows) {
 		if(rowSizes_[row]) FreePointer(m_ppElements[row]);
 		if(count > 0) m_ppElements[row] = AllocPointer<MatrixEntry<T>>(count);
 	}

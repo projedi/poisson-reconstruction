@@ -111,7 +111,6 @@ private:
 private:
 	Pointer(int) rowSizes_;
 	Pointer(Pointer(MatrixEntry<T>)) m_ppElements;
-	bool _contiguous;
 	int _maxEntriesPerRow;
 	int rows;
 };
