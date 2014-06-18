@@ -338,23 +338,6 @@ void Neighbors<N, T>::clear() {
 }
 
 template<class OctNode>
-NeighborKey3<OctNode>::NeighborKey3(NeighborKey3 const& nKey3):
-	neighbors_(nullptr),
-	_depth(0) {
-	set(nKey3._depth);
-	memcpy(neighbors_, nKey3.neighbors_, sizeof(Neighbors3) * (_depth + 1));
-}
-
-template<class OctNode>
-void NeighborKey3<OctNode>::set(int d) {
-	if(neighbors_) delete[] neighbors_;
-	neighbors_ = nullptr;
-	_depth = d;
-	if(d < 0) return;
-	neighbors_ = new Neighbors3[d + 1];
-}
-
-template<class OctNode>
 typename NeighborKey3<OctNode>::Neighbors3& NeighborKey3<OctNode>::collectNeighbors(
 		OctNode* node, int minDepth, bool flags[3][3][3], bool doReset,
 		std::function<void(OctNode*)> const& emptyChildrenCallback) {

@@ -55,18 +55,14 @@ public:
 	typedef Neighbors<3, OctNode> Neighbors3;
 	typedef Neighbors<5, OctNode> Neighbors5;
 
-	explicit NeighborKey3(int depth): neighbors_(nullptr), _depth(-1) { set(depth); }
-	NeighborKey3(NeighborKey3 const& nKey3);
-	~NeighborKey3() { if(neighbors_) delete[] neighbors_; }
+	explicit NeighborKey3(int depth): neighbors_(depth + 1) { }
 
 	operator NeighborKey3<OctNode const>() {
-		NeighborKey3<OctNode const> r;
-		r.neighbors_ = neighbors_;
-		r._depth = _depth;
-		return r;
+		return reinterpret_cast<NeighborKey3<OctNode const>>(*this);
 	}
 
-	Neighbors3* neighbors() const { return neighbors_; }
+	Neighbors3& neighbors(int idx) { return neighbors_[idx]; }
+	Neighbors3 const& neighbors(int idx) const { return neighbors_[idx]; }
 
 	void set(int depth);
 
@@ -83,8 +79,7 @@ private:
 	Neighbors3& collectNeighbors(OctNode*, int minDepth, bool flags[3][3][3], bool doReset,
 			std::function<void(OctNode*)> const& emptyChildrenCallback);
 private:
-	Neighbors3* neighbors_;
-	int _depth;
+	std::vector<Neighbors3> neighbors_;
 };
 
 }

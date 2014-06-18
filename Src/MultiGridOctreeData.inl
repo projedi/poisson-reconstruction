@@ -172,14 +172,14 @@ void SortedTreeNodes< OutputDensity >::setCornerTable( CornerTableData& cData , 
 					int d = n->depth();
 					do
 					{
-						const typename TreeOctNode::ConstNeighbors3& neighbors = neighborKey.neighbors()[d];
+						const typename TreeOctNode::ConstNeighbors3& neighbors = neighborKey.neighbors(d);
 						// Set all the corner indices at the current depth
 						for( unsigned cc=0 ; cc<Cube::CORNERS ; cc++ )
 						{
 							int xx , yy , zz;
 							std::tie(xx, yy, zz) = Cube::FactorCornerIndex(cc);
 							xx += x , yy += y , zz += z;
-							if( neighborKey.neighbors()[d].neighbors[xx][yy][zz] && neighborKey.neighbors()[d].neighbors[xx][yy][zz]->nodeData.nodeIndex!=-1 )
+							if( neighborKey.neighbors(d).neighbors[xx][yy][zz] && neighborKey.neighbors(d).neighbors[xx][yy][zz]->nodeData.nodeIndex!=-1 )
 								cData[ neighbors.neighbors[xx][yy][zz] ][ Cube::AntipodalCornerIndex(cc) ] = myCount;
 						}
 						// If we are not at the root and the parent() also has the corner
@@ -1744,7 +1744,7 @@ Real Octree< Degree , OutputDensity >::WeightedCoarserFunctionValue( const TreeN
 	// Iterate over all basis functions that overlap the point at the coarser resolutions
 	{
 		int d , _idx[3];
-		const typename TreeOctNode::Neighbors3& neighbors = neighborKey.neighbors()[depth-1];
+		const typename TreeOctNode::Neighbors3& neighbors = neighborKey.neighbors(depth-1);
 		neighbors.neighbors[1][1][1]->depthAndOffset( d , _idx );
 		_idx[0] = BinaryNode< double >::CenterIndex( d , _idx[0]-1 );
 		_idx[1] = BinaryNode< double >::CenterIndex( d , _idx[1]-1 );
@@ -2678,13 +2678,13 @@ Real Octree< Degree , OutputDensity >::getCenterValue( const TreeConstNeighborKe
 	{
 		for( int i=0 ; i<3 ; i++ ) for( int j=0 ; j<3 ; j++ ) for( int k=0 ; k<3 ; k++ )
 		{
-			const TreeOctNode* n = neighborKey.neighbors()[d].neighbors[i][j][k];
+			const TreeOctNode* n = neighborKey.neighbors(d).neighbors[i][j][k];
 			if( n ) value += n->nodeData.solution * Real( stencil.values[i][j][k] );
 		}
 		if( d>_minDepth )
 			for( int i=0 ; i<3 ; i++ ) for( int j=0 ; j<3 ; j++ ) for( int k=0 ; k<3 ; k++ )
 			{
-				const TreeOctNode* n = neighborKey.neighbors()[d-1].neighbors[i][j][k];
+				const TreeOctNode* n = neighborKey.neighbors(d-1).neighbors[i][j][k];
 				if( n ) value += metSolution[n->nodeData.nodeIndex] * Real( pStencil.values[i][j][k] );
 			}
 	}
@@ -2692,7 +2692,7 @@ Real Octree< Degree , OutputDensity >::getCenterValue( const TreeConstNeighborKe
 	{
 		for( int i=0 ; i<3 ; i++ ) for( int j=0 ; j<3 ; j++ ) for( int k=0 ; k<3 ; k++ )
 		{
-			const TreeOctNode* n = neighborKey.neighbors()[d].neighbors[i][j][k];
+			const TreeOctNode* n = neighborKey.neighbors(d).neighbors[i][j][k];
 			if( n )
 			{
 				int _d , _off[3];
@@ -2705,7 +2705,7 @@ Real Octree< Degree , OutputDensity >::getCenterValue( const TreeConstNeighborKe
 		if( d>_minDepth )
 			for( int i=0 ; i<3 ; i++ ) for( int j=0 ; j<3 ; j++ ) for( int k=0 ; k<3 ; k++ )
 			{
-				const TreeOctNode* n = neighborKey.neighbors()[d-1].neighbors[i][j][k];
+				const TreeOctNode* n = neighborKey.neighbors(d-1).neighbors[i][j][k];
 				if( n )
 				{
 					int _d , _off[3];
@@ -2730,7 +2730,7 @@ Real Octree< Degree , OutputDensity >::getCornerValue( const TreeConstNeighborKe
 	int startX = 0 , endX = 3 , startY = 0 , endY = 3 , startZ = 0 , endZ = 3;
 	std::tie(cx, cy, cz) = Cube::FactorCornerIndex(corner);
 	{
-		typename TreeOctNode::ConstNeighbors3& neighbors = neighborKey3.neighbors()[d];
+		typename TreeOctNode::ConstNeighbors3 const& neighbors = neighborKey3.neighbors(d);
 		if( cx==0 ) endX = 2;
 		else      startX = 1;
 		if( cy==0 ) endY = 2;
@@ -2763,7 +2763,7 @@ Real Octree< Degree , OutputDensity >::getCornerValue( const TreeConstNeighborKe
 		if( cx!=_cx ) startX = 0 , endX = 3;
 		if( cy!=_cy ) startY = 0 , endY = 3;
 		if( cz!=_cz ) startZ = 0 , endZ = 3;
-		typename TreeOctNode::ConstNeighbors3& neighbors = neighborKey3.neighbors()[d-1];
+		typename TreeOctNode::ConstNeighbors3 const& neighbors = neighborKey3.neighbors(d-1);
 		if( isInterior )
 			for( int x=startX ; x<endX ; x++ ) for( int y=startY ; y<endY ; y++ ) for( int z=startZ ; z<endZ ; z++ )
 			{
