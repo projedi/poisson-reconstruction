@@ -81,6 +81,14 @@ template<class Real1, class Real2>
 Point3D<Real1> operator/(Point3D<Real1> const& p, Real2 r) { return p * (1.0 / r); }
 
 template<class Real>
+bool operator==(Point3D<Real> const& p1, Point3D<Real> const& p2)
+	{ return p1[0] == p2[0] && p1[1] == p2[1] && p1[2] == p2[2]; }
+
+template<class Real>
+bool operator!=(Point3D<Real> const& p1, Point3D<Real> const& p2)
+	{ return !(p1 == p2); }
+
+template<class Real>
 double Dot(Point3D<Real> const& p1, Point3D<Real> const& p2)
 	{ return p1[0] * p2[0] + p1[1] * p2[1] + p1[2] * p2[2]; }
 
