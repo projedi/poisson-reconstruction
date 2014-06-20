@@ -40,30 +40,6 @@ struct MatrixEntry {
 };
 
 template<class T>
-class MapReduceVector {
-public:
-	MapReduceVector(): _dim(0) { }
-	~MapReduceVector() {
-		if(_dim) for(size_t t = 0; t != out.size(); ++t) delete[] out[t];
-		out.resize(0);
-	}
-	T* operator[](int t) { return out[t]; }
-	T const* operator[](int t) const { return out[t]; }
-	int threads() const { return out.size(); }
-	void resize(size_t threads, int dim) {
-		if(threads != out.size() || _dim < dim) {
-			for(size_t t = 0; t != out.size(); ++t) delete[] out[t];
-			out.resize(threads);
-			for(size_t t = 0; t != out.size(); ++t) out[t] = new T[dim];
-			_dim = dim;
-		}
-	}
-private:
-	std::vector<T*> out;
-	int _dim;
-};
-
-template<class T>
 class SparseSymmetricMatrix {
 public:
 	int Rows() const { return rows; }
@@ -90,24 +66,12 @@ public:
 	template<class T2>
 	Vector<T2> operator*(Vector<T2> const& V) const;
 
-#ifdef NEW_MATRIX_CODE
 	template<class T2>
 	static int Solve(SparseSymmetricMatrix<T> const& M, Vector<T2> const& b, int iters, Vector<T2>& solution,
 			T2 eps, bool reset, int threads, bool addDCTerm);
-#else
-	template<class T2>
-	static int Solve(SparseSymmetricMatrix<T> const& M, Vector<T2> const& b, int iters, Vector<T2>& solution,
-			MapReduceVector<T2>& scratch, T2 eps, bool reset, bool addDCTerm);
-#endif
 private:
-#ifdef NEW_MATRIX_CODE
 	template<class T2>
 	void Multiply(Vector<T2> const& In, Vector<T2>& Out, bool addDCTerm, int threads) const;
-#else
-	template<class T2>
-	void Multiply(Vector<T2> const& In, Vector<T2>& Out, MapReduceVector<T2>& OutScratch,
-			bool addDCTerm) const;
-#endif
 private:
 	Pointer(int) rowSizes_;
 	Pointer(Pointer(MatrixEntry<T>)) m_ppElements;

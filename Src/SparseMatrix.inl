@@ -133,13 +133,14 @@ void SparseSymmetricMatrix<T>::Multiply(Vector<T2> const& in, Vector<T2>& out, b
 #else
 template<class T>
 template<class T2>
-void SparseSymmetricMatrix<T>::Multiply(Vector<T2> const& in, Vector<T2>& out,
-		MapReduceVector<T2>& OutScratch, bool addDCTerm) const {
-	int threads = OutScratch.threads();
+void SparseSymmetricMatrix<T>::Multiply(Vector<T2> const& in, Vector<T2>& out, bool addDCTerm,
+		int threads) const {
+	// TODO: If slow, OutScratch may be turned into static thread-local
+	std::vector<std::vector<T2>> OutScratch(threads);
 #pragma omp parallel for num_threads(threads)
 	for(int t = 0; t < threads; ++t) {
-		T2* outs = OutScratch[t];
-		memset(outs, 0, sizeof(T2) * in.Dimensions());
+		std::vector<T2>& outs = OutScratch[t];
+		outs.assign(in.Dimensions(), 0);
 		for(int i = (Rows() * t) / threads; i < (Rows() * (t + 1)) / threads; ++i) {
 			if(addDCTerm) {
 				for(int ii = 0; ii != rowSizes_[i]; ++ii) {
@@ -173,29 +174,17 @@ void SparseSymmetricMatrix<T>::Multiply(Vector<T2> const& in, Vector<T2>& out,
 }
 #endif
 
-#ifdef NEW_MATRIX_CODE
 template<class T>
 template<class T2>
 int SparseSymmetricMatrix<T>::Solve(SparseSymmetricMatrix<T> const& A, Vector<T2> const& b, int iters,
 		Vector<T2>& x, T2 eps, bool reset, int threads, bool addDCTerm) {
-#else
-template<class T>
-template<class T2>
-int SparseSymmetricMatrix<T>::Solve(SparseSymmetricMatrix<T> const& A, Vector<T2> const& b, int iters,
-		Vector<T2>& x, MapReduceVector<T2>& scratch, T2 eps, bool reset, bool addDCTerm) {
-	int threads = scratch.threads();
-#endif
 	eps *= eps;
 	int dim = b.Dimensions();
 	if(threads < 1) threads = 1;
 	if(reset) x = Vector<T2>(dim);
 
 	Vector<T2> r(dim);
-#ifdef NEW_MATRIX_CODE
 	A.Multiply(x, r, addDCTerm, threads);
-#else
-	A.Multiply(x, r, scratch, addDCTerm);
-#endif
 
 	Vector<T2> d(dim);
 	double delta_new = 0;
@@ -213,11 +202,7 @@ int SparseSymmetricMatrix<T>::Solve(SparseSymmetricMatrix<T> const& A, Vector<T2
 	int ii;
 	for(ii = 0; ii != iters && delta_new > eps * delta_0; ++ii) {
 		Vector<T2> q(dim);
-#ifdef NEW_MATRIX_CODE
 		A.Multiply(d, q, addDCTerm, threads);
-#else
-		A.Multiply(d, q, scratch, addDCTerm);
-#endif
 		double dDotQ = 0;
 #pragma omp parallel for num_threads(threads) reduction(+ : dDotQ)
 		for(int i = 0; i < dim; ++i) dDotQ += d[i] * q[i];
@@ -228,11 +213,7 @@ int SparseSymmetricMatrix<T>::Solve(SparseSymmetricMatrix<T> const& A, Vector<T2
 		if(ii % 50 == 49) {
 #pragma omp parallel for num_threads(threads)
 			for(int i = 0; i < dim; ++i) x[i] += d[i] * alpha;
-#ifdef NEW_MATRIX_CODE
 			A.Multiply(x, r, addDCTerm, threads);
-#else
-			A.Multiply(x, r, scratch, addDCTerm);
-#endif
 #pragma omp parallel for num_threads(threads) reduction(+ : delta_new)
 			for(int i = 0; i < dim; ++i) {
 				r[i] = b[i] - r[i];
