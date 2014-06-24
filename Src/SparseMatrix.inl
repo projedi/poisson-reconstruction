@@ -121,7 +121,7 @@ Vector<T2> SparseSymmetricMatrix<T>::operator*(Vector<T2> const& V) const {
 template<class T>
 template<class T2>
 void SparseSymmetricMatrix<T>::Multiply(Vector<T2> const& in, Vector<T2>& out, bool addDCTerm, int threads) const {
-	out = Vector(Rows());
+	out = Vector<T2>(Rows());
 #pragma omp parallel for num_threads(threads)
 	for(int i = 0; i < Rows(); ++i) {
 		T2 acc = 0;
