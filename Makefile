@@ -58,31 +58,31 @@ $(BIN)%.o: $(SRC)%.cpp
 $(BIN)%.d: $(SRC)%.cpp
 	$(CXX) $(CFLAGS) -MF"$@" -MG -MM -MP -MT "$(addprefix $(BIN), $(addsuffix .o, $(notdir $(basename $<))))" "$<"
 
-test:
+test: all
 	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig"
 	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig"
 
-test-release:
+test-release: release
 	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig-release"
 	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig-release"
 
 # NEW_MATRIX_CODE 1
-test-newmatrix:
+test-newmatrix: all
 	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig-newmatrix"
 	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig-newmatrix"
 
 # GRADIENT_DOMAIN_SOLUTION 0
-test-nogradient:
+test-nogradient: all
 	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig-nogradient"
 	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig-nogradient"
 
 # FORCE_NEUMANN_FIELD 0
-test-noneumann:
+test-noneumann: all
 	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig-noneumann"
 	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig-noneumann"
 
 # SPLAT_ORDER 1
-test-splat1:
+test-splat1: all
 	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig-splat1"
 	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig-splat1"
 
