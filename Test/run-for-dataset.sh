@@ -1,5 +1,7 @@
 #!/bin/sh
 
+DO_CHECK=1
+
 INNAME=$1
 OUTNAME=$2
 ORIGSUF=$3
@@ -7,11 +9,11 @@ ORIGNAME=${OUTNAME}${ORIGSUF}
 OUTDIR=/tmp
 ORIGDIR=Examples
 
-UNSCREENED=".unscreened.ply"
-SCREENED=".screened.ply"
-SCREENEDDENS=".screened.density.ply"
-TRIMMED=".screened.trimmed.ply"
-TRIMMEDFILLED=".screened.trimmed.filled.ply"
+UNSCREENED=".unscreened"
+SCREENED=".screened"
+SCREENEDDENS=".screened.density"
+TRIMMED=".screened.trimmed"
+TRIMMEDFILLED=".screened.trimmed.filled"
 
 echo "Running for $INNAME"
 
@@ -22,10 +24,13 @@ function run() {
    shift
    suf=$1
    shift
-   "$name" --in "$inp" --out "${OUTDIR}/${OUTNAME}$suf" $@
-   sed '/^comment.*$/d' "${ORIGDIR}/${ORIGNAME}$suf" > "${OUTDIR}/orig"
-   sed '/^comment.*$/d' "${OUTDIR}/${OUTNAME}$suf" > "${OUTDIR}/new"
+   "$name" --in "$inp" --out "${OUTDIR}/${OUTNAME}$suf.ply" $@
+   sed '/^comment.*$/d' "${ORIGDIR}/${ORIGNAME}$suf.ply" > "${OUTDIR}/orig"
+   sed '/^comment.*$/d' "${OUTDIR}/${OUTNAME}$suf.ply" > "${OUTDIR}/new"
    cmp "${OUTDIR}/orig" "${OUTDIR}/new"
+   if [[ $? -ne 0 ]]; then
+      return 1
+   fi
 }
 
 function run_poisson() {
@@ -41,17 +46,37 @@ function run_trimmer() {
    run "Bin/SurfaceTrimmer" "${OUTDIR}/${OUTNAME}${SCREENEDDENS}" "$suf" $@
 }
 
-echo "Unscreened"
-run_poisson "${UNSCREENED}" --depth 10 --pointWeight 0
+function run_prog() {
+   prog=$1
+   shift
+   greeting=$1
+   shift
+   echo "$greeting"
+   case "$prog" in
+      "poisson")
+         run_poisson $@
+         res=$?
+         ;;
+      "trimmer")
+         run_trimmer $@
+         res=$?
+         ;;
+      *)
+         echo "Unrecognised prog: $prog"
+         exit 255
+         ;;
+   esac
+   if [[ $DO_CHECK -ne 0 ]] && [[ $res -ne 0 ]]; then
+      exit $res
+   fi
+}
 
-echo "Screened"
-run_poisson "${SCREENED}" --depth 10
+run_prog poisson "Unscreened" "${UNSCREENED}" --depth 10 --pointWeight 0
 
-echo "Screened with density"
-run_poisson "${SCREENEDDENS}" --depth 10 --density
+run_prog poisson "Screened" "${SCREENED}" --depth 10
 
-echo "Trimming surface"
-run_trimmer "${TRIMMED}" --trim 7 --aRatio 0
+run_prog poisson "Screened with density" "${SCREENEDDENS}" --depth 10 --density
 
-echo "Trimming surface and closing holes"
-run_trimmer "${TRIMMEDFILLED}" --trim 7
+run_prog trimmer "Trimming surface" "${TRIMMED}" --trim 7 --aRatio 0
+
+run_prog trimmer "Trimming surface and closing holes" "${TRIMMEDFILLED}" --trim 7
