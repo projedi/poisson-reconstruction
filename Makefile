@@ -86,5 +86,8 @@ test-splat1: all
 	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig-splat1"
 	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig-splat1"
 
+test-binary: all
+	Test/run-for-dataset.sh "Examples/horse.bnpts" "horse" "-orig"
+
 include $(PR_DEPENDS)
 include $(ST_DEPENDS)
