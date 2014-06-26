@@ -233,7 +233,7 @@ int Execute() {
 	tree.setBSplineData(Depth.value(), BoundaryType.value());
 
 	double t = Time();
-	tree.maxMemoryUsage = 0;
+	tree.resetMaxMemoryUsage();
 	int pointCount = tree.setTree(In.value().c_str(), Depth.value(), MinDepth.value(), KernelDepth.value(),
 			SamplesPerNode.value(), Scale.value(), Confidence.set(), NormalWeights.set(), PointWeight.value(),
 			AdaptiveExponent.value(), xForm);
@@ -241,31 +241,31 @@ int Execute() {
 	tree.finalize(IsoDivide.value());
 
 	DumpOutput::instance()("#             Tree set in: %9.1f (s), %9.1f (MB)\n", Time() - t,
-			tree.maxMemoryUsage);
+			tree.maxMemoryUsage());
 	DumpOutput::instance()("#               Input Points: %d\n", pointCount);
-	DumpOutput::instance()("#               Leaves/Nodes: %lld/%lld\n", tree.tree.leaves(),
-			tree.tree.nodes());
+	DumpOutput::instance()("#               Leaves/Nodes: %lld/%lld\n", tree.tree().leaves(),
+			tree.tree().nodes());
 	DumpOutput::instance()("#               Memory Usage: %.3f MB\n",
 			float(MemoryInfo::Usage()) / (1 << 20));
 
-	double maxMemoryUsage = tree.maxMemoryUsage;
+	double maxMemoryUsage = tree.maxMemoryUsage();
 	t = Time();
-	tree.maxMemoryUsage = 0;
+	tree.resetMaxMemoryUsage();
 	tree.SetLaplacianConstraints();
 	DumpOutput::instance()("#      Constraints set in: %9.1f (s), %9.1f (MB)\n", Time() - t,
-			tree.maxMemoryUsage);
+			tree.maxMemoryUsage());
 	DumpOutput::instance()("#               Memory Usage: %.3f MB\n",
 			float(MemoryInfo::Usage()) / (1 << 20));
-	maxMemoryUsage = std::max(maxMemoryUsage, tree.maxMemoryUsage);
+	maxMemoryUsage = std::max(maxMemoryUsage, tree.maxMemoryUsage());
 
 	t = Time();
-	tree.maxMemoryUsage = 0;
+	tree.resetMaxMemoryUsage();
 	tree.LaplacianMatrixIteration(SolverDivide.value(), ShowResidual.set(), MinIters.value(),
 			SolverAccuracy.value(), MaxSolveDepth.value(), FixedIters.value());
 	DumpOutput::instance()("# Linear system solved in: %9.1f (s), %9.1f (MB)\n", Time() - t,
-			tree.maxMemoryUsage);
+			tree.maxMemoryUsage());
 	DumpOutput::instance()("#            Memory Usage: %.3f MB\n", float(MemoryInfo::Usage()) / (1 << 20));
-	maxMemoryUsage = std::max(maxMemoryUsage, tree.maxMemoryUsage);
+	maxMemoryUsage = std::max(maxMemoryUsage, tree.maxMemoryUsage());
 
 	t = Time();
 	Real isoValue = tree.GetIsoValue();
@@ -292,16 +292,16 @@ int Execute() {
 	if(Out.set()) {
 		t = Time();
 		CoredFileMeshData<Vertex> mesh;
-		tree.maxMemoryUsage = 0;
+		tree.resetMaxMemoryUsage();
 		tree.GetMCIsoTriangles(isoValue, IsoDivide.value(), &mesh, 0, 1, !NonManifold.set(),
 				PolygonMesh.set());
 		if(PolygonMesh.set())
 			DumpOutput::instance()("#         Got polygons in: %9.1f (s), %9.1f (MB)\n", Time() - t,
-					tree.maxMemoryUsage);
+					tree.maxMemoryUsage());
 		else
 			DumpOutput::instance()("#        Got triangles in: %9.1f (s), %9.1f (MB)\n", Time() - t,
-					tree.maxMemoryUsage);
-		maxMemoryUsage = std::max(maxMemoryUsage, tree.maxMemoryUsage);
+					tree.maxMemoryUsage());
+		maxMemoryUsage = std::max(maxMemoryUsage, tree.maxMemoryUsage());
 		DumpOutput::instance()("#             Total Solve: %9.1f (s), %9.1f (MB)\n", Time() - tt,
 				maxMemoryUsage);
 

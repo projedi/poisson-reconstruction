@@ -432,13 +432,13 @@ TreeNodeData<OutputDensity>::TreeNodeData():
 ////////////
 // Octree //
 ////////////
-template< int Degree , bool OutputDensity > double Octree< Degree , OutputDensity >::maxMemoryUsage=0;
+template< int Degree , bool OutputDensity > double Octree< Degree , OutputDensity >::maxMemoryUsage_=0;
 
 template< int Degree , bool OutputDensity >
 double Octree< Degree , OutputDensity >::MemoryUsage(void)
 {
 	double mem = double( MemoryInfo::Usage() ) / (1<<20);
-	if( mem>maxMemoryUsage ) maxMemoryUsage=mem;
+	if( mem>maxMemoryUsage_ ) maxMemoryUsage_=mem;
 	return mem;
 }
 
@@ -543,7 +543,7 @@ Real Octree< Degree , OutputDensity >::SplatOrientedPoint( const Point3D<Real>& 
 	myCenter[0] = myCenter[1] = myCenter[2] = Real(0.5);
 	myWidth = Real(1.0);
 
-	temp = &tree;
+	temp = &tree_;
 	while( temp->depth()<splatDepth )
 	{
 		if( !temp->children() )
@@ -786,7 +786,7 @@ int Octree< Degree , OutputDensity >::setTree( char const* fileName , int maxDep
 	else if( !strcasecmp( ext.c_str() , "ply"   ) ) pointStream = new    PLYPointStream< Real >( fileName );
 	else                                    pointStream = new  ASCIIPointStream< Real >( fileName );
 
-	tree.setFullDepth( _minDepth );
+	tree_.setFullDepth( _minDepth );
 	// Read through once to get the center and scale
 	{
 		Point3D< Real > p , n;
@@ -821,7 +821,7 @@ int Octree< Degree , OutputDensity >::setTree( char const* fileName , int maxDep
 			myCenter = Point3D< Real >( Real(0.5) , Real(0.5) , Real(0.5) );
 			myWidth = Real(1.0);
 			Real weight = useConfidence ? Real( Length(n) ) : Real( 1. );
-			temp = &tree;
+			temp = &tree_;
 			int d=0;
 			while( d<splatDepth )
 			{
@@ -866,7 +866,7 @@ int Octree< Degree , OutputDensity >::setTree( char const* fileName , int maxDep
 		}
 		else
 		{
-			temp = &tree;
+			temp = &tree_;
 			int d=0;
 			if( splatDepth )
 			{
@@ -907,7 +907,7 @@ int Octree< Degree , OutputDensity >::setTree( char const* fileName , int maxDep
 		{
 			Real pointScreeningWeight = useNormalWeights ? Real( normalLength ) : Real(1.f);
 			int d = 0;
-			TreeOctNode* temp = &tree;
+			TreeOctNode* temp = &tree_;
 			myCenter = Point3D< Real >( Real(0.5) , Real(0.5) , Real(0.5) );
 			myWidth = Real(1.0);
 			while( 1 )
@@ -948,7 +948,7 @@ int Octree< Degree , OutputDensity >::setTree( char const* fileName , int maxDep
 	MemoryUsage( );
 	delete pointStream;
 	if( _constrainValues )
-		for( TreeOctNode* node=tree.nextNode() ; node ; node=tree.nextNode(node) )
+		for( TreeOctNode* node=tree_.nextNode() ; node ; node=tree_.nextNode(node) )
 			if( node->nodeData.pointIndex!=-1 )
 			{
 				int idx = node->nodeData.pointIndex;
@@ -960,7 +960,7 @@ int Octree< Degree , OutputDensity >::setTree( char const* fileName , int maxDep
 			}
 #if FORCE_NEUMANN_FIELD
 	if( _boundaryType==1 )
-		for( TreeOctNode* node=tree.nextNode() ; node ; node=tree.nextNode( node ) )
+		for( TreeOctNode* node=tree_.nextNode() ; node ; node=tree_.nextNode( node ) )
 		{
 			int d , off[3] , res;
 			node->depthAndOffset( d , off );
@@ -990,11 +990,11 @@ void Octree< Degree , OutputDensity >::setBSplineData( int maxDepth , int bounda
 template< int Degree , bool OutputDensity >
 void Octree< Degree , OutputDensity >::finalize( int subdivideDepth )
 {
-	int maxDepth = tree.maxDepth( );
+	int maxDepth = tree_.maxDepth( );
 	TreeNeighborKey3 nKey;
 	nKey.set( maxDepth );
 	for( int d=maxDepth ; d>1 ; d-- )
-		for( TreeOctNode* node=tree.nextNode() ; node ; node=tree.nextNode( node ) ) if( node->depth()==d )
+		for( TreeOctNode* node=tree_.nextNode() ; node ; node=tree_.nextNode( node ) ) if( node->depth()==d )
 		{
 			typename TreeOctNode::Neighbors3& neighbors = nKey.setNeighbors( node->parent()->parent() );
 			for( int i=0 ; i<3 ; i++ ) for( int j=0 ; j<3 ; j++ ) for( int k=0 ; k<3 ; k++ )
@@ -1940,8 +1940,8 @@ int Octree< Degree , OutputDensity >::LaplacianMatrixIteration( int subdivideDep
 template< int Degree , bool OutputDensity >
 int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const typename BSplineData< Degree , Real >::Integrator& integrator , const SortedTreeNodes< OutputDensity >& sNodes , Real* metSolution , bool showResidual , int minIters , double accuracy , bool noSolve , int fixedIters )
 {
-	double _maxMemoryUsage = maxMemoryUsage;
-	maxMemoryUsage = 0;
+	double _maxMemoryUsage = maxMemoryUsage_;
+	maxMemoryUsage_ = 0;
 	int iter = 0;
 	Vector< Real > X , B;
 	SparseSymmetricMatrix< Real > M;
@@ -2009,14 +2009,14 @@ int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const 
 	for( int i=sNodes.nodeCount[depth] ; i<sNodes.nodeCount[depth+1] ; i++ ) sNodes.treeNodes[i]->nodeData.solution = Real( X[i-sNodes.nodeCount[depth]] );
 
 	MemoryUsage();
-	DumpOutput::instance()("#\tEvaluated / Got / Solved in: %6.3f / %6.3f / %6.3f\t(%.3f MB)\n" , evaluateTime , systemTime , solveTime , float( maxMemoryUsage ) );
-	maxMemoryUsage = std::max< double >( maxMemoryUsage , _maxMemoryUsage );
+	DumpOutput::instance()("#\tEvaluated / Got / Solved in: %6.3f / %6.3f / %6.3f\t(%.3f MB)\n" , evaluateTime , systemTime , solveTime , float( maxMemoryUsage_ ) );
+	maxMemoryUsage_ = std::max< double >( maxMemoryUsage_ , _maxMemoryUsage );
 	return iter;
 }
 template< int Degree , bool OutputDensity >
 int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const typename BSplineData< Degree , Real >::Integrator& integrator , const SortedTreeNodes< OutputDensity >& sNodes , Real* metSolution , int startingDepth , bool showResidual , int minIters , double accuracy , bool noSolve , int fixedIters )
 {
-	double _maxMemoryUsage = maxMemoryUsage;
+	double _maxMemoryUsage = maxMemoryUsage_;
 	if( startingDepth>=depth ) return _SolveFixedDepthMatrix( depth , integrator , sNodes , metSolution , showResidual , minIters , accuracy , noSolve , fixedIters );
 	int d , tIter=0;
 	SparseSymmetricMatrix< Real > _M;
@@ -2163,8 +2163,8 @@ int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const 
 	}
 	delete[] adjacencies;
 	MemoryUsage();
-	DumpOutput::instance()("#\tEvaluated / Got / Solved in: %6.3f / %6.3f / %6.3f\t(%.3f MB)\n" , evaluateTime , systemTime , solveTime , float( maxMemoryUsage ) );
-	maxMemoryUsage = std::max< double >( maxMemoryUsage , _maxMemoryUsage );
+	DumpOutput::instance()("#\tEvaluated / Got / Solved in: %6.3f / %6.3f / %6.3f\t(%.3f MB)\n" , evaluateTime , systemTime , solveTime , float( maxMemoryUsage_ ) );
+	maxMemoryUsage_ = std::max< double >( maxMemoryUsage_ , _maxMemoryUsage );
 	return tIter;
 }
 template< int Degree , bool OutputDensity >
@@ -2179,8 +2179,8 @@ int Octree< Degree , OutputDensity >::HasNormals( TreeOctNode* node , Real epsil
 template< int Degree , bool OutputDensity >
 void Octree< Degree , OutputDensity >::ClipTree( void )
 {
-	int maxDepth = tree.maxDepth();
-	for( TreeOctNode* temp=tree.nextNode() ; temp ; temp=tree.nextNode(temp) )
+	int maxDepth = tree_.maxDepth();
+	for( TreeOctNode* temp=tree_.nextNode() ; temp ; temp=tree_.nextNode(temp) )
 		if( temp->children() && temp->depth()>=_minDepth )
 		{
 			int hasNormals=0;
@@ -2454,7 +2454,7 @@ int Octree< Degree , OutputDensity >::refineBoundary( int subdivideDepth )
 	// neighbors are all refined simultaneously.
 	// For this reason, the implementation can only support nodes deeper than sDepth.
 	bool flags[3][3][3];
-	int maxDepth = tree.maxDepth();
+	int maxDepth = tree_.maxDepth();
 
 	subdivideDepth = std::max< int >( subdivideDepth , 0 );
 	if( _boundaryType==0 ) subdivideDepth += 2;
@@ -2463,7 +2463,7 @@ int Octree< Degree , OutputDensity >::refineBoundary( int subdivideDepth )
 	if( _boundaryType==0 ) sDepth = std::max< int >( 2 , sDepth );
 	if( sDepth==0 )
 	{
-		_sNodes.set( tree );
+		_sNodes.set( tree_ );
 		return sDepth;
 	}
 
@@ -2471,7 +2471,7 @@ int Octree< Degree , OutputDensity >::refineBoundary( int subdivideDepth )
 	// a consistent definition of the iso-surface
 	TreeNeighborKey3 nKey;
 	nKey.set( maxDepth );
-	for( TreeOctNode* leaf=tree.nextLeaf() ; leaf ; leaf=tree.nextLeaf( leaf ) )
+	for( TreeOctNode* leaf=tree_.nextLeaf() ; leaf ; leaf=tree_.nextLeaf( leaf ) )
 		if( leaf->depth()>sDepth )
 		{
 			int d , off[3] , _off[3];
@@ -2513,7 +2513,7 @@ int Octree< Degree , OutputDensity >::refineBoundary( int subdivideDepth )
 				}
 			}
 		}
-	_sNodes.set( tree );
+	_sNodes.set( tree_ );
 	MemoryUsage();
 	return sDepth;
 }
@@ -2528,7 +2528,7 @@ void Octree< Degree , OutputDensity >::GetMCIsoTriangles( Real isoValue , int su
 
 	RootData rootData , coarseRootData;
 	std::vector< Vertex >* interiorVertices;
-	int maxDepth = tree.maxDepth();
+	int maxDepth = tree_.maxDepth();
 
 	std::vector< Real > metSolution( _sNodes.nodeCount[maxDepth] , 0 );
 #pragma omp parallel for num_threads( threads )
@@ -2543,7 +2543,7 @@ void Octree< Degree , OutputDensity >::GetMCIsoTriangles( Real isoValue , int su
 	int offSet = 0;
 
 	int maxCCount = _sNodes.getMaxCornerCount( sDepth , maxDepth , threads );
-	int maxECount = _sNodes.getMaxEdgeCount  ( &tree , sDepth , threads );
+	int maxECount = _sNodes.getMaxEdgeCount  ( &tree_ , sDepth , threads );
 	rootData.cornerValues     = NewPointer< Real            >( maxCCount );
 	rootData.cornerNormals    = NewPointer< Point3D< Real > >( maxCCount );
 	rootData.interiorRoots    = NewPointer< int             >( maxECount );
@@ -2867,7 +2867,7 @@ template< int Degree , bool OutputDensity >
 Real Octree< Degree , OutputDensity >::GetIsoValue( void )
 {
 	Real isoValue=0 , weightSum=0;
-	int maxDepth = tree.maxDepth();
+	int maxDepth = tree_.maxDepth();
 
 	typename BSplineData< Degree , Real >::template CenterEvaluator< 1 > evaluator;
 	fData.setCenterEvaluator( evaluator , 0 , 0);
@@ -3867,7 +3867,7 @@ Real Octree< Degree , OutputDensity >::GetSolutionValue( Point3D< Real > p , con
 template< int Degree , bool OutputDensity >
 Pointer( Real ) Octree< Degree , OutputDensity >::GetSolutionGrid( int& res , Real isoValue , int depth )
 {
-	int maxDepth = _boundaryType==0 ? tree.maxDepth()-1 : tree.maxDepth();
+	int maxDepth = _boundaryType==0 ? tree_.maxDepth()-1 : tree_.maxDepth();
 	if( depth<=0 || depth>maxDepth ) depth = maxDepth;
 	BSplineData< Degree , Real > fData;
 	fData.set( _boundaryType==0 ? depth+1 : depth , (BoundaryType)_boundaryType );
@@ -3876,7 +3876,7 @@ Pointer( Real ) Octree< Degree , OutputDensity >::GetSolutionGrid( int& res , Re
 	Pointer( Real ) values = NewPointer< Real >( res * res * res );
 	memset( values , 0 , sizeof( Real ) * res  * res * res );
 
-	for( TreeOctNode* n=tree.nextNode() ; n ; n=tree.nextNode( n ) )
+	for( TreeOctNode* n=tree_.nextNode() ; n ; n=tree_.nextNode( n ) )
 	{
 		if( n->depth()>(_boundaryType==0?depth+1:depth) ) continue;
 		if( n->depth()<_minDepth ) continue;
