@@ -228,9 +228,7 @@ int Execute() {
 
 	double tt = Time();
 
-	Octree<Degree, OutputDensity> tree;
-	tree.threads = Threads.value();
-	tree.setBSplineData(Depth.value(), BoundaryType.value());
+	Octree<Degree, OutputDensity> tree(Threads.value(), Depth.value(), BoundaryType.value());
 
 	double t = Time();
 	tree.resetMaxMemoryUsage();

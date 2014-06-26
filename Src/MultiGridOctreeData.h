@@ -358,7 +358,7 @@ public:
 	Real postDerivativeSmooth;
 	TreeOctNode tree_;
 	BSplineData< Degree , Real > fData;
-	Octree( void );
+	Octree(int threads, int maxDepth, int boundaryType);
 	static double maxMemoryUsage() { return maxMemoryUsage_; }
 	static void resetMaxMemoryUsage() { maxMemoryUsage_ = 0; }
 	TreeOctNode const& tree() const { return tree_; }

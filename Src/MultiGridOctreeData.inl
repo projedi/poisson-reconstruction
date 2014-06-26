@@ -443,13 +443,14 @@ double Octree< Degree , OutputDensity >::MemoryUsage(void)
 }
 
 template< int Degree , bool OutputDensity >
-Octree< Degree , OutputDensity >::Octree(void)
+Octree< Degree , OutputDensity >::Octree(int threads, int maxDepth, int boundaryType)
 {
-	threads = 1;
+	this->threads = threads;
 	radius = 0;
 	width = 0;
 	postDerivativeSmooth = 0;
 	_constrainValues = false;
+	setBSplineData(maxDepth, boundaryType);
 }
 
 template< int Degree , bool OutputDensity >
