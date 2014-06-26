@@ -28,6 +28,7 @@ DAMAGE.
 
 #pragma once
 
+#include <algorithm>
 #include <vector>
 
 template<int Degree>
