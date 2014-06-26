@@ -229,18 +229,6 @@ class Octree
 	Point3D< double > GetDivergence1( const typename BSplineData< Degree , Real >::Integrator& integrator , int d , const int off1[3] , const int off2[3] , bool childParent ) const;
 	Point3D< double > GetDivergence2( const typename BSplineData< Degree , Real >::Integrator& integrator , int d , const int off1[3] , const int off2[3] , bool childParent ) const;
 
-	class AdjacencyCountFunction
-	{
-	public:
-		int adjacencyCount;
-		void Function( const TreeOctNode* node1 , const TreeOctNode* node2 );
-	};
-	class AdjacencySetFunction{
-	public:
-		int *adjacencies,adjacencyCount;
-		void Function( const TreeOctNode* node1 , const TreeOctNode* node2 );
-	};
-
 	class RefineFunction{
 	public:
 		int depth;

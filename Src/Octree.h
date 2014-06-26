@@ -83,6 +83,8 @@ public:
 	typedef octree_internals::NeighborKey3<OctNode, Neighbors3, Neighbors5> NeighborKey3;
 	typedef octree_internals::NeighborKey3<OctNode const, ConstNeighbors3, ConstNeighbors5>
 		ConstNeighborKey3;
+
+	typedef std::function<void(OctNode const*, OctNode const*)> NodeAdjacencyFunction;
 public:
 	static int const DepthShift = 5;
 	static int const OffsetShift = (sizeof(long long) * 8 - DepthShift) / 3;
@@ -95,10 +97,9 @@ public:
 public:
 	static void SetAllocator(int blockSize);
 
-	template<class NodeAdjacencyFunction>
 	static void ProcessFixedDepthNodeAdjacentNodes(int maxDepth,
 			OctNode* node1, int width1, OctNode* node2, int width2,
-			int depth, NodeAdjacencyFunction* F, int processCurrent = 1);
+			int depth, NodeAdjacencyFunction const& F, int processCurrent = 1);
 
 	static int CornerIndex(Point3D<Real> const& center, Point3D<Real> const& p);
 public:
@@ -126,19 +127,16 @@ public:
 
 	void setFullDepth(int maxDepth);
 
-	template<class NodeAdjacencyFunction>
-	void processNodeFaces(OctNode const* node, NodeAdjacencyFunction& F, int fIndex,
+	void processNodeFaces(OctNode const* node, NodeAdjacencyFunction const& F, int fIndex,
 			bool processCurrent = true) const;
 private:
-	template<class NodeAdjacencyFunction>
 	static void ProcessFixedDepthNodeAdjacentNodes(int dx, int dy, int dz,
 			OctNode* node1, int radius1, OctNode* node2, int radius2,
-			int width2, int depth, NodeAdjacencyFunction* F, bool processCurrent = true);
+			int width2, int depth, NodeAdjacencyFunction const& F, bool processCurrent = true);
 
-	template<class NodeAdjacencyFunction>
 	static void __ProcessFixedDepthNodeAdjacentNodes(int dx, int dy, int dz,
 			OctNode* node1, int radius1, OctNode* node2, int radius2,
-			int cWidth2, int depth, NodeAdjacencyFunction* F);
+			int cWidth2, int depth, NodeAdjacencyFunction const& F);
 
 	// This is made private because the division by two has been pulled out.
 	static bool Overlap(int c1, int c2, int c3, int dWidth);
@@ -146,8 +144,7 @@ private:
 
 	static unsigned long long Index(int depth, int const offset[3]);
 private:
-	template<class NodeAdjacencyFunction>
-	void processNodeFaces(OctNode const* node, NodeAdjacencyFunction& F,
+	void processNodeFaces(OctNode const* node, NodeAdjacencyFunction const& F,
 			std::tuple<int, int, int, int> cIndex) const;
 
 	int width(int maxDepth) const { return 1 << (maxDepth - depth()); }

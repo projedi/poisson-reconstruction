@@ -2021,8 +2021,9 @@ int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const 
 	int d , tIter=0;
 	SparseSymmetricMatrix< Real > _M;
 	Vector< Real > B , _B , _X;
-	AdjacencySetFunction asf;
-	AdjacencyCountFunction acf;
+	int *adjacencies;
+	int adjacencyCount2;
+	int adjacencyCount = 0;
 	double systemTime = 0 , solveTime = 0 , memUsage = 0 , evaluateTime = 0 , gTime , sTime;
 	Real myRadius;
 
@@ -2064,21 +2065,21 @@ int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const 
 	for( int i=sNodes.nodeCount[d] ; i<sNodes.nodeCount[d+1] ; i++ )
 	{
 		// Count the number of nodes at depth "depth" that lie under sNodes.treeNodes[i]
-		acf.adjacencyCount = 0;
+		adjacencyCount = 0;
 		for( TreeOctNode* temp=sNodes.treeNodes[i]->nextNode() ; temp ; )
 		{
-			if( temp->depth()==depth ) acf.adjacencyCount++ , temp = sNodes.treeNodes[i]->nextBranch( temp );
+			if( temp->depth()==depth ) adjacencyCount++ , temp = sNodes.treeNodes[i]->nextBranch( temp );
 			else                                              temp = sNodes.treeNodes[i]->nextNode  ( temp );
 		}
 		// [ERROR] Wow!!!! This is as stupid as stupid gets. All pairs? Really?
 #pragma message( "[WARNING] Assuming that the 2-ring contains all the children() of interest..." )
 		neighbors5 = neighborKey3.getNeighbors5(sNodes.treeNodes[i]);
 		for( int x=0 ; x<5 ; x++ ) for( int y=0 ; y<5 ; y++ ) for( int z=0 ; z<5 ; z++ ) if( neighbors5.neighbors[x][y][z] && !(x==2 && y==2 && z==2) )
-			TreeOctNode::ProcessFixedDepthNodeAdjacentNodes( fData.depth() , sNodes.treeNodes[i] , 1 , neighbors5.neighbors[x][y][z] , 2*width-1 , depth , &acf );
-		subDimension[i-sNodes.nodeCount[d]] = acf.adjacencyCount;
+			TreeOctNode::ProcessFixedDepthNodeAdjacentNodes( fData.depth() , sNodes.treeNodes[i] , 1 , neighbors5.neighbors[x][y][z] , 2*width-1 , depth , [&adjacencyCount](TreeOctNode const*, TreeOctNode const*) { ++adjacencyCount; });
+		subDimension[i-sNodes.nodeCount[d]] = adjacencyCount;
 		maxDimension = std::max< int >( maxDimension , subDimension[i-sNodes.nodeCount[d]] );
 	}
-	asf.adjacencies = new int[maxDimension];
+	adjacencies = new int[maxDimension];
 #ifndef NEW_MATRIX_CODE
 	MapReduceVector< Real > mrVector;
 	mrVector.resize( threads , maxDimension );
@@ -2089,38 +2090,38 @@ int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const 
 		int iter = 0;
 		gTime = Time();
 		// Count the number of nodes at depth "depth" that lie under sNodes.treeNodes[i]
-		acf.adjacencyCount = subDimension[i-sNodes.nodeCount[d]];
-		if( !acf.adjacencyCount ) continue;
+		adjacencyCount = subDimension[i-sNodes.nodeCount[d]];
+		if( !adjacencyCount ) continue;
 
 		// Set the indices for the nodes under, or near, sNodes.treeNodes[i].
-		asf.adjacencyCount = 0;
+		adjacencyCount2 = 0;
 		for( TreeOctNode* temp=sNodes.treeNodes[i]->nextNode() ; temp ; )
 		{
-			if( temp->depth()==depth && temp->nodeData.nodeIndex!=-1 ) asf.adjacencies[ asf.adjacencyCount++ ] = temp->nodeData.nodeIndex , temp = sNodes.treeNodes[i]->nextBranch( temp );
+			if( temp->depth()==depth && temp->nodeData.nodeIndex!=-1 ) adjacencies[ adjacencyCount2++ ] = temp->nodeData.nodeIndex , temp = sNodes.treeNodes[i]->nextBranch( temp );
 			else                                                                                                                            temp = sNodes.treeNodes[i]->nextNode  ( temp );
 		}
 #pragma message( "[WARNING] Assuming that the 2-ring contains all the children() of interest..." )
 		neighbors5 = neighborKey3.getNeighbors5(sNodes.treeNodes[i]);
 		for( int x=0 ; x<5 ; x++ ) for( int y=0 ; y<5 ; y++ ) for( int z=0 ; z<5 ; z++ ) if( neighbors5.neighbors[x][y][z] && !(x==2 && y==2 && z==2) )
-			TreeOctNode::ProcessFixedDepthNodeAdjacentNodes( fData.depth() , sNodes.treeNodes[i] , 1 , neighbors5.neighbors[x][y][z] , 2*width-1 , depth , &asf );
+			TreeOctNode::ProcessFixedDepthNodeAdjacentNodes( fData.depth() , sNodes.treeNodes[i] , 1 , neighbors5.neighbors[x][y][z] , 2*width-1 , depth , [&adjacencyCount2, &adjacencies](TreeOctNode const* node1, TreeOctNode const*) { adjacencies[adjacencyCount2++] = node1->nodeData.nodeIndex; } );
 
 		// Get the associated constraint vector
-		_B = Vector<Real>( asf.adjacencyCount );
-		_X = Vector<Real>( asf.adjacencyCount );
+		_B = Vector<Real>( adjacencyCount2 );
+		_X = Vector<Real>( adjacencyCount2 );
 #pragma omp parallel for num_threads( threads ) schedule( static )
-		for( int j=0 ; j<asf.adjacencyCount ; j++ )
+		for( int j=0 ; j<adjacencyCount2 ; j++ )
 		{
-			_B[j] = B[ asf.adjacencies[j]-sNodes.nodeCount[depth] ];
-			_X[j] = sNodes.treeNodes[ asf.adjacencies[j] ]->nodeData.solution;
+			_B[j] = B[ adjacencies[j]-sNodes.nodeCount[depth] ];
+			_X[j] = sNodes.treeNodes[ adjacencies[j] ]->nodeData.solution;
 		}
 
 		// Get the associated matrix
-		GetRestrictedFixedDepthLaplacian( _M , depth , integrator , asf.adjacencies , asf.adjacencyCount , sNodes.treeNodes[i] , myRadius , sNodes , metSolution );
+		GetRestrictedFixedDepthLaplacian( _M , depth , integrator , adjacencies , adjacencyCount2 , sNodes.treeNodes[i] , myRadius , sNodes , metSolution );
 #pragma omp parallel for num_threads( threads ) schedule( static )
-		for( int j=0 ; j<asf.adjacencyCount ; j++ )
+		for( int j=0 ; j<adjacencyCount2 ; j++ )
 		{
-			_B[j] += sNodes.treeNodes[asf.adjacencies[j]]->nodeData.constraint;
-			sNodes.treeNodes[ asf.adjacencies[j] ]->nodeData.constraint = 0;
+			_B[j] += sNodes.treeNodes[adjacencies[j]]->nodeData.constraint;
+			sNodes.treeNodes[ adjacencies[j] ]->nodeData.constraint = 0;
 		}
 		gTime = Time()-gTime;
 
@@ -2149,18 +2150,18 @@ int Octree< Degree , OutputDensity >::_SolveFixedDepthMatrix( int depth , const 
 
 		// Update the solution for all nodes in the sub-tree
 #pragma omp parallel for num_threads( threads )
-		for( int j=0 ; j<asf.adjacencyCount ; j++ )
+		for( int j=0 ; j<adjacencyCount2 ; j++ )
 		{
-			TreeOctNode* temp=sNodes.treeNodes[ asf.adjacencies[j] ];
+			TreeOctNode* temp=sNodes.treeNodes[ adjacencies[j] ];
 			while( temp->depth()>sNodes.treeNodes[i]->depth() ) temp=temp->parent();
-			if( temp->nodeData.nodeIndex>=sNodes.treeNodes[i]->nodeData.nodeIndex ) sNodes.treeNodes[ asf.adjacencies[j] ]->nodeData.solution = Real( _X[j] );
+			if( temp->nodeData.nodeIndex>=sNodes.treeNodes[i]->nodeData.nodeIndex ) sNodes.treeNodes[ adjacencies[j] ]->nodeData.solution = Real( _X[j] );
 		}
 		systemTime += gTime;
 		solveTime += sTime;
 		memUsage = std::max< double >( MemoryUsage() , memUsage );
 		tIter += iter;
 	}
-	delete[] asf.adjacencies;
+	delete[] adjacencies;
 	MemoryUsage();
 	DumpOutput::instance()("#\tEvaluated / Got / Solved in: %6.3f / %6.3f / %6.3f\t(%.3f MB)\n" , evaluateTime , systemTime , solveTime , float( maxMemoryUsage ) );
 	maxMemoryUsage = std::max< double >( maxMemoryUsage , _maxMemoryUsage );
@@ -2401,10 +2402,6 @@ void Octree< Degree , OutputDensity >::SetLaplacianConstraints( void )
 	delete normals;
 	normals = NULL;
 }
-template< int Degree , bool OutputDensity >
-void Octree< Degree , OutputDensity >::AdjacencyCountFunction::Function( const TreeOctNode*, const TreeOctNode*){ adjacencyCount++; }
-template< int Degree , bool OutputDensity >
-void Octree< Degree , OutputDensity >::AdjacencySetFunction::Function(const TreeOctNode* node1,const TreeOctNode*){ adjacencies[adjacencyCount++] = node1->nodeData.nodeIndex; }
 template< int Degree , bool OutputDensity >
 void Octree< Degree , OutputDensity >::RefineFunction::Function( TreeOctNode* node1 , const TreeOctNode* node2 )
 {

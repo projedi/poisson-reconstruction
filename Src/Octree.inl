@@ -165,17 +165,15 @@ OctNode<NodeData, Real>* OctNode<NodeData, Real>::nextNode(OctNode* current) {
 }
 
 template<class NodeData, class Real>
-template<class NodeAdjacencyFunction>
 void OctNode<NodeData, Real>::processNodeFaces(OctNode const* node,
-		NodeAdjacencyFunction& F, int fIndex, bool processCurrent) const {
+		NodeAdjacencyFunction const& F, int fIndex, bool processCurrent) const {
 	if(processCurrent) F(this, node);
 	if(children_) processNodeFaces(node, F, Cube::FaceCorners(fIndex));
 }
 
 template<class NodeData, class Real>
-template<class NodeAdjacencyFunction>
 void OctNode<NodeData, Real>::processNodeFaces(OctNode const* node,
-		NodeAdjacencyFunction& F, std::tuple<int, int, int, int> cIndex) const {
+		NodeAdjacencyFunction const& F, std::tuple<int, int, int, int> cIndex) const {
 	F(&children_[std::get<0>(cIndex)], node);
 	F(&children_[std::get<1>(cIndex)], node);
 	F(&children_[std::get<2>(cIndex)], node);
@@ -192,10 +190,9 @@ void OctNode<NodeData, Real>::processNodeFaces(OctNode const* node,
 }
 
 template<class NodeData, class Real>
-template<class NodeAdjacencyFunction>
 void OctNode<NodeData, Real>::ProcessFixedDepthNodeAdjacentNodes(int maxDepth,
 		OctNode* node1, int width1, OctNode* node2, int width2,
-		int depth, NodeAdjacencyFunction* F, int processCurrent) {
+		int depth, std::function<void(OctNode const*, OctNode const*)> const& F, int processCurrent) {
 	int c1[3];
 	int c2[3];
 	node1->centerIndex(maxDepth + 1, c1);
@@ -209,15 +206,14 @@ void OctNode<NodeData, Real>::ProcessFixedDepthNodeAdjacentNodes(int maxDepth,
 }
 
 template<class NodeData, class Real>
-template<class NodeAdjacencyFunction>
 void OctNode<NodeData, Real>::ProcessFixedDepthNodeAdjacentNodes(
 		int dx, int dy, int dz, OctNode* node1, int radius1, OctNode* node2, int radius2,
-		int width2, int depth, NodeAdjacencyFunction* F, bool processCurrent) {
+		int width2, int depth, NodeAdjacencyFunction const& F, bool processCurrent) {
 	int d = node2->depth();
 	if(d > depth) return;
 	if(!Overlap(dx, dy, dz, radius1 + radius2)) return;
 	if(d == depth) {
-		if(processCurrent) F->Function(node2, node1);
+		if(processCurrent) F(node2, node1);
 	} else {
 		if(!node2->children_) return;
 		__ProcessFixedDepthNodeAdjacentNodes(-dx, -dy, -dz,
@@ -226,10 +222,9 @@ void OctNode<NodeData, Real>::ProcessFixedDepthNodeAdjacentNodes(
 }
 
 template<class NodeData, class Real>
-template<class NodeAdjacencyFunction>
 void OctNode<NodeData, Real>::__ProcessFixedDepthNodeAdjacentNodes(
 		int dx, int dy, int dz, OctNode* node1, int radius1, OctNode* node2, int radius2,
-		int cWidth2, int depth, NodeAdjacencyFunction* F) {
+		int cWidth2, int depth, NodeAdjacencyFunction const& F) {
 	int cWidth = cWidth2 >> 1;
 	int radius = radius2 >> 1;
 	int o = ChildOverlap(dx, dy, dz, radius1 + radius, cWidth);
@@ -241,14 +236,14 @@ void OctNode<NodeData, Real>::__ProcessFixedDepthNodeAdjacentNodes(
 	int dz1 = dz - cWidth;
 	int dz2 = dz + cWidth;
 	if(node2->depth() == depth) {
-		if(o & 1) F->Function(&node2->children_[0], node1);
-		if(o & 2) F->Function(&node2->children_[1], node1);
-		if(o & 4) F->Function(&node2->children_[2], node1);
-		if(o & 8) F->Function(&node2->children_[3], node1);
-		if(o & 16) F->Function(&node2->children_[4], node1);
-		if(o & 32) F->Function(&node2->children_[5], node1);
-		if(o & 64) F->Function(&node2->children_[6], node1);
-		if(o & 128) F->Function(&node2->children_[7], node1);
+		if(o & 1) F(&node2->children_[0], node1);
+		if(o & 2) F(&node2->children_[1], node1);
+		if(o & 4) F(&node2->children_[2], node1);
+		if(o & 8) F(&node2->children_[3], node1);
+		if(o & 16) F(&node2->children_[4], node1);
+		if(o & 32) F(&node2->children_[5], node1);
+		if(o & 64) F(&node2->children_[6], node1);
+		if(o & 128) F(&node2->children_[7], node1);
 	} else {
 		if(o & 1)
 			if(node2->children_[0].children_)
