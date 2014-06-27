@@ -66,6 +66,8 @@ public:
 	template<class T2>
 	Vector<T2> operator*(Vector<T2> const& V) const;
 
+	T Norm(size_t Ln) const;
+
 	template<class T2>
 	static int Solve(SparseSymmetricMatrix<T> const& M, Vector<T2> const& b, int iters, Vector<T2>& solution,
 			T2 eps, bool reset, int threads, bool addDCTerm);

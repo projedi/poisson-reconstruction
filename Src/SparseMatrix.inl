@@ -235,3 +235,12 @@ int SparseSymmetricMatrix<T>::Solve(SparseSymmetricMatrix<T> const& A, Vector<T2
 	}
 	return ii;
 }
+
+template<class T>
+T SparseSymmetricMatrix<T>::Norm(size_t Ln) const {
+	T N = 0;
+	for(int i = 0; i != rows; ++i)
+		for(int j = 0; j != rowSizes_[i]; ++j)
+			N += std::pow(m_ppElements[i][j].Value, (T)Ln);
+	return std::pow(N, (T)1.0 / Ln);
+}
