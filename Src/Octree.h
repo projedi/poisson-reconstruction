@@ -55,7 +55,7 @@ public:
 	typedef Neighbors<3, OctNode> Neighbors3;
 	typedef Neighbors<5, OctNode> Neighbors5;
 
-	NeighborKey3(): neighbors_(nullptr), _depth(-1) { }
+	explicit NeighborKey3(int depth): neighbors_(nullptr), _depth(-1) { set(depth); }
 	NeighborKey3(NeighborKey3 const& nKey3);
 	~NeighborKey3() { if(neighbors_) delete[] neighbors_; }
 
