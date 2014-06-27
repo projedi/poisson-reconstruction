@@ -33,43 +33,61 @@ DAMAGE.
 
 #pragma message( "[WARNING] Assuming that the number of octree nodes is less than INT_MAX" )
 
-#define GRADIENT_DOMAIN_SOLUTION 1	// Given the constraint vector-field V(p), there are two ways to solve for the coefficients, x, of the indicator function
-									// with respect to the B-spline basis {B_i(p)}
-									// 1] Find x minimizing:
-									//			|| V(p) - \sum_i \nabla x_i B_i(p) ||^2
-									//		which is solved by the system A_1x = b_1 where:
-									//			A_1[i,j] = < \nabla B_i(p) , \nabla B_j(p) >
-									//			b_1[i]   = < \nabla B_i(p) , V(p) >
-									// 2] Formulate this as a Poisson equation:
-									//			\sum_i x_i \Delta B_i(p) = \nabla \cdot V(p)
-									//		which is solved by the system A_2x = b_2 where:
-									//			A_2[i,j] = - < \Delta B_i(p) , B_j(p) >
-									//			b_2[i]   = - < B_i(p) , \nabla \cdot V(p) >
-									// Although the two system matrices should be the same (assuming that the B_i satisfy dirichlet/neumann boundary conditions)
-									// the constraint vectors can differ when V does not satisfy the Neumann boundary conditions:
-									//		A_1[i,j] = \int_R < \nabla B_i(p) , \nabla B_j(p) >
-									//               = \int_R [ \nabla \cdot ( B_i(p) \nabla B_j(p) ) - B_i(p) \Delta B_j(p) ]
-									//               = \int_dR < N(p) , B_i(p) \nabla B_j(p) > + A_2[i,j]
-									// and the first integral is zero if either f_i is zero on the boundary dR or the derivative of B_i across the boundary is zero.
-									// However, for the constraints we have:
-									//		b_1(i)   = \int_R < \nabla B_i(p) , V(p) >
-									//               = \int_R [ \nabla \cdot ( B_i(p) V(p) ) - B_i(p) \nabla \cdot V(p) ]
-									//               = \int_dR < N(p) ,  B_i(p) V(p) > + b_2[i]
-									// In particular, this implies that if the B_i satisfy the Neumann boundary conditions (rather than Dirichlet),
-									// and V is not zero across the boundary, then the two constraints are different.
-									// Forcing the < V(p) , N(p) > = 0 on the boundary, by killing off the component of the vector-field in the normal direction
-									// (FORCE_NEUMANN_FIELD), makes the two systems equal, and the value of this flag should be immaterial.
-									// Note that under interpretation 1, we have:
-									//		\sum_i b_1(i) = < \nabla \sum_ i B_i(p) , V(p) > = 0
-									// because the B_i's sum to one. However, in general, we could have
-									//		\sum_i b_2(i) \neq 0.
-									// This could cause trouble because the constant functions are in the kernel of the matrix A, so CG will misbehave if the constraint
-									// has a non-zero DC term. (Again, forcing < V(p) , N(p) > = 0 along the boundary resolves this problem.)
+#ifndef NO_GRADIENT_DOMAIN_SOLUTION
+#define GRADIENT_DOMAIN_SOLUTION 1
+#else
+#define GRADIENT_DOMAIN_SOLUTION 0
+#endif
+// Given the constraint vector-field V(p), there are two ways to solve for the coefficients, x, of the
+// indicator function with respect to the B-spline basis {B_i(p)}
+// 1] Find x minimizing:
+//			|| V(p) - \sum_i \nabla x_i B_i(p) ||^2
+//		which is solved by the system A_1x = b_1 where:
+//			A_1[i,j] = < \nabla B_i(p) , \nabla B_j(p) >
+//			b_1[i]   = < \nabla B_i(p) , V(p) >
+// 2] Formulate this as a Poisson equation:
+//			\sum_i x_i \Delta B_i(p) = \nabla \cdot V(p)
+//		which is solved by the system A_2x = b_2 where:
+//			A_2[i,j] = - < \Delta B_i(p) , B_j(p) >
+//			b_2[i]   = - < B_i(p) , \nabla \cdot V(p) >
+// Although the two system matrices should be the same (assuming that the B_i satisfy
+// dirichlet/neumann boundary conditions) the constraint vectors can differ when V does not satisfy
+// the Neumann boundary conditions:
+//		A_1[i,j] = \int_R < \nabla B_i(p) , \nabla B_j(p) >
+//               = \int_R [ \nabla \cdot ( B_i(p) \nabla B_j(p) ) - B_i(p) \Delta B_j(p) ]
+//               = \int_dR < N(p) , B_i(p) \nabla B_j(p) > + A_2[i,j]
+// and the first integral is zero if either f_i is zero on the boundary dR or the derivative of
+// B_i across the boundary is zero. However, for the constraints we have:
+//		b_1(i)   = \int_R < \nabla B_i(p) , V(p) >
+//               = \int_R [ \nabla \cdot ( B_i(p) V(p) ) - B_i(p) \nabla \cdot V(p) ]
+//               = \int_dR < N(p) ,  B_i(p) V(p) > + b_2[i]
+// In particular, this implies that if the B_i satisfy the Neumann boundary conditions
+// (rather than Dirichlet), and V is not zero across the boundary, then the two constraints are different.
+// Forcing the < V(p) , N(p) > = 0 on the boundary, by killing off the component of the vector-field
+// in the normal direction (FORCE_NEUMANN_FIELD), makes the two systems equal, and the value of this
+// flag should be immaterial.
+// Note that under interpretation 1, we have:
+//		\sum_i b_1(i) = < \nabla \sum_ i B_i(p) , V(p) > = 0
+// because the B_i's sum to one. However, in general, we could have
+//		\sum_i b_2(i) \neq 0.
+// This could cause trouble because the constant functions are in the kernel of the matrix A,
+// so CG will misbehave if the constraint has a non-zero DC term.
+// (Again, forcing < V(p) , N(p) > = 0 along the boundary resolves this problem.)
 
-#define FORCE_NEUMANN_FIELD 1		// This flag forces the normal component across the boundary of the integration domain to be zero.
-									// This should be enabled if GRADIENT_DOMAIN_SOLUTION is not, so that CG doesn't run into trouble.
+#ifndef NO_FORCE_NEUMANN_FIELD
+#define FORCE_NEUMANN_FIELD 1
+#else
+#define FORCE_NEUMANN_FIELD 0
+#endif
+// This flag forces the normal component across the boundary of the integration domain to be zero.
+// This should be enabled if GRADIENT_DOMAIN_SOLUTION is not, so that CG doesn't run into trouble.
 
-#define ROBERTO_TOLDO_FIX 1
+// 0 produces segmentation fault on the original code
+#ifndef SPLAT_ORDER_1
+#define SPLAT_ORDER 2
+#else
+#define SPLAT_ORDER 1
+#endif
 
 #if !FORCE_NEUMANN_FIELD
 #pragma message( "[WARNING] Not zeroing out normal component on boundary" )
