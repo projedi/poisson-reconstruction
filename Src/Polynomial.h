@@ -36,6 +36,8 @@ class Polynomial {
 public:
 	Polynomial(): coefficients{{}} { }
 
+	Polynomial(std::array<double, Degree + 1> const& cs): coefficients(cs) { }
+
 	template<int Degree2>
 	Polynomial(Polynomial<Degree2> const& P);
 
