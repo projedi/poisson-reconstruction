@@ -126,8 +126,11 @@ public:
 
 	OctNode* parent() const { return parent_; }
 	OctNode* children() const { return children_; }
-	void nullChildren() { children_ = nullptr; }
 
+	bool hasChildren() const { return children_; }
+	OctNode* child(int idx) const { return children_ + idx; }
+
+	void nullChildren() { children_ = nullptr; }
 	bool initChildren();
 
 	void depthAndOffset(int& depth, int offset[3]) const; 
