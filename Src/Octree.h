@@ -39,6 +39,13 @@ class Neighbors {
 public:
 	T* neighbors[N][N][N];
 	Neighbors(): neighbors{} { }
+
+	operator Neighbors<N, T const>() {
+		Neighbors<N, T const> r;
+		r.neighbors = neighbors;
+		return r;
+	}
+
 	void clear();
 };
 
