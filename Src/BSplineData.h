@@ -46,6 +46,12 @@ enum class BoundaryType {
 	Neumann = 1
 };
 
+constexpr BoundaryType getBoundaryType(int v) {
+	return (v == 0) ? BoundaryType::None :
+		(v < 0) ? BoundaryType::Dirichlet :
+		BoundaryType::Neumann;
+}
+
 template<int Degree>
 struct BSplineElements {
 	BSplineElements(): denominator_(1) { }
