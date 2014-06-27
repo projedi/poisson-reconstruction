@@ -129,6 +129,7 @@ public:
 
 	bool hasChildren() const { return children_; }
 	OctNode* child(int idx) const { return children_ + idx; }
+	int childIndex(OctNode const* node) const { return node - children_; }
 
 	void nullChildren() { children_ = nullptr; }
 	bool initChildren();
