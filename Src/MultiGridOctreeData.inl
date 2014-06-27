@@ -2176,7 +2176,7 @@ void Octree< Degree , OutputDensity >::ClipTree( void )
 		{
 			int hasNormals=0;
 			for( unsigned i=0 ; i<Cube::CORNERS && !hasNormals ; i++ ) hasNormals = HasNormals( &temp->children()[i] , EPSILON/(1<<maxDepth) );
-			if( !hasNormals ) temp->children()=NULL;
+			if( !hasNormals ) temp->nullChildren();
 		}
 	MemoryUsage();
 }

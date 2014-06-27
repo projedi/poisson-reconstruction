@@ -125,7 +125,8 @@ public:
 	~OctNode() { if(!UseAlloc && children_) delete[] children_; }
 
 	OctNode* parent() const { return parent_; }
-	OctNode*& children() const { return const_cast<OctNode*&>(children_); }
+	OctNode* children() const { return children_; }
+	void nullChildren() { children_ = nullptr; }
 
 	bool initChildren();
 
