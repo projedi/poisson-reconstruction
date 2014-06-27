@@ -51,6 +51,21 @@ newmatrix: LFLAGS += $(LFLAGS_DEBUG)
 newmatrix: $(BIN)$(PR_TARGET)
 newmatrix: $(BIN)$(ST_TARGET)
 
+nogradient: CFLAGS += $(CFLAGS_DEBUG) -DNO_GRADIENT_DOMAIN_SOLUTION
+nogradient: LFLAGS += $(LFLAGS_DEBUG)
+nogradient: $(BIN)$(PR_TARGET)
+nogradient: $(BIN)$(ST_TARGET)
+
+noneumann: CFLAGS += $(CFLAGS_DEBUG) -DNO_FORCE_NEUMANN_FIELD
+noneumann: LFLAGS += $(LFLAGS_DEBUG)
+noneumann: $(BIN)$(PR_TARGET)
+noneumann: $(BIN)$(ST_TARGET)
+
+splat1: CFLAGS += $(CFLAGS_DEBUG) -DSPLAT_ORDER_1
+splat1: LFLAGS += $(LFLAGS_DEBUG)
+splat1: $(BIN)$(PR_TARGET)
+splat1: $(BIN)$(ST_TARGET)
+
 clean:
 	rm -f $(BIN)$(PR_TARGET)
 	rm -f $(BIN)$(ST_TARGET)
@@ -83,17 +98,17 @@ test-newmatrix: newmatrix
 	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig-newmatrix"
 
 # GRADIENT_DOMAIN_SOLUTION 0
-test-nogradient: all
+test-nogradient: nogradient
 	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig-nogradient"
 	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig-nogradient"
 
 # FORCE_NEUMANN_FIELD 0
-test-noneumann: all
+test-noneumann: noneumann
 	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig-noneumann"
 	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig-noneumann"
 
 # SPLAT_ORDER 1
-test-splat1: all
+test-splat1: splat1
 	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig-splat1"
 	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig-splat1"
 
