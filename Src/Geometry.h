@@ -116,6 +116,9 @@ struct XForm {
 	XForm transpose() const;
 	Real determinant() const;
 	XForm inverse() const;
+
+	template<int Dim2>
+	XForm<Real, Dim2> cut() const;
 private:
 	Real coords_[Dim][Dim];
 };

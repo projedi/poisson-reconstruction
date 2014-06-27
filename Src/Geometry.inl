@@ -138,6 +138,17 @@ XForm<Real, Dim> operator*(XForm<Real, Dim> const& f1, XForm<Real, Dim> const& f
 	return n;
 }
 
+template<class Real, int Dim>
+template<int Dim2>
+XForm<Real, Dim2> XForm<Real, Dim>::cut() const {
+	static_assert(Dim2 <= Dim, "cut can only construct XForm with dimension less or equal to the original");
+	XForm<Real, Dim2> res;
+	for(int i = 0; i != Dim2; ++i)
+		for(int j = 0; j != Dim2; ++j)
+			res(i, j) = coords_[i][j];
+	return res;
+}
+
 ///////////////////////////
 // BufferedReadWriteFile //
 ///////////////////////////
