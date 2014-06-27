@@ -50,20 +50,14 @@ private:
 	std::ifstream file_;
 };
 
-// TODO: Implementation is untouched because there is no test data
 template<class Real>
 class BinaryPointStream: public PointStream<Real> {
 public:
 	BinaryPointStream(std::string const& filename);
-	~BinaryPointStream();
-	void reset() override;
+	void reset() override { file_.clear(); file_.seekg(0); }
 	bool nextPoint(Point3D<Real>& p, Point3D<Real>& n) override;
 private:
-	FILE* _fp;
-	static int const POINT_BUFFER_SIZE = 1024;
-	Real _pointBuffer[POINT_BUFFER_SIZE * 2 * 3];
-	int _pointsInBuffer;
-	int _currentPointIndex;
+	std::ifstream file_;
 };
 
 template<class Real>

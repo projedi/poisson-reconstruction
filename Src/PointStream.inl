@@ -39,46 +39,27 @@ bool ASCIIPointStream<Real>::nextPoint(Point3D<Real>& p, Point3D<Real>& n) {
 	return (file_ >> p[0] >> p[1] >> p[2] >> n[0] >> n[1] >> n[2]).good();
 }
 
-template< class Real >
-BinaryPointStream< Real >::BinaryPointStream( std::string const& fileName )
-{
-	_pointsInBuffer = _currentPointIndex = 0;
-	_fp = fopen( fileName.c_str() , "rb" );
-	if( !_fp ) fprintf( stderr , "Failed to open file for reading: %s\n" , fileName.c_str() ) , exit( 0 );
-}
-template< class Real >
-BinaryPointStream< Real >::~BinaryPointStream( void )
-{
-	fclose( _fp );
-	_fp = NULL;
-}
-template< class Real >
-void BinaryPointStream< Real >::reset( void )
-{
-	fseek( _fp , SEEK_SET , 0 );
-	_pointsInBuffer = _currentPointIndex = 0;
-}
-template< class Real >
-bool BinaryPointStream< Real >::nextPoint( Point3D< Real >& p , Point3D< Real >& n )
-{
-	if( _currentPointIndex<_pointsInBuffer )
-	{
-		p[0] = _pointBuffer[ _currentPointIndex*6+0 ];
-		p[1] = _pointBuffer[ _currentPointIndex*6+1 ];
-		p[2] = _pointBuffer[ _currentPointIndex*6+2 ];
-		n[0] = _pointBuffer[ _currentPointIndex*6+3 ];
-		n[1] = _pointBuffer[ _currentPointIndex*6+4 ];
-		n[2] = _pointBuffer[ _currentPointIndex*6+5 ];
-		_currentPointIndex++;
-		return true;
+template<class Real>
+BinaryPointStream<Real>::BinaryPointStream(std::string const& filename):
+	file_(filename, std::ios_base::binary) {
+	if(!file_) {
+		std::cerr << "Failed to open file for reading: " << filename << std::endl;
+		std::exit(1);
 	}
-	else
-	{
-		_currentPointIndex = 0;
-		_pointsInBuffer = int( fread( _pointBuffer , sizeof( Real ) * 6 , POINT_BUFFER_SIZE , _fp ) );
-		if( !_pointsInBuffer ) return false;
-		else return nextPoint( p , n );
-	}
+}
+
+
+template<class Real>
+bool BinaryPointStream<Real>::nextPoint(Point3D<Real>& p, Point3D<Real>& n) {
+	Real buf[6];
+	file_.read((char*)buf, 6 * sizeof(Real));
+	p[0] = buf[0];
+	p[1] = buf[1];
+	p[2] = buf[2];
+	n[0] = buf[3];
+	n[1] = buf[4];
+	n[2] = buf[5];
+	return file_.good();
 }
 
 template<class Real>
