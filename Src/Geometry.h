@@ -35,6 +35,8 @@ DAMAGE.
 
 template<class Real>
 struct Point3D {
+	static Point3D ones() { return Point3D(1, 1, 1); }
+
 	Point3D(): coords{} { }
 	Point3D(Real v0, Real v1, Real v2): coords{v0, v1, v2} { }
 	template<class Real2>
