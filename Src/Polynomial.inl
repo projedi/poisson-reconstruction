@@ -35,11 +35,20 @@ DAMAGE.
 ////////////////
 // Polynomial //
 ////////////////
+
+template<int Degree>
+Polynomial<Degree>::Polynomial(double cs[Degree + 1]) {
+	std::copy(cs, cs + Degree + 1, coefficients);
+}
+
 template<int Degree>
 template<int Degree2>
-Polynomial<Degree>::Polynomial(Polynomial<Degree2> const& P): coefficients{{}} {
-	for(int i = 0; i <= Degree && i <= Degree2; ++i)
+Polynomial<Degree>::Polynomial(Polynomial<Degree2> const& P) {
+	int i;
+	for(i = 0; i <= Degree && i <= Degree2; ++i)
 		coefficients[i] = P[i];
+	for(; i <= Degree; ++i)
+		coefficients[i] = 0;
 }
 
 template<int Degree>
@@ -172,10 +181,10 @@ Polynomial<Degree> Polynomial<Degree>::shift(double t) const {
 
 template<int Degree>
 std::vector<double> Polynomial<Degree>::getSolutions(double c, double EPS) const {
-	std::array<double, Degree + 1> cs;
-	std::copy(coefficients.begin(), coefficients.end(), cs.begin());
+	double cs[Degree + 1];
+	std::copy(coefficients, coefficients + Degree + 1, cs);
 	cs[0] -= c;
-	auto rs = Factor<Degree>(cs.data(), EPS);
+	auto rs = Factor<Degree>(cs, EPS);
 	std::vector<double> roots;
 	for(auto r: rs) if(std::abs(r.imag()) <= EPS) roots.push_back(r.real());
 	return roots;

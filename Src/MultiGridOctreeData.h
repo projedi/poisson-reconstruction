@@ -117,9 +117,7 @@ public:
 	Real solution;
 	int pointIndex;
 
-	TreeNodeData():
-		nodeIndex(-1), normalIndex(-1), centerWeightContribution{}, constraint(0),
-		solution(0), pointIndex(-1) { }
+	TreeNodeData();
 };
 
 template<bool OutputDensity>

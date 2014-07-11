@@ -31,15 +31,15 @@ void MinimalAreaTriangulation<Real>::GetTriangulation(
 		std::vector<Point3D<Real>> const& vertices, std::vector<TriangleIndex>& triangles) {
 	if(vertices.size() == 3) {
 		triangles.clear();
-		triangles.push_back({ { { 0, 1, 2 } } });
+		triangles.push_back(TriangleIndex(0, 1, 2));
 		return;
 	}
 	if(vertices.size() == 4) {
-		TriangleIndex tIndex[2][2] {
-			{ { { { 0, 1, 2 } } }, { { { 2, 3, 0 } } } },
-			{ { { { 0, 1, 3 } } }, { { { 3, 1, 2 } } } }
+		TriangleIndex tIndex[2][2] = {
+			{ TriangleIndex(0, 1, 2), TriangleIndex(2, 3, 0) },
+			{ TriangleIndex(0, 1, 3), TriangleIndex(3, 1, 2) }
 		};
-		Real area[2]{};
+		Real area[2] = {};
 
 		for(int i = 0; i != 2; ++i)
 			for(int j = 0; j != 2; ++j)
@@ -52,7 +52,7 @@ void MinimalAreaTriangulation<Real>::GetTriangulation(
 		return;
 	}
 	data_.clear();
-	data_.resize(vertices.size() * vertices.size(), { -1, -1 });
+	data_.resize(vertices.size() * vertices.size(), TriangulationData(-1, -1));
 	GetArea(0, 1, vertices);
 	triangles.clear();
 	GetTriangulation(0, 1, vertices, triangles);
@@ -61,7 +61,7 @@ void MinimalAreaTriangulation<Real>::GetTriangulation(
 template <class Real>
 Real MinimalAreaTriangulation<Real>::GetArea(std::vector<Point3D<Real>> const& vertices) {
 	data_.clear();
-	data_.resize(vertices.size() * vertices.size(), { -1, -1 });
+	data_.resize(vertices.size() * vertices.size(), TriangulationData(-1, -1));
 	return GetArea(0, 1, vertices);
 }
 
@@ -72,7 +72,7 @@ void MinimalAreaTriangulation<Real>::GetTriangulation(int i, int j,
 
 	int m = data_[i * vertices.size() + j].midPoint;
 	if(m >= 0) {
-		triangles.push_back({ { { i, j, m } } });
+		triangles.push_back(TriangleIndex(i, j, m));
 		GetTriangulation(i, m, vertices, triangles);
 		GetTriangulation(m, j, vertices, triangles);
 	}
@@ -115,7 +115,7 @@ Real MinimalAreaTriangulation<Real>::GetArea(size_t i, size_t j,
 			mid = rr;
 		}
 	}
-	data_[idx] = { a, mid };
+	data_[idx] = TriangulationData(a, mid);
 
 	return a;
 }

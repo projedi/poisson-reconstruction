@@ -498,15 +498,16 @@ typename NeighborKey3<OctNode>::Neighbors5 NeighborKey3<OctNode>::getNeighbors5(
 		return neighbors;
 	}
 	struct RangeData {
+		RangeData(int s, int e, int o): start(s), end(e), neighborOffset(o) { }
 		int start;
 		int end;
 		int neighborOffset;
 	};
 	std::function<RangeData(int, int)> getRange = [](int c, int i) {
 		switch(i) {
-			case 0: return c % 2 ? RangeData { 1, 2, -1 } : RangeData { 0, 2, 0 };
-			case 1: return c % 2 ? RangeData { 0, 2, 1 } : RangeData { 0, 2, 2 };
-			case 2: return c % 2 ? RangeData { 0, 2, 3 } : RangeData { 0, 1, 4 };
+			case 0: return c % 2 ? RangeData(1, 2, -1) : RangeData(0, 2, 0);
+			case 1: return c % 2 ? RangeData(0, 2, 1) : RangeData(0, 2, 2);
+			case 2: return c % 2 ? RangeData(0, 2, 3) : RangeData(0, 1, 4);
 			default:
 				std::cerr << "[ERROR]: Invalid value of i in getRange lambda" << std::endl;
 				exit(1);

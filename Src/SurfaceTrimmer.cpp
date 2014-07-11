@@ -52,9 +52,15 @@ cmdLine<float> IslandAreaRatio("aRatio", 0.001f);
 cmdLine<std::pair<float, float>> ColorRange("color");
 cmdLineReadable PolygonMesh("polygonMesh");
 
-std::vector<cmdLineReadable*> params = {
-	&In , &Out , &Trim , &PolygonMesh , &ColorRange , &Smooth , &IslandAreaRatio
-};
+std::vector<cmdLineReadable*> params;
+
+void BuildParams() {
+	cmdLineReadable* params_array[] = {
+		&In , &Out , &Trim , &PolygonMesh , &ColorRange , &Smooth , &IslandAreaRatio, nullptr
+	};
+	for(cmdLineReadable** p = params_array; *p; ++p)
+		params.push_back(*p);
+}
 
 void ShowUsage(std::string const& executable) {
 	printf( "Usage: %s\n" , executable.c_str() );
@@ -293,6 +299,7 @@ double PolygonArea(std::vector<PlyValueVertex<Real>> const& vertices, std::vecto
 }
 
 int main(int argc, char** argv) {
+	BuildParams();
 	cmdLineParse(argc - 1, argv + 1, params , false);
 
 #if FOR_RELEASE

@@ -33,7 +33,7 @@ DAMAGE.
 
 template<int Degree>
 struct BSplineElementCoefficients {
-	BSplineElementCoefficients(): coeffs{} { }
+	BSplineElementCoefficients() { memset(coeffs, 0, sizeof(int) * (Degree + 1)); }
 	int operator[](int idx) const { return coeffs[idx]; }
 	int& operator[](int idx) { return coeffs[idx]; }
 private:
