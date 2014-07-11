@@ -38,7 +38,7 @@ template<int N, class T>
 class Neighbors {
 public:
 	T* neighbors[N][N][N];
-	Neighbors(): neighbors{} { }
+	Neighbors() { memset(neighbors, 0, sizeof(T*) * N * N * N); }
 
 	operator Neighbors<N, T const>() {
 		Neighbors<N, T const> r;

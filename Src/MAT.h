@@ -41,6 +41,7 @@ private:
 			std::vector<TriangleIndex>& triangles);
 private:
 	struct TriangulationData {
+		TriangulationData(Real b, int p): bestTriangulation(b), midPoint(p) { }
 		Real bestTriangulation;
 		int midPoint;
 	};

@@ -40,6 +40,22 @@ Real const MATRIX_ENTRY_EPSILON = 0;
 Real const EPSILON = 1e-6;
 Real const ROUND_EPS = 1e-5;
 
+//////////////////
+// TreeNodeData //
+//////////////////
+
+template<bool StoreDensity>
+TreeNodeData<StoreDensity>::TreeNodeData():
+	nodeIndex(-1),
+	normalIndex(-1),
+	constraint(0),
+	solution(0),
+	pointIndex(-1) {
+	centerWeightContribution[0] = 0;
+	if(StoreDensity)
+		centerWeightContribution[1] = 0;
+}
+
 /////////////////////
 // SortedTreeNodes //
 /////////////////////
@@ -1304,8 +1320,14 @@ void Octree<Degree, OutputDensity>::UpdateConstraintsFromCoarser(TreeNeighbors5 
 }
 
 struct UpSampleData {
-	UpSampleData(): start(0), v{} { }
-	UpSampleData(int s, double v1, double v2): start(s), v{v1, v2} { }
+	UpSampleData(): start(0) {
+		v[0] = 0;
+		v[1] = 0;
+	}
+	UpSampleData(int s, double v1, double v2): start(s) {
+		v[0] = v1;
+		v[1] = v2;
+	}
 	int start;
 	double v[2];
 };
@@ -2092,7 +2114,7 @@ int Octree<Degree, OutputDensity>::refineBoundary(int subdivideDepth) {
 			boundary[2][1] && !neighbors.neighbors[1][1][2] ? 1 : 0;
 
 		if(!x && !y && !z) continue;
-		bool flags[3][3][3] {};
+		bool flags[3][3][3] = {};
 		// Corner case
 		if(x && y && z) flags[1 + x][1 + y][1 + z] = true;
 		// Edge cases
@@ -2488,10 +2510,10 @@ Point3D<Real> Octree<Degree, OutputDensity>::getCornerNormal(TreeConstNeighbors5
 						int _d;
 						int _off[3];
 						_node->depthAndOffset(_d, _off);
-						double v[] { evaluator.value(d, off[0], cx, _off[0], false, false),
+						double v[] = { evaluator.value(d, off[0], cx, _off[0], false, false),
 							evaluator.value(d, off[1], cy, _off[1], false, false),
 							evaluator.value(d, off[2], cz, _off[2], false, false) };
-						double dv[] { evaluator.value(d, off[0], cx, _off[0], true, false),
+						double dv[] = { evaluator.value(d, off[0], cx, _off[0], true, false),
 							evaluator.value(d, off[1], cy, _off[1], true, false),
 							evaluator.value(d, off[2], cz, _off[2], true, false) };
 						normal +=
@@ -2539,10 +2561,10 @@ Point3D<Real> Octree<Degree, OutputDensity>::getCornerNormal(TreeConstNeighbors5
 							int _d;
 							int _off[3];
 							_node->depthAndOffset(_d, _off);
-							double v[] { evaluator.value(d, off[0], cx, _off[0], false, true),
+							double v[] = { evaluator.value(d, off[0], cx, _off[0], false, true),
 								evaluator.value(d, off[1], cy, _off[1], false, true),
 								evaluator.value(d, off[2], cz, _off[2], false, true) };
-							double dv[] { evaluator.value(d, off[0], cx, _off[0], true, true),
+							double dv[] = { evaluator.value(d, off[0], cx, _off[0], true, true),
 								evaluator.value(d, off[1], cy, _off[1], true, true),
 								evaluator.value(d, off[2], cz, _off[2], true, true) };
 							normal +=
@@ -2818,7 +2840,7 @@ int Octree<Degree, OutputDensity>::GetRoot(RootInfo<OutputDensity> const& ri, Re
 	if(!haveKey2)
 		keyValue2.second = getCornerNormal(neighbors5, pNeighbors5, ri.node, c2, metSolution, evaluator,
 				nStencil.at(c2x, c2y, c2z), nStencils.at(c2x, c2y, c2z), isInterior);
-	Point3D<Real> n[2] { keyValue1.second, keyValue2.second };
+	Point3D<Real> n[2] = { keyValue1.second, keyValue2.second };
 	double x0 = keyValue1.first;
 	double x1 = keyValue2.first;
 
@@ -2874,7 +2896,8 @@ int Octree<Degree, OutputDensity>::GetRoot(RootInfo<OutputDensity> const& ri, Re
 	dx1 *= scl;
 
 	// Hermite Spline
-	Polynomial<2> P({ x0, dx0, 3 * (x1 - x0) - dx1 - 2 * dx0 });
+	double coefficients[] = { x0, dx0, 3 * (x1 - x0) - dx1 - 2 * dx0 };
+	Polynomial<2> P(coefficients);
 
 	std::vector<double> roots = P.getSolutions(isoValue, EPSILON);
 	int rCount = 0;

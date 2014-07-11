@@ -91,15 +91,22 @@ cmdLine<float> Scale("scale", 1.1);
 cmdLine<float> SolverAccuracy("accuracy", 1e-3);
 cmdLine<float> PointWeight("pointWeight", 4);
 
-std::vector<cmdLineReadable*> params = {
-	&In, &Depth, &Out, &Xform, &SolverDivide, &IsoDivide, &Scale, &Verbose, &SolverAccuracy, &NoComments,
-	&KernelDepth, &SamplesPerNode, &Confidence, &NormalWeights, &NonManifold, &PolygonMesh, &ASCII,
-	&ShowResidual, &MinIters, &FixedIters, &VoxelDepth, &PointWeight, &VoxelGrid, &Threads, &MinDepth,
-	&MaxSolveDepth, &AdaptiveExponent, &BoundaryType, &Density,
+std::vector<cmdLineReadable*> params;
+
+void BuildParams() {
+	cmdLineReadable* params_array[] = {
+		&In, &Depth, &Out, &Xform, &SolverDivide, &IsoDivide, &Scale, &Verbose, &SolverAccuracy, &NoComments,
+		&KernelDepth, &SamplesPerNode, &Confidence, &NormalWeights, &NonManifold, &PolygonMesh, &ASCII,
+		&ShowResidual, &MinIters, &FixedIters, &VoxelDepth, &PointWeight, &VoxelGrid, &Threads, &MinDepth,
+		&MaxSolveDepth, &AdaptiveExponent, &BoundaryType, &Density,
 #ifdef _WIN32
-	&Performance
+		&Performance,
 #endif
-};
+		nullptr
+	};
+	for(cmdLineReadable** p = params_array; *p; ++p)
+		params.push_back(*p);
+}
 
 void ShowUsage(std::string const& executable) {
 	printf( "Usage: %s\n" , executable.c_str() );
@@ -326,6 +333,7 @@ inline double to_seconds( const FILETIME& ft )
 #endif // _WIN32
 
 int main(int argc, char** argv) {
+	BuildParams();
 	cmdLineParse(argc - 1, argv + 1, params);
 	int ret;
 	if((ret = ValidateFlags(argv[0]))) return ret;

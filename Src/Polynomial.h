@@ -34,9 +34,9 @@ DAMAGE.
 template<int Degree>
 class Polynomial {
 public:
-	Polynomial(): coefficients{{}} { }
+	Polynomial() { memset(coefficients, 0, sizeof(double) * (Degree + 1)); }
 
-	Polynomial(std::array<double, Degree + 1> const& cs): coefficients(cs) { }
+	Polynomial(double cs[Degree + 1]);
 
 	template<int Degree2>
 	Polynomial(Polynomial<Degree2> const& P);
@@ -57,7 +57,7 @@ public:
 	bool operator!=(Polynomial const& p) const { return !(*this == p); }
 
 	bool isZero() const
-		{ return std::all_of(coefficients.begin(), coefficients.end(), [](double p) { return p == 0; }); }
+		{ return std::all_of(coefficients, coefficients + Degree + 1, [](double p) { return p == 0; }); }
 	void setZero() { std::fill(coefficients.begin(), coefficients.end(), 0); }
 
 	Polynomial& operator+=(Polynomial const& p);
@@ -82,7 +82,7 @@ public:
 
 	static Polynomial BSplineComponent(int i);
 private:
-	std::array<double, Degree + 1> coefficients;
+	double coefficients[Degree + 1];
 };
 
 template<int Degree>

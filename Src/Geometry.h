@@ -37,11 +37,10 @@ template<class Real>
 struct Point3D {
 	static Point3D ones() { return Point3D(1, 1, 1); }
 
-	Point3D(): coords{} { }
-	Point3D(Real v0, Real v1, Real v2): coords{v0, v1, v2} { }
+	Point3D() { memset(coords, 0, sizeof(Real) * 3); }
+	Point3D(Real v0, Real v1, Real v2);
 	template<class Real2>
-	explicit Point3D(Point3D<Real2> const& p):
-		coords{(Real)p[0], (Real)p[1], (Real)p[2]} { }
+	explicit Point3D(Point3D<Real2> const& p);
 
 	Real& operator[](int i) { return coords[i]; }
 	Real const& operator[](int i) const { return coords[i]; }
@@ -116,7 +115,7 @@ double TriangleArea(Point3D<Real> const& v1, Point3D<Real> const& v2, Point3D<Re
 
 template<class Real, int Dim>
 struct XForm {
-	XForm(): coords_{} { }
+	XForm() { memset(coords_, 0, sizeof(Real) * Dim * Dim); }
 
 	static XForm Identity();
 
@@ -149,6 +148,7 @@ struct CoredPointIndex {
 };
 
 struct TriangleIndex {
+	TriangleIndex(int i0, int i1, int i2);
 	std::array<int, 3> idx;
 };
 

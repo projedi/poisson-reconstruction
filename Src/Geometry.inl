@@ -31,6 +31,21 @@ DAMAGE.
 /////////////
 
 template<class Real>
+Point3D<Real>::Point3D(Real v0, Real v1, Real v2) {
+	coords[0] = v0;
+	coords[1] = v1;
+	coords[2] = v2;
+}
+
+template<class Real>
+template<class Real2>
+Point3D<Real>::Point3D(Point3D<Real2> const& p) {
+	coords[0] = (Real)p.coords[0];
+	coords[1] = (Real)p.coords[1];
+	coords[2] = (Real)p.coords[2];
+}
+
+template<class Real>
 Point3D<Real>& operator+=(Point3D<Real>& p1, Point3D<Real> const& p2) {
 	for(int i = 0; i != 3; ++i) p1[i] += p2[i];
 	return p1;
@@ -87,8 +102,8 @@ Real subDeterminant(XForm<Real, 3> const& f, int i, int j) {
 template<class Real>
 Real subDeterminant(XForm<Real, 4> const& f, int i, int j) {
 	XForm<Real, 3> xForm;
-	int ii[] { (i + 1) % 4, (i + 2) % 4, (i + 3) % 4 };
-	int jj[] { (j + 1) % 4, (j + 2) % 4, (j + 3) % 4 };
+	int ii[] = { (i + 1) % 4, (i + 2) % 4, (i + 3) % 4 };
+	int jj[] = { (j + 1) % 4, (j + 2) % 4, (j + 3) % 4 };
 	for(int _i = 0; _i != 3; ++_i)
 		for(int _j = 0; _j != 3; ++_j)
 			xForm(_i, _j) = f(ii[_i], jj[_j]);
@@ -147,6 +162,16 @@ XForm<Real, Dim2> XForm<Real, Dim>::cut() const {
 		for(int j = 0; j != Dim2; ++j)
 			res(i, j) = coords_[i][j];
 	return res;
+}
+
+///////////////////
+// TriangleIndex //
+///////////////////
+
+inline TriangleIndex::TriangleIndex(int i0, int i1, int i2) {
+	idx[0] = i0;
+	idx[1] = i1;
+	idx[2] = i2;
 }
 
 ///////////////////////////

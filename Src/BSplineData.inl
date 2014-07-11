@@ -239,7 +239,7 @@ double BSplineData<Degree, Real>::_dot(int depth1, int off1, int depth2, int off
 		bool inset) const {
 	int const _Degree1 = D1 ? Degree - 1 : Degree;
 	int const _Degree2 = D2 ? Degree - 1 : Degree;
-	int sums[_Degree1 + 1][_Degree2 + 1]{ };
+	int sums[_Degree1 + 1][_Degree2 + 1] = {};
 
 	int depth = std::max(depth1, depth2);
 
