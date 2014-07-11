@@ -34,6 +34,7 @@ DAMAGE.
 #include "MemoryUsage.h"
 #include "PointStream.h"
 #include "MAT.h"
+#include "Util.h"
 
 double const ITERATION_POWER = 1.0 / 3;
 Real const MATRIX_ENTRY_EPSILON = 0;
@@ -1979,7 +1980,7 @@ void Octree<Degree, OutputDensity>::SetLaplacianConstraints() {
 		sNodes_.treeNodes[i]->nodeData.constraint += constraints[i];
 
 	constraints.clear();
-	constraints.shrink_to_fit();
+	shrink_to_fit(constraints);
 
 	// Compute the contribution from all coarser depths
 	for(int d = 1; d <= maxDepth; ++d) {
@@ -2258,15 +2259,15 @@ void Octree<Degree, OutputDensity>::GetMCIsoTriangles(Real isoValue, int subdivi
 
 	MemoryUsage();
 	rootData.cornerNormalsSet.clear();
-	rootData.cornerNormalsSet.shrink_to_fit();
+	shrink_to_fit(rootData.cornerNormalsSet);
 	rootData.cornerValues.clear();
-	rootData.cornerValues.shrink_to_fit();
+	shrink_to_fit(rootData.cornerValues);
 	rootData.edgesSet.clear();
-	rootData.edgesSet.shrink_to_fit();
+	shrink_to_fit(rootData.edgesSet);
 	rootData.cornerValuesSet.clear();
-	rootData.cornerValuesSet.shrink_to_fit();
+	shrink_to_fit(rootData.cornerValuesSet);
 	rootData.interiorRoots.clear();
-	rootData.interiorRoots.shrink_to_fit();
+	shrink_to_fit(rootData.interiorRoots);
 	coarseRootData.interiorRoots.clear();
 	coarseRootData.boundaryValues = std::move(rootData.boundaryValues);
 	for(auto iter : rootData.boundaryRoots)
