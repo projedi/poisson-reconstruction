@@ -358,7 +358,7 @@ int PlyReadPolygons(char const* fileName,
 
 template<class Vertex>
 int PlyReadPolygons(std::string const& filename, std::vector<Vertex>& vertices,
-		std::vector<std::vector<int>>& polygons, int& file_type,
+		std::vector<std::vector<int> >& polygons, int& file_type,
 		std::vector<std::string>& comments, bool* readFlags = nullptr) {
 	char** commentsPtr;
 	int commentsSize = 0;
@@ -380,7 +380,7 @@ int PlyWritePolygons(char const* fileName,
 
 template<class Vertex>
 int PlyWritePolygons(std::string const& filename, std::vector<Vertex> const& vertices,
-		std::vector<std::vector<int>> const& polygons, int file_type,
+		std::vector<std::vector<int> > const& polygons, int file_type,
 		std::vector<std::string> const& comments) {
 	char** commentsPtr = new char*[comments.size()];
 	for(size_t i = 0; i != comments.size(); ++i) {

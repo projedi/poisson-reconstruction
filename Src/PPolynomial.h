@@ -91,7 +91,7 @@ private:
 	template<int Degree2>
 	friend class PPolynomial;
 
-	std::vector<StartingPolynomial<Degree>> polys_;
+	std::vector<StartingPolynomial<Degree> > polys_;
 };
 
 #include "PPolynomial.inl"

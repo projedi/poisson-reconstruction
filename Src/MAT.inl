@@ -28,7 +28,7 @@ DAMAGE.
 
 template <class Real>
 void MinimalAreaTriangulation<Real>::GetTriangulation(
-		std::vector<Point3D<Real>> const& vertices, std::vector<TriangleIndex>& triangles) {
+		std::vector<Point3D<Real> > const& vertices, std::vector<TriangleIndex>& triangles) {
 	if(vertices.size() == 3) {
 		triangles.clear();
 		triangles.push_back(TriangleIndex(0, 1, 2));
@@ -59,7 +59,7 @@ void MinimalAreaTriangulation<Real>::GetTriangulation(
 }
 
 template <class Real>
-Real MinimalAreaTriangulation<Real>::GetArea(std::vector<Point3D<Real>> const& vertices) {
+Real MinimalAreaTriangulation<Real>::GetArea(std::vector<Point3D<Real> > const& vertices) {
 	data_.clear();
 	data_.resize(vertices.size() * vertices.size(), TriangulationData(-1, -1));
 	return GetArea(0, 1, vertices);
@@ -67,7 +67,7 @@ Real MinimalAreaTriangulation<Real>::GetArea(std::vector<Point3D<Real>> const& v
 
 template<class Real>
 void MinimalAreaTriangulation<Real>::GetTriangulation(int i, int j,
-		std::vector<Point3D<Real>> const& vertices, std::vector<TriangleIndex>& triangles) {
+		std::vector<Point3D<Real> > const& vertices, std::vector<TriangleIndex>& triangles) {
 	if((i < j && i + vertices.size() <= (size_t)j + 1) || i == j || i == j + 1) return;
 
 	int m = data_[i * vertices.size() + j].midPoint;
@@ -80,7 +80,7 @@ void MinimalAreaTriangulation<Real>::GetTriangulation(int i, int j,
 
 template<class Real>
 Real MinimalAreaTriangulation<Real>::GetArea(size_t i, size_t j,
-		std::vector<Point3D<Real>> const& vertices) {
+		std::vector<Point3D<Real> > const& vertices) {
 	size_t eCount = vertices.size();
 	size_t idx = i * eCount + j;
 	size_t ii = i < j ? i + eCount : i;

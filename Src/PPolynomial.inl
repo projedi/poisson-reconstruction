@@ -108,7 +108,7 @@ PPolynomial<Degree> PPolynomial<Degree>::BSpline(double radius) {
 template<int Degree>
 PPolynomial<Degree + 1> PPolynomial<Degree>::MovingAverage(double radius) const {
 
-	std::vector<StartingPolynomial<Degree + 1>> sps(polys_.size() * 2);
+	std::vector<StartingPolynomial<Degree + 1> > sps(polys_.size() * 2);
 
 	for(size_t i = 0; i != polys_.size(); ++i) {
 		Polynomial<Degree + 1> p = polys_[i].p.integral() -

@@ -32,12 +32,12 @@ DAMAGE.
 template<class Real>
 class MinimalAreaTriangulation {
 public:
-	Real GetArea(std::vector<Point3D<Real>> const& vertices);
-	void GetTriangulation(std::vector<Point3D<Real>> const& vertices,
+	Real GetArea(std::vector<Point3D<Real> > const& vertices);
+	void GetTriangulation(std::vector<Point3D<Real> > const& vertices,
 			std::vector<TriangleIndex>& triangles);
 private:
-	Real GetArea(size_t i, size_t j, std::vector<Point3D<Real>> const& vertices);
-	void GetTriangulation(int i, int j, std::vector<Point3D<Real>> const& vertices,
+	Real GetArea(size_t i, size_t j, std::vector<Point3D<Real> > const& vertices);
+	void GetTriangulation(int i, int j, std::vector<Point3D<Real> > const& vertices,
 			std::vector<TriangleIndex>& triangles);
 private:
 	struct TriangulationData {

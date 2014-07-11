@@ -32,4 +32,4 @@ DAMAGE.
 #include <vector>
 
 template<int Degree>
-std::vector<std::complex<double>> Factor(double const cs[Degree + 1], double EPS);
+std::vector<std::complex<double> > Factor(double const cs[Degree + 1], double EPS);

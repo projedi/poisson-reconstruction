@@ -77,7 +77,7 @@ private:
 	static int const _off = (Degree + 1) / 2;
 	// Coefficients are ordered as "/" "-" "\"
 	int denominator_;
-	std::vector<BSplineElementCoefficients<Degree>> elems;
+	std::vector<BSplineElementCoefficients<Degree> > elems;
 };
 
 template<int Degree, class Real>

@@ -85,7 +85,7 @@ template<class T>
 void SparseSymmetricMatrix<T>::SetRowSize(int row, int count) {
 	if(row >= 0 && row < rows) {
 		if(rowSizes_[row]) FreePointer(m_ppElements[row]);
-		if(count > 0) m_ppElements[row] = AllocPointer<MatrixEntry<T>>(count);
+		if(count > 0) m_ppElements[row] = AllocPointer<MatrixEntry<T> >(count);
 	}
 }
 
@@ -136,7 +136,7 @@ template<class T2>
 void SparseSymmetricMatrix<T>::Multiply(Vector<T2> const& in, Vector<T2>& out, bool addDCTerm,
 		int threads) const {
 	// TODO: If slow, OutScratch may be turned into static thread-local
-	std::vector<std::vector<T2>> OutScratch(threads);
+	std::vector<std::vector<T2> > OutScratch(threads);
 #pragma omp parallel for num_threads(threads)
 	for(int t = 0; t < threads; ++t) {
 		std::vector<T2>& outs = OutScratch[t];

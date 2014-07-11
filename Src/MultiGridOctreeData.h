@@ -265,11 +265,11 @@ struct RootData: SortedTreeNodes<OutputDensity>::CornerTableData,
 	// Edge to iso-vertex map
 	std::unordered_map<long long, int> boundaryRoots;
 	// Vertex to ( value , normal ) map
-	std::unordered_map<long long, std::pair<Real, Point3D<Real>>> boundaryValues;
+	std::unordered_map<long long, std::pair<Real, Point3D<Real> > > boundaryValues;
 
 	std::vector<int> interiorRoots;
 	std::vector<Real> cornerValues;
-	std::vector<Point3D<Real>> cornerNormals;
+	std::vector<Point3D<Real> > cornerNormals;
 	std::vector<char> cornerValuesSet;
 	std::vector<char> cornerNormalsSet;
 	std::vector<char> edgesSet;
@@ -337,8 +337,8 @@ private:
 	typedef typename BSplineData<Degree, Real>::template CenterEvaluator<1> CenterEvaluator1;
 	typedef typename BSplineData<Degree, Real>::template CornerEvaluator<2> CornerEvaluator2;
 	typedef typename SortedTreeNodes<OutputDensity>::CornerTableData CornerTableData;
-	typedef std::vector<std::pair<RootInfo<OutputDensity>, RootInfo<OutputDensity>>> edges_t;
-	typedef std::unordered_map<long long, std::pair<RootInfo<OutputDensity>, int>> vertex_count_t;
+	typedef std::vector<std::pair<RootInfo<OutputDensity>, RootInfo<OutputDensity> > > edges_t;
+	typedef std::unordered_map<long long, std::pair<RootInfo<OutputDensity>, int> > vertex_count_t;
 
 	class FaceEdgesFunction {
 	public:
@@ -494,7 +494,7 @@ private:
 	Real postDerivativeSmooth_;
 	bool constrainValues_;
 	TreeOctNode tree_;
-	std::vector<Point3D<Real>> normals_;
+	std::vector<Point3D<Real> > normals_;
 	BSplineData<Degree, Real> fData_;
 	SortedTreeNodes<OutputDensity> sNodes_;
 	Real samplesPerNode_;

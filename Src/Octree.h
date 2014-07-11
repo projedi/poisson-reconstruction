@@ -58,7 +58,7 @@ public:
 	explicit NeighborKey3(int depth): neighbors_(depth + 1) { }
 
 	operator NeighborKey3<OctNode const>() {
-		return reinterpret_cast<NeighborKey3<OctNode const>>(*this);
+		return reinterpret_cast<NeighborKey3<OctNode const> >(*this);
 	}
 
 	Neighbors3& neighbors(int idx) { return neighbors_[idx]; }
