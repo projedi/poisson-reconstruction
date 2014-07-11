@@ -168,25 +168,23 @@ template<class NodeData, class Real>
 void OctNode<NodeData, Real>::processNodeFaces(OctNode const* node,
 		NodeAdjacencyFunction const& F, int fIndex, bool processCurrent) const {
 	if(processCurrent) F(this, node);
-	if(children_) processNodeFaces(node, F, Cube::FaceCorners(fIndex));
+	int cs[4];
+	Cube::FaceCorners(fIndex, cs[0], cs[1], cs[2], cs[3]);
+	if(children_) processNodeFaces(node, F, cs);
 }
 
 template<class NodeData, class Real>
 void OctNode<NodeData, Real>::processNodeFaces(OctNode const* node,
-		NodeAdjacencyFunction const& F, std::tuple<int, int, int, int> cIndex) const {
-	F(&children_[std::get<0>(cIndex)], node);
-	F(&children_[std::get<1>(cIndex)], node);
-	F(&children_[std::get<2>(cIndex)], node);
-	F(&children_[std::get<3>(cIndex)], node);
+		NodeAdjacencyFunction const& F, int cIndex[4]) const {
+	F(&children_[cIndex[0]], node);
+	F(&children_[cIndex[1]], node);
+	F(&children_[cIndex[2]], node);
+	F(&children_[cIndex[3]], node);
 
-	if(children_[std::get<0>(cIndex)].children_)
-		children_[std::get<0>(cIndex)].processNodeFaces(node, F, cIndex);
-	if(children_[std::get<1>(cIndex)].children_)
-		children_[std::get<1>(cIndex)].processNodeFaces(node, F, cIndex);
-	if(children_[std::get<2>(cIndex)].children_)
-		children_[std::get<2>(cIndex)].processNodeFaces(node, F, cIndex);
-	if(children_[std::get<3>(cIndex)].children_)
-		children_[std::get<3>(cIndex)].processNodeFaces(node, F, cIndex);
+	if(children_[cIndex[0]].children_) children_[cIndex[0]].processNodeFaces(node, F, cIndex);
+	if(children_[cIndex[1]].children_) children_[cIndex[1]].processNodeFaces(node, F, cIndex);
+	if(children_[cIndex[2]].children_) children_[cIndex[2]].processNodeFaces(node, F, cIndex);
+	if(children_[cIndex[3]].children_) children_[cIndex[3]].processNodeFaces(node, F, cIndex);
 }
 
 template<class NodeData, class Real>
@@ -365,11 +363,11 @@ typename NeighborKey3<OctNode>::Neighbors3& NeighborKey3<OctNode>::collectNeighb
 			int y1;
 			int z1;
 			int idx = node->parent()->childIndex(node);
-			std::tie(x1, y1, z1) = Cube::FactorCornerIndex(idx);
+			Cube::FactorCornerIndex(idx, x1, y1, z1);
 			int x2;
 			int y2;
 			int z2;
-			std::tie(x2, y2, z2) = Cube::FactorCornerIndex((~idx) & 7);
+			Cube::FactorCornerIndex((~idx) & 7, x2, y2, z2);
 			for(int i = 0; i != 2; ++i)
 				for(int j = 0; j != 2; ++j)
 					for(int k = 0; k != 2; ++k)

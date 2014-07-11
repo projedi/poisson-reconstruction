@@ -39,30 +39,30 @@ public:
 	static int CornerIndex(int maxDepth, int depth, int offset, int forwardCorner)
 		{ return (offset + forwardCorner) << (maxDepth - depth); }
 
-	static std::pair<Real, Real> CenterAndWidth(int idx);
+	static void CenterAndWidth(int idx, Real& center, Real& width);
 
-	static std::pair<int, int> DepthAndOffset(int idx);
+	static void DepthAndOffset(int idx, int& depth, int& offset);
 };
 
 template<class Real>
-std::pair<Real, Real> BinaryNode<Real>::CenterAndWidth(int idx) {
-	auto dao = DepthAndOffset(idx);
-	Real width = 1.0 / (1 << dao.first);
-	return std::make_pair((0.5 + dao.second) * width, width);
+void BinaryNode<Real>::CenterAndWidth(int idx, Real& center, Real& width) {
+	int depth;
+	int offset;
+	DepthAndOffset(idx, depth, offset);
+	width = 1.0 / (1 << depth);
+	center = (0.5 + offset) * width;
 }
 
 template<class Real>
-std::pair<int, int> BinaryNode<Real>::DepthAndOffset(int idx) {
+void BinaryNode<Real>::DepthAndOffset(int idx, int& depth, int& offset) {
 	int i = idx + 1;
-	std::pair<int, int> dao;
 	// MSVC_2010_FIX - no idea what's going on.
-	dao.first = 0;
+	depth = 0;
 	while(i) {
 		i >>= 1;
-		++dao.first;
+		++depth;
 	}
 	// MSVC_2010_FIX - no idea what's going on.
-	--dao.first;
-	dao.second = (idx + 1) - (1 << dao.first);
-	return dao;
+	--depth;
+	offset = (idx + 1) - (1 << depth);
 }
