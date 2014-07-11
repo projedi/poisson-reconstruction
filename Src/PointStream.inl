@@ -27,7 +27,7 @@ DAMAGE.
 */
 
 template<class Real>
-ASCIIPointStream<Real>::ASCIIPointStream(std::string const& filename): file_(filename) {
+ASCIIPointStream<Real>::ASCIIPointStream(std::string const& filename): file_(filename.c_str()) {
 	if(!file_) {
 		std::cerr << "Failed to open file for reading: " << filename << std::endl;
 		std::exit(1);
@@ -41,7 +41,7 @@ bool ASCIIPointStream<Real>::nextPoint(Point3D<Real>& p, Point3D<Real>& n) {
 
 template<class Real>
 BinaryPointStream<Real>::BinaryPointStream(std::string const& filename):
-	file_(filename, std::ios_base::binary) {
+	file_(filename.c_str(), std::ios_base::binary) {
 	if(!file_) {
 		std::cerr << "Failed to open file for reading: " << filename << std::endl;
 		std::exit(1);
