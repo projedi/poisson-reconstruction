@@ -40,22 +40,22 @@ private:
 	int coeffs[Degree + 1];
 };
 
-enum class BoundaryType {
-	None = 0,
-	Dirichlet = -1,
-	Neumann = 1
+enum BoundaryType {
+	BoundaryTypeNone = 0,
+	BoundaryTypeDirichlet = -1,
+	BoundaryTypeNeumann = 1
 };
 
-constexpr BoundaryType getBoundaryType(int v) {
-	return (v == 0) ? BoundaryType::None :
-		(v < 0) ? BoundaryType::Dirichlet :
-		BoundaryType::Neumann;
+BoundaryType getBoundaryType(int v) {
+	return (v == 0) ? BoundaryTypeNone :
+		(v < 0) ? BoundaryTypeDirichlet :
+		BoundaryTypeNeumann;
 }
 
 template<int Degree>
 struct BSplineElements {
 	BSplineElements(): denominator_(1) { }
-	BSplineElements(int res, int offset, BoundaryType boundary = BoundaryType::None,
+	BSplineElements(int res, int offset, BoundaryType boundary = BoundaryTypeNone,
 			int inset = 0);
 
 	void upSample(BSplineElements& high) const;

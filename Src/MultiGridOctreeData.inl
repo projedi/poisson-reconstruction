@@ -420,7 +420,7 @@ Octree<Degree, OutputDensity>::Octree(int threads, int maxDepth, BoundaryType bo
 	radius_(0.5 + 0.5 * Degree),
 	width_((int)((double)(radius_ + 0.5 - EPSILON) * 2)),
 	constrainValues_(false) {
-	if(boundaryType_ == BoundaryType::None) ++maxDepth;
+	if(boundaryType_ == BoundaryTypeNone) ++maxDepth;
 	postDerivativeSmooth_ = (Real)1.0 / (1 << maxDepth);
 	fData_.set(maxDepth, (BoundaryType)boundaryType);
 }
@@ -645,7 +645,7 @@ void Octree<Degree, OutputDensity>::UpdateWeightContribution(TreeOctNode* node,
 
 template<int Degree, bool OutputDensity>
 bool Octree<Degree, OutputDensity>::inBounds(Point3D<Real> p) const {
-	Real e = boundaryType_ == BoundaryType::None ? 0.25 : 0;
+	Real e = boundaryType_ == BoundaryTypeNone ? 0.25 : 0;
 	return p[0] >= e && p[0] <= 1 - e && p[1] >= e && p[1] <= 1 - e && p[2] >= e && p[2] <= 1 - e;
 }
 
@@ -659,7 +659,7 @@ int Octree<Degree, OutputDensity>::setTree(std::string const& fileName, int maxD
 	constrainValues_ = constraintWeight > 0;
 
 	XForm<Real, 3> xFormN = xForm.cut<3>().transpose().inverse();
-	if(boundaryType_ == BoundaryType::None) {
+	if(boundaryType_ == BoundaryTypeNone) {
 		++maxDepth;
 		minDepth_ = clamp(minDepth + 1, 2, maxDepth);
 		if(splatDepth > 0) ++splatDepth;
@@ -685,7 +685,7 @@ int Octree<Degree, OutputDensity>::setTree(std::string const& fileName, int maxD
 			unassigned = false;
 		}
 		scale_ = std::max(max[0] - min[0], std::max(max[1] - min[1], max[2] - min[2]));
-		scale_ *= boundaryType_ == BoundaryType::None ? 2 * scaleFactor : scaleFactor;
+		scale_ *= boundaryType_ == BoundaryTypeNone ? 2 * scaleFactor : scaleFactor;
 		center_ = (max + min) / 2 - Point3D<Real>::ones() * (scale_ / 2);
 	}
 
@@ -797,7 +797,7 @@ int Octree<Degree, OutputDensity>::setTree(std::string const& fileName, int maxD
 		++cnt;
 	}
 
-	if(boundaryType_ == BoundaryType::None) pointWeightSum *= 4;
+	if(boundaryType_ == BoundaryTypeNone) pointWeightSum *= 4;
 	constraintWeight *= pointWeightSum / cnt;
 
 	MemoryUsage();
@@ -807,14 +807,14 @@ int Octree<Degree, OutputDensity>::setTree(std::string const& fileName, int maxD
 			if(node->nodeData.pointIndex != -1) {
 				int idx = node->nodeData.pointIndex;
 				points_[idx].position /= points_[idx].weight;
-				int nd = boundaryType_ == BoundaryType::None ? node->depth() - 1 : node->depth();
-				int md = boundaryType_ == BoundaryType::None ? maxDepth - 1 : maxDepth;
+				int nd = boundaryType_ == BoundaryTypeNone ? node->depth() - 1 : node->depth();
+				int md = boundaryType_ == BoundaryTypeNone ? maxDepth - 1 : maxDepth;
 				int e = nd * adaptiveExponent - md * (adaptiveExponent - 1);
 				Real mul = e < 0 ? (Real)1 / (1 << (-e)) : 1 << e;
 				points_[idx].weight *= mul * constraintWeight;
 			}
 #if FORCE_NEUMANN_FIELD
-	if(boundaryType_ == BoundaryType::Neumann)
+	if(boundaryType_ == BoundaryTypeNeumann)
 		for(TreeOctNode* node = tree_.nextNode(); node; node = tree_.nextNode(node)) {
 			int d;
 			int off[3];
@@ -1022,7 +1022,7 @@ int Octree<Degree, OutputDensity>::SetMatrixRow(TreeNeighbors5 const& neighbors5
 		pointValues[2][2][2] = diagonal;
 	}
 
-	int mn = boundaryType_ == BoundaryType::None ? (1 << (d - 2)) + 2 : 2;
+	int mn = boundaryType_ == BoundaryTypeNone ? (1 << (d - 2)) + 2 : 2;
 	int mx = (1 << d) - mn;
 	bool isInterior =
 		off[0] >= mn && off[0] < mx && off[1] >= mn && off[1] < mx && off[2] >= mn && off[2] < mx;
@@ -1251,7 +1251,7 @@ void Octree<Degree, OutputDensity>::UpdateConstraintsFromCoarser(TreeNeighbors5 
 	int d;
 	int off[3];
 	node->depthAndOffset(d, off);
-	int mn = boundaryType_ == BoundaryType::None ? (1 << (d - 2)) + 4 : 4;
+	int mn = boundaryType_ == BoundaryTypeNone ? (1 << (d - 2)) + 4 : 4;
 	int mx = (1 << d) - mn;
 	bool isInterior =
 		off[0] >= mn && off[0] < mx && off[1] >= mn && off[1] < mx && off[2] >= mn && off[2] < mx;
@@ -1313,8 +1313,8 @@ struct UpSampleData {
 template<bool OutputDensity, class TreeOctNode>
 void UpSampleGeneric(int depth, SortedTreeNodes<OutputDensity> const& sNodes, BoundaryType boundaryType,
 		int threads, std::function<void(int, TreeOctNode const*, UpSampleData*, int*)> const& func) {
-	double cornerValue = boundaryType == BoundaryType::Dirichlet ? 0.5 :
-		boundaryType == BoundaryType::Neumann ? 1 : 0.75;
+	double cornerValue = boundaryType == BoundaryTypeDirichlet ? 0.5 :
+		boundaryType == BoundaryTypeNeumann ? 1 : 0.75;
 	// For every node at the current depth
 	typename TreeOctNode::NeighborKey3 neighborKey(depth);
 #pragma omp parallel for num_threads(threads) firstprivate(neighborKey)
@@ -1351,8 +1351,8 @@ Vector<Real> Octree<Degree, OutputDensity>::UpSampleCoarserSolution(int depth,
 	size_t start = sNodes.nodeCount[depth];
 	size_t end = sNodes.nodeCount[depth + 1];
 	Vector<Real> Solution(end - start);
-	if((boundaryType_ != BoundaryType::None && depth == 0) ||
-			(boundaryType_ == BoundaryType::None && depth <= 2)) return Solution;
+	if((boundaryType_ != BoundaryTypeNone && depth == 0) ||
+			(boundaryType_ == BoundaryTypeNone && depth <= 2)) return Solution;
 	UpSampleGeneric<OutputDensity, TreeOctNode>(depth, sNodes, boundaryType_, threads_,
 		[&](int i, TreeOctNode const* node, UpSampleData* usData, int* idxs) {
 			double dxyz = usData[0].v[idxs[0]] * usData[1].v[idxs[1]] * usData[2].v[idxs[2]];
@@ -1384,8 +1384,8 @@ template<int Degree, bool OutputDensity>
 template<class C>
 void Octree<Degree, OutputDensity>::UpSample(int depth, SortedTreeNodes<OutputDensity> const& sNodes,
 		C* coefficients) const {
-	if((boundaryType_ != BoundaryType::None && depth == 0) ||
-			(boundaryType_ == BoundaryType::None && depth <= 2)) return;
+	if((boundaryType_ != BoundaryTypeNone && depth == 0) ||
+			(boundaryType_ == BoundaryTypeNone && depth <= 2)) return;
 	UpSampleGeneric<OutputDensity, TreeOctNode>(depth, sNodes, boundaryType_, threads_,
 		[&](int i, TreeOctNode const* node, UpSampleData* usData, int* idxs) {
 			double dx = usData[0].v[idxs[0]];
@@ -1429,10 +1429,10 @@ template<int Degree, bool OutputDensity>
 Real Octree<Degree, OutputDensity>::WeightedCoarserFunctionValue(TreeNeighborKey3 const& neighborKey,
 		TreeOctNode const* pointNode, Real* metSolution) const {
 	int depth = pointNode->depth();
-	if(boundaryType_ == BoundaryType::Dirichlet && depth == 0 && pointNode->nodeData.pointIndex != -1)
+	if(boundaryType_ == BoundaryTypeDirichlet && depth == 0 && pointNode->nodeData.pointIndex != -1)
 		return (Real)(-0.5) * points_[pointNode->nodeData.pointIndex].weight;
-	if((boundaryType_ != BoundaryType::None && depth == 0) ||
-			(boundaryType_ == BoundaryType::None && depth <= 2) || pointNode->nodeData.pointIndex == -1)
+	if((boundaryType_ != BoundaryTypeNone && depth == 0) ||
+			(boundaryType_ == BoundaryTypeNone && depth <= 2) || pointNode->nodeData.pointIndex == -1)
 		return 0;
 
 	Real weight = points_[pointNode->nodeData.pointIndex].weight;
@@ -1465,7 +1465,7 @@ Real Octree<Degree, OutputDensity>::WeightedCoarserFunctionValue(TreeNeighborKey
 			pointValue += _pointValue * xyValue;
 		}
 	}
-	if(boundaryType_ == BoundaryType::Dirichlet) pointValue -= (Real)0.5;
+	if(boundaryType_ == BoundaryTypeDirichlet) pointValue -= (Real)0.5;
 	return pointValue * weight;
 }
 
@@ -1485,7 +1485,7 @@ SparseSymmetricMatrix<Real> Octree<Degree, OutputDensity>::GetFixedDepthLaplacia
 		TreeOctNode* node = getNode(i);
 
 		// Get the matrix row size
-		bool insetSupported = boundaryType_ != BoundaryType::None || IsInsetSupported(node);
+		bool insetSupported = boundaryType_ != BoundaryTypeNone || IsInsetSupported(node);
 		TreeNeighbors5 neighbors5;
 		if(insetSupported) neighbors5 = neighborKey3.getNeighbors5(node);
 		int count = insetSupported ? getRowSize(neighbors5, true) : 1;
@@ -1583,8 +1583,8 @@ int Octree<Degree, OutputDensity>::LaplacianMatrixIteration(int subdivideDepth, 
 		int minIters, double accuracy, int maxSolveDepth, int fixedIters) {
 	int iter = 0;
 	Integrator integrator;
-	fData_.setIntegrator(integrator, boundaryType_ == BoundaryType::None);
-	if(boundaryType_ == BoundaryType::None) {
+	fData_.setIntegrator(integrator, boundaryType_ == BoundaryTypeNone);
+	if(boundaryType_ == BoundaryTypeNone) {
 		++subdivideDepth;
 		++maxSolveDepth;
 	}
@@ -1592,9 +1592,9 @@ int Octree<Degree, OutputDensity>::LaplacianMatrixIteration(int subdivideDepth, 
 	sNodes_.treeNodes[0]->nodeData.solution = 0;
 
 	std::vector<Real> metSolution(sNodes_.nodeCount[sNodes_.maxDepth], 0);
-	for(int d = (boundaryType_ == BoundaryType::None ? 2 : 0); d != sNodes_.maxDepth; ++d) {
-		DumpOutput::instance()("#Depth[%d/%d]: %d\n", boundaryType_ == BoundaryType::None ? d - 1 : d,
-				boundaryType_ == BoundaryType::None ? sNodes_.maxDepth - 2 : sNodes_.maxDepth - 1,
+	for(int d = (boundaryType_ == BoundaryTypeNone ? 2 : 0); d != sNodes_.maxDepth; ++d) {
+		DumpOutput::instance()("#Depth[%d/%d]: %d\n", boundaryType_ == BoundaryTypeNone ? d - 1 : d,
+				boundaryType_ == BoundaryTypeNone ? sNodes_.maxDepth - 2 : sNodes_.maxDepth - 1,
 				sNodes_.nodeCount[d + 1] - sNodes_.nodeCount[d]);
 		if(subdivideDepth > 0)
 			iter += SolveFixedDepthMatrix(d, integrator, sNodes_, &metSolution[0], subdivideDepth,
@@ -1635,7 +1635,7 @@ int Octree<Degree, OutputDensity>::SolveFixedDepthMatrix(int depth, Integrator c
 	Vector<Real> B(sNodes.nodeCount[depth + 1] - sNodes.nodeCount[depth]);
 	for(int i = sNodes.nodeCount[depth]; i != sNodes.nodeCount[depth + 1]; ++i)
 		B[i - sNodes.nodeCount[depth]] =
-			boundaryType_ != BoundaryType::None || IsInsetSupported(sNodes.treeNodes[i]) ?
+			boundaryType_ != BoundaryTypeNone || IsInsetSupported(sNodes.treeNodes[i]) ?
 			sNodes.treeNodes[i]->nodeData.constraint : 0;
 	systemTime = Time() - systemTime;
 
@@ -1643,14 +1643,14 @@ int Octree<Degree, OutputDensity>::SolveFixedDepthMatrix(int depth, Integrator c
 	// Solve the linear system
 	Real _accuracy = (Real)(accuracy / 100000) * M.Rows();
 	int res = 1 << depth;
-	if(boundaryType_ == BoundaryType::None && depth > 3) res -= 1 << (depth - 2);
+	if(boundaryType_ == BoundaryTypeNone && depth > 3) res -= 1 << (depth - 2);
 	int iter = 0;
 	if(!noSolve) {
 		int iters = fixedIters >= 0 ? fixedIters :
 			std::max((int)std::pow(M.Rows(), ITERATION_POWER), minIters);
 		Real accuracy = fixedIters >= 0 ? 1e-10 : _accuracy;
 		iter += SparseSymmetricMatrix<Real>::Solve(M, B, iters, X, accuracy, false, threads_,
-			M.Rows() == res * res * res && !constrainValues_ && boundaryType_ != BoundaryType::Dirichlet);
+			M.Rows() == res * res * res && !constrainValues_ && boundaryType_ != BoundaryTypeDirichlet);
 	}
 	solveTime = Time() - solveTime;
 
@@ -1721,13 +1721,13 @@ int Octree<Degree, OutputDensity>::SolveFixedDepthMatrix(int depth, Integrator c
 	// Back-up the constraints
 	for(int i = sNodes.nodeCount[depth]; i != sNodes.nodeCount[depth + 1]; ++i) {
 		B[i - sNodes.nodeCount[depth]] =
-			boundaryType_ != BoundaryType::None || IsInsetSupported(sNodes.treeNodes[i]) ?
+			boundaryType_ != BoundaryTypeNone || IsInsetSupported(sNodes.treeNodes[i]) ?
 			sNodes.treeNodes[i]->nodeData.constraint : 0;
 		sNodes.treeNodes[i]->nodeData.constraint = 0;
 	}
 
 	int d = depth - startingDepth;
-	if(boundaryType_ == BoundaryType::None) ++d;
+	if(boundaryType_ == BoundaryTypeNone) ++d;
 	std::vector<int> subDimension;
 	int maxDimension = 0;
 	TreeNeighborKey3 neighborKey3(fData_.depth());
@@ -1851,7 +1851,7 @@ void Octree<Degree, OutputDensity>::SetLaplacianConstraints() {
 	// Within the same depth: set directly as a gather
 	// Coarser depths 
 	Integrator integrator;
-	fData_.setIntegrator(integrator, boundaryType_ == BoundaryType::None);
+	fData_.setIntegrator(integrator, boundaryType_ == BoundaryTypeNone);
 	int maxDepth = sNodes_.maxDepth - 1;
 	std::vector<Real> constraints(sNodes_.nodeCount[maxDepth]);
 
@@ -1860,7 +1860,7 @@ void Octree<Degree, OutputDensity>::SetLaplacianConstraints() {
 	for(int i = 0; i < sNodes_.nodeCount[maxDepth + 1]; ++i)
 		sNodes_.treeNodes[i]->nodeData.constraint = 0;
 
-	for(int d = maxDepth; d >= (boundaryType_ == BoundaryType::None ? 2 : 0); --d) {
+	for(int d = maxDepth; d >= (boundaryType_ == BoundaryTypeNone ? 2 : 0); --d) {
 		DivergenceStencil stencil = SetDivergenceStencil(d, integrator, false);
 		DivergenceStencils stencils = SetDivergenceStencils(d, integrator, true);
 		TreeNeighborKey3 neighborKey3(fData_.depth());
@@ -1872,7 +1872,7 @@ void Octree<Degree, OutputDensity>::SetLaplacianConstraints() {
 
 			int off[3];
 			node->depthAndOffset(d, off);
-			int mn = boundaryType_ == BoundaryType::None ? (1 << (d - 2)) + 2 : 2;
+			int mn = boundaryType_ == BoundaryTypeNone ? (1 << (d - 2)) + 2 : 2;
 			int mx = (1 << d) - mn;
 			bool isInterior =
 				off[0] >= mn && off[0] < mx && off[1] >= mn && off[1] < mx && off[2] >= mn && off[2] < mx;
@@ -1944,11 +1944,11 @@ void Octree<Degree, OutputDensity>::SetLaplacianConstraints() {
 	}
 
 	// Fine-to-coarse down-sampling of constraints
-	for(int d = maxDepth - 1; d >= (boundaryType_ == BoundaryType::None ? 2 : 0); --d)
+	for(int d = maxDepth - 1; d >= (boundaryType_ == BoundaryTypeNone ? 2 : 0); --d)
 		DownSample(d, sNodes_, &constraints[0]);
 
 	// Coarse-to-fine up-sampling of coefficients
-	for(int d = (boundaryType_ == BoundaryType::None ? 2 : 0); d < maxDepth; ++d)
+	for(int d = (boundaryType_ == BoundaryTypeNone ? 2 : 0); d < maxDepth; ++d)
 		UpSample(d, sNodes_, &coefficients[0]);
 
 	// Add the accumulated constraints from all finer depths
@@ -1972,7 +1972,7 @@ void Octree<Degree, OutputDensity>::SetLaplacianConstraints() {
 			UpdateCoarserSupportBounds(node, range);
 			TreeNeighbors5 neighbors5 = neighborKey3.getNeighbors5(node->parent());
 
-			int mn = boundaryType_ == BoundaryType::None ? (1 << (d - 2)) + 4 : 4;
+			int mn = boundaryType_ == BoundaryTypeNone ? (1 << (d - 2)) + 4 : 4;
 			int mx = (1 << d) - mn;
 			bool isInterior =
 				off[0] >= mn && off[0] < mx && off[1] >= mn && off[1] < mx && off[2] >= mn && off[2] < mx;
@@ -2055,10 +2055,10 @@ int Octree<Degree, OutputDensity>::refineBoundary(int subdivideDepth) {
 	int maxDepth = tree_.maxDepth();
 
 	subdivideDepth = std::max(subdivideDepth, 0);
-	if(boundaryType_ == BoundaryType::None) subdivideDepth += 2;
+	if(boundaryType_ == BoundaryTypeNone) subdivideDepth += 2;
 	subdivideDepth = std::min(subdivideDepth, maxDepth);
 	int sDepth = maxDepth - subdivideDepth;
-	if(boundaryType_ == BoundaryType::None) sDepth = std::max(2, sDepth);
+	if(boundaryType_ == BoundaryTypeNone) sDepth = std::max(2, sDepth);
 	if(sDepth == 0) {
 		sNodes_.set(tree_);
 		return sDepth;
@@ -2212,7 +2212,7 @@ void Octree<Degree, OutputDensity>::GetMCIsoTriangles(Real isoValue, int subdivi
 
 				// Compute the iso-vertices
 				//
-				if(boundaryType_ != BoundaryType::None || IsInset(leaf))
+				if(boundaryType_ != BoundaryTypeNone || IsInset(leaf))
 					SetMCRootPositions(leaf, sDepth, isoValue, nKey, rootData, interiorVertices, mesh,
 							metSolution, evaluator, nStencils[d].stencil, nStencils[d].stencils,
 							nonLinearFit);
@@ -2224,7 +2224,7 @@ void Octree<Degree, OutputDensity>::GetMCIsoTriangles(Real isoValue, int subdivi
 #pragma omp parallel for num_threads(threads_) firstprivate(nKey)
 			for(int i = 0; i < (int)leafNodeCount; ++i) {
 				TreeOctNode* leaf = leafNodes[i];
-				if(boundaryType_ != BoundaryType::None || IsInset(leaf))
+				if(boundaryType_ != BoundaryTypeNone || IsInset(leaf))
 					GetMCIsoTriangles(leaf, nKey, mesh, rootData, interiorVertices, offSet, sDepth,
 							polygonMesh, addBarycenter ? &barycenters : nullptr);
 			}
@@ -2262,7 +2262,7 @@ void Octree<Degree, OutputDensity>::GetMCIsoTriangles(Real isoValue, int subdivi
 					vStencils[d].stencils);
 
 			// Now compute the iso-vertices
-			if(boundaryType_ != BoundaryType::None || IsInset(leaf)) {
+			if(boundaryType_ != BoundaryTypeNone || IsInset(leaf)) {
 				SetMCRootPositions<Vertex>(leaf, 0, isoValue, nKey, coarseRootData, nullptr, mesh,
 						metSolution, evaluator, nStencils[d].stencil, nStencils[d].stencils, nonLinearFit);
 				GetMCIsoTriangles<Vertex>(leaf, nKey, mesh, coarseRootData, nullptr, 0, 0, polygonMesh,
@@ -2349,7 +2349,7 @@ Real Octree<Degree, OutputDensity>::getCornerValue(TreeConstNeighborKey3 const& 
 		TreeOctNode const* node, int corner, std::vector<Real> const& metSolution,
 		CornerEvaluator2 const& evaluator, Stencil<double, 3> const& stencil,
 		CornerEvaluationStencil const& stencils, bool isInterior) const {
-	double value = boundaryType_ == BoundaryType::Dirichlet ? -0.5 : 0;
+	double value = boundaryType_ == BoundaryTypeDirichlet ? -0.5 : 0;
 	int d;
 	int off[3];
 	node->depthAndOffset(d, off);
@@ -2600,7 +2600,7 @@ Real Octree<Degree, OutputDensity>::GetIsoValue() const {
 				int d;
 				int off[3];
 				node->depthAndOffset(d, off);
-				int mn = boundaryType_ == BoundaryType::None ? (1 << (d - 2)) + 2 : 2;
+				int mn = boundaryType_ == BoundaryTypeNone ? (1 << (d - 2)) + 2 : 2;
 				int mx = (1 << d) - mn;
 				bool isInterior =
 					off[0] >= mn && off[0] < mx && off[1] >= mn && off[1] < mx && off[2] >= mn && off[2] < mx;
@@ -2616,7 +2616,7 @@ Real Octree<Degree, OutputDensity>::GetIsoValue() const {
 			}
 		}
 	}
-	Real r = boundaryType_ == BoundaryType::Dirichlet ? 0.5 : 0;
+	Real r = boundaryType_ == BoundaryTypeDirichlet ? 0.5 : 0;
 	return isoValue / weightSum - r;
 }
 
@@ -2631,7 +2631,7 @@ void Octree<Degree, OutputDensity>::SetIsoCorners(Real isoValue, TreeOctNode* le
 	int d;
 	int off[3];
 	leaf->depthAndOffset(d, off);
-	int mn = boundaryType_ == BoundaryType::None ? (1 << (d - 2)) + 2 : 2;
+	int mn = boundaryType_ == BoundaryTypeNone ? (1 << (d - 2)) + 2 : 2;
 	int mx = (1 << d) - mn;
 	bool isInterior =
 		off[0] >= mn && off[0] < mx && off[1] >= mn && off[1] < mx && off[2] >= mn && off[2] < mx;
@@ -2799,7 +2799,7 @@ int Octree<Degree, OutputDensity>::GetRoot(RootInfo<OutputDensity> const& ri, Re
 		int d;
 		int off[3];
 		ri.node->depthAndOffset(d, off);
-		int mn = boundaryType_ == BoundaryType::None ? (1 << (d - 2)) + 2 : 2;
+		int mn = boundaryType_ == BoundaryTypeNone ? (1 << (d - 2)) + 2 : 2;
 		int mx = (1 << d) - mn;
 		isInterior =
 			off[0] >= mn && off[0] < mx && off[1] >= mn && off[1] < mx && off[2] >= mn && off[2] < mx;
@@ -3379,16 +3379,16 @@ int Octree<Degree, OutputDensity>::AddTriangles(CoredFileMeshData<Vertex>* mesh,
 // TODO: Add voxel grid output test cases
 template< int Degree , bool OutputDensity >
 std::vector<Real> Octree<Degree, OutputDensity>::GetSolutionGrid(int& res, Real isoValue, int depth) {
-	int maxDepth = boundaryType_ == BoundaryType::None ? tree_.maxDepth() - 1 : tree_.maxDepth();
+	int maxDepth = boundaryType_ == BoundaryTypeNone ? tree_.maxDepth() - 1 : tree_.maxDepth();
 	if(depth <= 0 || depth > maxDepth) depth = maxDepth;
 	BSplineData<Degree, Real> fData;
-	fData.set(boundaryType_ == BoundaryType::None ? depth + 1 : depth, boundaryType_);
+	fData.set(boundaryType_ == BoundaryTypeNone ? depth + 1 : depth, boundaryType_);
 	res = 1 << depth;
 	fData.setValueTables();
 	std::vector<Real> values(res * res * res);
 
 	for(TreeOctNode* n = tree_.nextNode(); n; n = tree_.nextNode(n)) {
-		if(n->depth() > (boundaryType_ == BoundaryType::None ? depth + 1 : depth)) continue;
+		if(n->depth() > (boundaryType_ == BoundaryTypeNone ? depth + 1 : depth)) continue;
 		if(n->depth() < minDepth_) continue;
 		int d;
 		int idx[3];
@@ -3403,7 +3403,7 @@ std::vector<Real> Octree<Degree, OutputDensity>::GetSolutionGrid(int& res, Real 
 			// We only care about the odd indices
 			if(!(start[i] & 1)) ++start[i];
 			if(!(end[i] & 1)) --end[i];
-			if(boundaryType_ == BoundaryType::None) {
+			if(boundaryType_ == BoundaryTypeNone) {
 				// (start[i]-1)>>1 >=   res/2 
 				// (  end[i]-1)<<1 <  3*res/2
 				start[i] = std::max(start[i], res + 1);
@@ -3417,7 +3417,7 @@ std::vector<Real> Octree<Degree, OutputDensity>::GetSolutionGrid(int& res, Real 
 					int xx = (x - 1) >> 1;
 					int yy = (y - 1) >> 1;
 					int zz = (z - 1) >> 1;
-					if(boundaryType_ == BoundaryType::None) {
+					if(boundaryType_ == BoundaryTypeNone) {
 						xx -= res / 2;
 						yy -= res / 2;
 						zz -= res / 2;
@@ -3430,7 +3430,7 @@ std::vector<Real> Octree<Degree, OutputDensity>::GetSolutionGrid(int& res, Real 
 			}
 		}
 	}
-	if(boundaryType_ == BoundaryType::Dirichlet)
+	if(boundaryType_ == BoundaryTypeDirichlet)
 		for(int i = 0; i != res * res * res; ++i) values[i] -= (Real)0.5;
 	for(int i = 0; i != res * res * res; ++i) values[i] -= isoValue;
 
