@@ -29,8 +29,9 @@ DAMAGE.
 #pragma once
 
 #include <iostream>
-#include <memory>
 #include <vector>
+
+#include "SharedPtr.h"
 
 struct AllocatorState {
 	AllocatorState(): index(0), remains(0) { }
@@ -52,24 +53,8 @@ public:
 	Allocator(): block_size_(0) { }
 	~Allocator() { reset(); }
 
-	/** This method is the allocators destructor. It frees up any of the memory that
-	  * it has allocated. */
-	void reset();
-
 	/** This method returns the memory state of the allocator. */
 	AllocatorState getState() const { return state_; }
-
-	/** This method rolls back the allocator so that it makes all of the memory previously
-	  * allocated available for re-allocation. Note that it does it not call the
-	  * constructor again, so after this method has been called, assumptions about the
-	  * state of the values in memory are no longer valid. */
-	void rollBack();
-
-	/** This method rolls back the allocator to the previous memory state and makes
-	  * all of the memory previously allocated available for re-allocation. Note that
-	  * it does it not call the constructor again, so after this method has been
-	  * called, assumptions about the state of the values in memory are no longer valid. */
-	void rollBack(AllocatorState const& state);
 
 	/** This method initiallizes the constructor and the block_size variable specifies the
 	  * the number of objects that should be pre-allocated at a time. */
@@ -84,9 +69,14 @@ public:
 	  */
 	T* newElements(size_t elements = 1);
 private:
+	/** This method is the allocators destructor. It frees up any of the memory that
+	  * it has allocated. */
+	void reset();
+private:
 	size_t block_size_;
 	AllocatorState state_;
-	std::vector<std::unique_ptr<T[]>> memory_;
+	// SharedPtr so that inner vector does not copy when memory_ resizes.
+	std::vector<SharedPtr<std::vector<T>>> memory_;
 };
 
 template<class T>
@@ -97,40 +87,11 @@ void Allocator<T>::reset() {
 }
 
 template<class T>
-void Allocator<T>::rollBack() {
-	if(memory_.size()) {
-		for(size_t i = 0; i < memory_.size(); ++i) {
-			for(size_t j = 0; j < block_size_; ++j) {
-				memory_[i][j].~T();
-				new(&memory_[i][j]) T();
-			}
-		}
-		state_.index = 0;
-		state_.remains = block_size_;
-	}
-}
-
-template<class T>
-void Allocator<T>::rollBack(AllocatorState const& state) {
-	if(!(state.index < state_.index ||
-			(state.index == state_.index && state.remains < state_.remains))) return;
-	for(size_t i = state.index; i < state_.index + 1; ++i) {
-		size_t jfrom = (i == state.index) ? state.remains : 0;
-		size_t jto = (i == state_.index) ? state_.remains : block_size_;
-		for(size_t j = jfrom; j < jto; ++j){
-			memory_[i][j].~T();
-			new(&memory_[i][j]) T();
-		}
-	}
-	state_ = state;
-}
-
-template<class T>
 void Allocator<T>::set(size_t block_size) {
 	reset();
 	block_size_ = block_size;
 	state_.remains = block_size_;
-	memory_.push_back(std::unique_ptr<T[]>(new T[block_size_]));
+	memory_.push_back(new std::vector<T>(block_size_));
 }
 
 template<class T>
@@ -143,11 +104,11 @@ T* Allocator<T>::newElements(size_t elements) {
 	}
 	if(state_.remains < elements) {
 		if(state_.index == memory_.size() - 1)
-			memory_.push_back(std::unique_ptr<T[]>(new T[block_size_]));
+			memory_.push_back(new std::vector<T>(block_size_));
 		++state_.index;
 		state_.remains = block_size_;
 	}
-	T* mem = &(memory_[state_.index][block_size_ - state_.remains]);
+	T* mem = &((*memory_[state_.index])[block_size_ - state_.remains]);
 	state_.remains -= elements;
 	return mem;
 }
