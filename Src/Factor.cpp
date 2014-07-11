@@ -36,10 +36,10 @@ DAMAGE.
 static double const SQRT_3 = 1.7320508075688772935;
 
 template<>
-std::vector<std::complex<double>> Factor<1>(double const cs[2], double EPS) {
+std::vector<std::complex<double> > Factor<1>(double const cs[2], double EPS) {
 	double a0 = cs[0];
 	double a1 = cs[1];
-	std::vector<std::complex<double>> roots;
+	std::vector<std::complex<double> > roots;
 
 	if(fabs(a1) <= EPS) return roots;
 	roots.push_back(-a0 / a1);
@@ -48,11 +48,11 @@ std::vector<std::complex<double>> Factor<1>(double const cs[2], double EPS) {
 }
 
 template<>
-std::vector<std::complex<double>> Factor<2>(double const cs[3], double EPS) {
+std::vector<std::complex<double> > Factor<2>(double const cs[3], double EPS) {
 	double a0 = cs[0];
 	double a1 = cs[1];
 	double a2 = cs[2];
-	std::vector<std::complex<double>> roots;
+	std::vector<std::complex<double> > roots;
 
 	if(fabs(a2) <= EPS) return Factor<1>(cs, EPS);
 
@@ -74,12 +74,12 @@ std::vector<std::complex<double>> Factor<2>(double const cs[3], double EPS) {
 // Solution taken from: http://mathworld.wolfram.com/CubicFormula.html
 // and http://www.csit.fsu.edu/~burkardt/f_src/subpak/subpak.f90
 template<>
-std::vector<std::complex<double>> Factor<3>(double const cs[4], double EPS) {
+std::vector<std::complex<double> > Factor<3>(double const cs[4], double EPS) {
 	double a0 = cs[0];
 	double a1 = cs[1];
 	double a2 = cs[2];
 	double a3 = cs[3];
-	std::vector<std::complex<double>> roots;
+	std::vector<std::complex<double> > roots;
 
 	if(fabs(a3) <= EPS) return Factor<2>(cs, EPS);
 	a2 /= a3;

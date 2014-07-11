@@ -49,7 +49,7 @@ cmdLine<std::string> Out("out");
 cmdLine<int> Smooth("smooth", 5);
 cmdLine<float> Trim("trim");
 cmdLine<float> IslandAreaRatio("aRatio", 0.001f);
-cmdLine<std::pair<float, float>> ColorRange("color");
+cmdLine<std::pair<float, float> > ColorRange("color");
 cmdLineReadable PolygonMesh("polygonMesh");
 
 std::vector<cmdLineReadable*> params;
@@ -92,9 +92,9 @@ PlyValueVertex<Real> InterpolateVertices(PlyValueVertex<Real> const& v1, PlyValu
 }
 
 template<class Real>
-std::vector<PlyColorVertex<Real>> ColorVertices(std::vector<PlyValueVertex<Real>> const& inVertices,
+std::vector<PlyColorVertex<Real> > ColorVertices(std::vector<PlyValueVertex<Real> > const& inVertices,
 		float min, float max) {
-	std::vector<PlyColorVertex<Real>> outVertices(inVertices.size());
+	std::vector<PlyColorVertex<Real> > outVertices(inVertices.size());
 	for(size_t i = 0; i != inVertices.size(); ++i) {
 		outVertices[i].point = inVertices[i].point;
 		float temp = (inVertices[i].value - min) / (max - min);
@@ -106,8 +106,8 @@ std::vector<PlyColorVertex<Real>> ColorVertices(std::vector<PlyValueVertex<Real>
 }
 
 template<class Real>
-void SmoothValues(std::vector<PlyValueVertex<Real>>& vertices,
-		std::vector<std::vector<int>> const& polygons) {
+void SmoothValues(std::vector<PlyValueVertex<Real> >& vertices,
+		std::vector<std::vector<int> > const& polygons) {
 	std::vector<int> count(vertices.size());
 	std::vector<Real> sums(vertices.size(), 0);
 	for(size_t i = 0; i != polygons.size(); ++i) {
@@ -126,8 +126,8 @@ void SmoothValues(std::vector<PlyValueVertex<Real>>& vertices,
 }
 
 template<class Real>
-void SplitPolygon(std::vector<int> const& polygon, std::vector<PlyValueVertex<Real>>& vertices, 
-		std::vector<std::vector<int>>& ltPolygons, std::vector<std::vector<int>>& gtPolygons,
+void SplitPolygon(std::vector<int> const& polygon, std::vector<PlyValueVertex<Real> >& vertices, 
+		std::vector<std::vector<int> >& ltPolygons, std::vector<std::vector<int> >& gtPolygons,
 		std::vector<bool>& ltFlags, std::vector<bool>& gtFlags,
 		std::unordered_map<long long, int>& vertexTable, Real trimValue) {
 	int sz = polygon.size();
@@ -194,13 +194,13 @@ void SplitPolygon(std::vector<int> const& polygon, std::vector<PlyValueVertex<Re
 }
 
 template<class Real>
-std::vector<std::vector<int>> Triangulate(std::vector<PlyValueVertex<Real>> const& vertices,
-		std::vector<std::vector<int>> const& polygons) {
-	std::vector<std::vector<int>> triangles;
+std::vector<std::vector<int> > Triangulate(std::vector<PlyValueVertex<Real> > const& vertices,
+		std::vector<std::vector<int> > const& polygons) {
+	std::vector<std::vector<int> > triangles;
 	for(size_t i = 0; i != polygons.size(); ++i) {
 		if(polygons.size() > 3) {
 			MinimalAreaTriangulation<Real> mat;
-			std::vector<Point3D<Real>> _vertices(polygons[i].size());
+			std::vector<Point3D<Real> > _vertices(polygons[i].size());
 			std::vector<TriangleIndex> _triangles;
 			for(size_t j = 0; j != polygons[i].size(); ++j)
 				_vertices[j] = vertices[polygons[i][j]].point;
@@ -219,7 +219,7 @@ std::vector<std::vector<int>> Triangulate(std::vector<PlyValueVertex<Real>> cons
 }
 
 template<class Vertex>
-void RemoveHangingVertices(std::vector<Vertex>& vertices, std::vector<std::vector<int>>& polygons) {
+void RemoveHangingVertices(std::vector<Vertex>& vertices, std::vector<std::vector<int> >& polygons) {
 	std::unordered_map<int, int> vMap;
 	std::vector<bool> vertexFlags(vertices.size(), false);
 	for(size_t i = 0; i != polygons.size(); ++i)
@@ -238,8 +238,8 @@ void RemoveHangingVertices(std::vector<Vertex>& vertices, std::vector<std::vecto
 	vertices = _vertices;
 }
 
-std::vector<std::vector<int>> SetConnectedComponents(std::vector<std::vector<int>> const& polygons) {
-	std::vector<std::vector<int>> components;
+std::vector<std::vector<int> > SetConnectedComponents(std::vector<std::vector<int> > const& polygons) {
+	std::vector<std::vector<int> > components;
 	std::vector<int> polygonRoots(polygons.size());
 	for(size_t i = 0; i != polygons.size(); ++i)
 		polygonRoots[i] = i;
@@ -281,7 +281,7 @@ std::vector<std::vector<int>> SetConnectedComponents(std::vector<std::vector<int
 }
 
 template<class Real>
-double PolygonArea(std::vector<PlyValueVertex<Real>> const& vertices, std::vector<int> const& polygon) {
+double PolygonArea(std::vector<PlyValueVertex<Real> > const& vertices, std::vector<int> const& polygon) {
 	if(polygon.size() < 3) return 0;
 	else if(polygon.size() == 3)
 		return TriangleArea(vertices[polygon[0]].point, vertices[polygon[1]].point,
@@ -313,8 +313,8 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	}
 #endif // FOR_RELEASE
-	std::vector<PlyValueVertex<float>> vertices;
-	std::vector<std::vector<int>> polygons;
+	std::vector<PlyValueVertex<float> > vertices;
+	std::vector<std::vector<int> > polygons;
 	int ft;
 	std::vector<std::string> comments;
 	bool readFlags[PlyValueVertex<float>::Components];
@@ -340,8 +340,8 @@ int main(int argc, char** argv) {
 				DumpOutput::instance()("\t--%s %s\n", p->name(), p->toString().c_str());
 
 		std::unordered_map<long long, int> vertexTable;
-		std::vector<std::vector<int>> ltPolygons;
-		std::vector<std::vector<int>> gtPolygons;
+		std::vector<std::vector<int> > ltPolygons;
+		std::vector<std::vector<int> > gtPolygons;
 		std::vector<bool> ltFlags;
 		std::vector<bool> gtFlags;
 
@@ -350,9 +350,9 @@ int main(int argc, char** argv) {
 			SplitPolygon(polygons[i], vertices, ltPolygons, gtPolygons, ltFlags, gtFlags,
 					vertexTable, Trim.value());
 		if(IslandAreaRatio.value() > 0) {
-			std::vector<std::vector<int>> _gtPolygons;
-			std::vector<std::vector<int>> ltComponents = SetConnectedComponents(ltPolygons);
-			std::vector<std::vector<int>> gtComponents = SetConnectedComponents(gtPolygons);
+			std::vector<std::vector<int> > _gtPolygons;
+			std::vector<std::vector<int> > ltComponents = SetConnectedComponents(ltPolygons);
+			std::vector<std::vector<int> > gtComponents = SetConnectedComponents(gtPolygons);
 			std::vector<double> ltAreas(ltComponents.size(), 0);
 			std::vector<double> gtAreas(gtComponents.size(), 0);
 			std::vector<bool> ltComponentFlags(ltComponents.size(), false);
@@ -386,7 +386,7 @@ int main(int argc, char** argv) {
 			}
 			gtPolygons = _gtPolygons;
 		}
-		std::vector<std::vector<int>> polys =
+		std::vector<std::vector<int> > polys =
 			PolygonMesh.set() ? gtPolygons : Triangulate(vertices, gtPolygons);
 
 		RemoveHangingVertices(vertices, polys);
@@ -398,7 +398,7 @@ int main(int argc, char** argv) {
 			min = ColorRange.value().first;
 			max = ColorRange.value().second;
 		}
-		std::vector<PlyColorVertex<float>> outVertices = ColorVertices(vertices, min, max);
+		std::vector<PlyColorVertex<float> > outVertices = ColorVertices(vertices, min, max);
 		if(Out.set())
 			PlyWritePolygons(Out.value(), outVertices, polygons, ft, DumpOutput::instance().strings());
 	}

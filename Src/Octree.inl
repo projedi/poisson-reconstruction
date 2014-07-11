@@ -38,7 +38,7 @@ template<class NodeData, class Real>
 bool OctNode<NodeData, Real>::UseAlloc = false;
 
 template<class NodeData, class Real>
-Allocator<OctNode<NodeData, Real>> OctNode<NodeData, Real>::allocator;
+Allocator<OctNode<NodeData, Real> > OctNode<NodeData, Real>::allocator;
 
 template<class NodeData, class Real>
 void OctNode<NodeData, Real>::SetAllocator(int blockSize) {

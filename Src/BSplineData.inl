@@ -157,7 +157,7 @@ void BSplineData<Degree, Real>::set(int maxDepth, BoundaryType boundaryType) {
 	function_count_ = BinaryNode<double>::CumulativeCenterCount(depth_);
 	sample_count_ = BinaryNode<double>::CenterCount(depth_) +
 		BinaryNode<double>::CornerCount(depth_);
-	baseFunctions = NewPointer<PPolynomial<Degree>>(function_count_);
+	baseFunctions = NewPointer<PPolynomial<Degree> >(function_count_);
 	base_bsplines_ = NewPointer<BSplineComponents>(function_count_);
 
 	BSplineComponents baseBSpline;

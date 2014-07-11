@@ -76,7 +76,7 @@ private:
 	size_t block_size_;
 	AllocatorState state_;
 	// SharedPtr so that inner vector does not copy when memory_ resizes.
-	std::vector<SharedPtr<std::vector<T>>> memory_;
+	std::vector<SharedPtr<std::vector<T> > > memory_;
 };
 
 template<class T>

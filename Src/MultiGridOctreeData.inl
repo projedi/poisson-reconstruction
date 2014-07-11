@@ -97,7 +97,7 @@ void SortedTreeNodes<OutputDensity>::setCornerTable(CornerTableData& cData, Tree
 	if(threads <= 0) threads = 1;
 	cData.resizeOffsets(this->maxDepth, -1);
 	// The vector of per-depth node spans
-	std::vector<std::pair<int, int>> spans(this->maxDepth, std::pair<int, int>(-1, -1));
+	std::vector<std::pair<int, int> > spans(this->maxDepth, std::pair<int, int>(-1, -1));
 	int minDepth;
 	int off[3];
 	int start;
@@ -259,7 +259,7 @@ template<bool OutputDensity>
 void SortedTreeNodes<OutputDensity>::setEdgeTable(EdgeTableData& eData, TreeOctNode const* rootNode,
 		int maxDepth, int threads) {
 	if(threads <= 0) threads = 1;
-	std::vector<std::pair<int, int>> spans(this->maxDepth, std::pair<int, int>(-1, -1));
+	std::vector<std::pair<int, int> > spans(this->maxDepth, std::pair<int, int>(-1, -1));
 
 	int minDepth;
 	eData.resizeOffsets(this->maxDepth, -1);
@@ -1955,7 +1955,7 @@ void Octree<Degree, OutputDensity>::SetLaplacianConstraints() {
 			}
 		}
 	}
-	std::vector<Point3D<Real>> coefficients(sNodes_.nodeCount[maxDepth], Point3D<Real>());
+	std::vector<Point3D<Real> > coefficients(sNodes_.nodeCount[maxDepth], Point3D<Real>());
 	for(int d = maxDepth - 1; d >= 0; --d) {
 #pragma omp parallel for num_threads(threads_)
 		for(int i = sNodes_.nodeCount[d]; i < sNodes_.nodeCount[d + 1]; ++i) {
@@ -2792,8 +2792,8 @@ int Octree<Degree, OutputDensity>::GetRoot(RootInfo<OutputDensity> const& ri, Re
 	bool isBoundary = IsBoundaryEdge(ri.node, ri.edgeIndex, sDepth) != 0;
 	bool haveKey1;
 	bool haveKey2;
-	std::pair<Real, Point3D<Real>> keyValue1;
-	std::pair<Real, Point3D<Real>> keyValue2;
+	std::pair<Real, Point3D<Real> > keyValue1;
+	std::pair<Real, Point3D<Real> > keyValue2;
 	int iter1 = rootData.cornerIndices(ri.node, c1);
 	int iter2 = rootData.cornerIndices(ri.node, c2);
 	keyValue1.first = rootData.cornerValues[iter1];
@@ -3315,7 +3315,7 @@ int Octree<Degree, OutputDensity>::AddTriangles(CoredFileMeshData<Vertex>* mesh,
 		std::vector<CoredPointIndex>& edges, std::vector<Vertex>* interiorVertices, int offSet,
 		bool polygonMesh, std::vector<Vertex>* barycenters) {
 	MinimalAreaTriangulation<Real> MAT;
-	std::vector<Point3D<Real>> vertices;
+	std::vector<Point3D<Real> > vertices;
 	std::vector<TriangleIndex> triangles;
 	if(polygonMesh) {
 		std::vector<CoredVertexIndex> vertices(edges.size());
