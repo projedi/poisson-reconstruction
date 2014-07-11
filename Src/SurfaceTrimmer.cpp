@@ -336,9 +336,9 @@ int main(int argc, char** argv) {
 
 	if(Trim.set()) {
 		DumpOutput::instance()("Running Surface Trimmer (V5)");
-		for(auto p: params)
-			if(p->set())
-				DumpOutput::instance()("\t--%s %s\n", p->name(), p->toString().c_str());
+		for(std::vector<cmdLineReadable*>::iterator p = params.begin(); p != params.end(); ++p)
+			if((*p)->set())
+				DumpOutput::instance()("\t--%s %s\n", (*p)->name(), (*p)->toString().c_str());
 
 		HashMap<long long, int> vertexTable;
 		std::vector<std::vector<int> > ltPolygons;

@@ -184,9 +184,10 @@ std::vector<double> Polynomial<Degree>::getSolutions(double c, double EPS) const
 	double cs[Degree + 1];
 	std::copy(coefficients, coefficients + Degree + 1, cs);
 	cs[0] -= c;
-	auto rs = Factor<Degree>(cs, EPS);
+	std::vector<std::complex<double> > rs = Factor<Degree>(cs, EPS);
 	std::vector<double> roots;
-	for(auto r: rs) if(std::abs(r.imag()) <= EPS) roots.push_back(r.real());
+	for(std::vector<std::complex<double> >::iterator r = rs.begin(); r != rs.end(); ++r)
+		if(std::abs(r->imag()) <= EPS) roots.push_back(r->real());
 	return roots;
 }
 

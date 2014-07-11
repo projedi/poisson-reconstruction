@@ -336,7 +336,8 @@ private:
 	typedef typename BSplineData<Degree, Real>::template CenterEvaluator<1> CenterEvaluator1;
 	typedef typename BSplineData<Degree, Real>::template CornerEvaluator<2> CornerEvaluator2;
 	typedef typename SortedTreeNodes<OutputDensity>::CornerTableData CornerTableData;
-	typedef std::vector<std::pair<RootInfo<OutputDensity>, RootInfo<OutputDensity> > > edges_t;
+	typedef std::pair<RootInfo<OutputDensity>, RootInfo<OutputDensity> > edge_t;
+	typedef std::vector<edge_t> edges_t;
 	typedef HashMap<long long, std::pair<RootInfo<OutputDensity>, int> > vertex_count_t;
 
 	class FaceEdgesFunction {

@@ -95,7 +95,7 @@ Vector<T2> SparseSymmetricMatrix<T>::operator*(Vector<T2> const& V) const {
 	Vector<T2> R(Rows());
 	for(int i = 0; i != Rows(); ++i) {
 		for(int ii = 0; ii != rowSizes_[i]; ++ii) {
-			auto e = m_ppElements[i][ii];
+			MatrixEntry<T> e = m_ppElements[i][ii];
 			R[i] += e.Value * V[e.N];
 			R[e.N] += e.Value * V[i];
 		}
@@ -113,7 +113,7 @@ void SparseSymmetricMatrix<T>::Multiply(Vector<T2> const& in, Vector<T2>& out, b
 	for(int i = 0; i < Rows(); ++i) {
 		T2 acc = 0;
 		for(int ii = 0; ii != rowSizes_[i]; ++ii) {
-			auto e = m_ppElements[i][ii];
+			MatrixEntry<T> e = m_ppElements[i][ii];
 			acc += e.Value * in[e.N];
 #pragma omp atomic
 			out[e.N] += e.Value * in[i];
@@ -144,14 +144,14 @@ void SparseSymmetricMatrix<T>::Multiply(Vector<T2> const& in, Vector<T2>& out, b
 		for(int i = (Rows() * t) / threads; i < (Rows() * (t + 1)) / threads; ++i) {
 			if(addDCTerm) {
 				for(int ii = 0; ii != rowSizes_[i]; ++ii) {
-					auto e = m_ppElements[i][ii];
+					MatrixEntry<T> e = m_ppElements[i][ii];
 					outs[i] += e.Value * in[e.N];
 					outs[e.N] += e.Value * in[i];
 				}
 			} else {
 				T2 acc = 0;
 				for(int ii = 0; ii != rowSizes_[i]; ++ii) {
-					auto e = m_ppElements[i][ii];
+					MatrixEntry<T> e = m_ppElements[i][ii];
 					acc += e.Value * in[e.N];
 					outs[e.N] += e.Value * in[i];
 				}
