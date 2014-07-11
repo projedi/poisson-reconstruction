@@ -2270,8 +2270,9 @@ void Octree<Degree, OutputDensity>::GetMCIsoTriangles(Real isoValue, int subdivi
 	shrink_to_fit(rootData.interiorRoots);
 	coarseRootData.interiorRoots.clear();
 	coarseRootData.boundaryValues = std::move(rootData.boundaryValues);
-	for(auto iter : rootData.boundaryRoots)
-		coarseRootData.boundaryRoots[iter.first] = iter.second;
+	for(HashMap<long long, int>::iterator iter = rootData.boundaryRoots.begin();
+			iter != rootData.boundaryRoots.end(); ++iter)
+		coarseRootData.boundaryRoots[iter->first] = iter->second;
 
 	for(int d = sDepth; d >= 0; --d) {
 		std::vector<Vertex> barycenters;
@@ -3065,7 +3066,7 @@ int Octree<Degree, OutputDensity>::GetRootPair(RootInfo<OutputDensity> const& ri
 template<int Degree, bool OutputDensity>
 int Octree<Degree, OutputDensity>::GetRootIndex(RootInfo<OutputDensity> const& ri,
 		RootData<OutputDensity>& rootData, CoredPointIndex& index) {
-	auto rootIter = rootData.boundaryRoots.find(ri.key);
+	HashMap<long long, int>::iterator rootIter = rootData.boundaryRoots.find(ri.key);
 	if(rootIter != rootData.boundaryRoots.end()) {
 		index.inCore = 1;
 		index.index = rootIter->second;
@@ -3275,7 +3276,7 @@ std::vector<typename Octree<Degree, OutputDensity>::edges_t> Octree<Degree, Outp
 	while(edges.size()) {
 		edges_t front;
 		edges_t back;
-		auto e = edges[0];
+		edge_t e = edges[0];
 		loops.resize(loopSize + 1);
 		edges[0] = edges.back();
 		edges.pop_back();
@@ -3283,7 +3284,7 @@ std::vector<typename Octree<Degree, OutputDensity>::edges_t> Octree<Degree, Outp
 		long long backIdx = e.first.key;
 		for(int j = edges.size() - 1; j >= 0; --j) {
 			if(edges[j].first.key == frontIdx || edges[j].second.key == frontIdx) {
-				auto temp = edges[j].first.key == frontIdx ? edges[j] :
+				edge_t temp = edges[j].first.key == frontIdx ? edges[j] :
 					std::make_pair(edges[j].second, edges[j].first);
 				frontIdx = temp.second.key;
 				front.push_back(temp);
@@ -3291,7 +3292,7 @@ std::vector<typename Octree<Degree, OutputDensity>::edges_t> Octree<Degree, Outp
 				edges.pop_back();
 				j = edges.size();
 			} else if(edges[j].first.key == backIdx || edges[j].second.key == backIdx) {
-				auto temp = edges[j].second.key == backIdx ? edges[j] :
+				edge_t temp = edges[j].second.key == backIdx ? edges[j] :
 					std::make_pair(edges[j].second, edges[j].first);
 				backIdx = temp.first.key;
 				back.push_back(temp);
