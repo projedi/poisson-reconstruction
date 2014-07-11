@@ -3098,8 +3098,8 @@ int Octree<Degree, OutputDensity>::SetMCRootPositions(TreeOctNode* node, int sDe
 				Vertex vertex;
 				if(!GetRootIndex(node, eIndex, fData_.depth(), neighborKey3, ri)) continue;
 				if(rootData.interiorRoots.empty() || IsBoundaryEdge(node, i, j, k, sDepth)) {
-					std::unordered_map<long long, int>::iterator iter;
-					std::unordered_map<long long, int>::iterator end;
+					HashMap<long long, int>::iterator iter;
+					HashMap<long long, int>::iterator end;
 					// Check if the root has already been set
 #pragma omp critical (boundary_roots_hash_access)
 					{

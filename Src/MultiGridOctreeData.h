@@ -92,9 +92,8 @@ size_t const MEMORY_ALLOCATOR_BLOCK_SIZE = 1 << 12;
 #pragma message("[WARNING] Not zeroing out normal component on boundary")
 #endif
 
-#include <unordered_map>
-
 #include "BSplineData.h"
+#include "HashMap.h"
 #include "Octree.h"
 #include "PPolynomial.h"
 #include "Ply.h"
@@ -263,9 +262,9 @@ template<bool OutputDensity>
 struct RootData: SortedTreeNodes<OutputDensity>::CornerTableData,
 		SortedTreeNodes<OutputDensity>::EdgeTableData {
 	// Edge to iso-vertex map
-	std::unordered_map<long long, int> boundaryRoots;
+	HashMap<long long, int> boundaryRoots;
 	// Vertex to ( value , normal ) map
-	std::unordered_map<long long, std::pair<Real, Point3D<Real> > > boundaryValues;
+	HashMap<long long, std::pair<Real, Point3D<Real> > > boundaryValues;
 
 	std::vector<int> interiorRoots;
 	std::vector<Real> cornerValues;
@@ -338,7 +337,7 @@ private:
 	typedef typename BSplineData<Degree, Real>::template CornerEvaluator<2> CornerEvaluator2;
 	typedef typename SortedTreeNodes<OutputDensity>::CornerTableData CornerTableData;
 	typedef std::vector<std::pair<RootInfo<OutputDensity>, RootInfo<OutputDensity> > > edges_t;
-	typedef std::unordered_map<long long, std::pair<RootInfo<OutputDensity>, int> > vertex_count_t;
+	typedef HashMap<long long, std::pair<RootInfo<OutputDensity>, int> > vertex_count_t;
 
 	class FaceEdgesFunction {
 	public:
