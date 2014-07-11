@@ -74,8 +74,9 @@ public:
 private:
 	friend class NeighborKey3<OctNode const>;
 
+	template<class EmptyChildrenCallback>
 	Neighbors3& collectNeighbors(OctNode*, int minDepth, bool flags[3][3][3], bool doReset,
-			std::function<void(OctNode*)> const& emptyChildrenCallback);
+			EmptyChildrenCallback const& emptyChildrenCallback);
 private:
 	std::vector<Neighbors3> neighbors_;
 };
@@ -94,8 +95,6 @@ public:
 	typedef typename NeighborKey3::Neighbors5 Neighbors5;
 	typedef typename ConstNeighborKey3::Neighbors3 ConstNeighbors3;
 	typedef typename ConstNeighborKey3::Neighbors5 ConstNeighbors5;
-
-	typedef std::function<void(OctNode const*, OctNode const*)> NodeAdjacencyFunction;
 public:
 	static int const DepthShift = 5;
 	static int const OffsetShift = (sizeof(long long) * 8 - DepthShift) / 3;
@@ -108,6 +107,7 @@ public:
 public:
 	static void SetAllocator(int blockSize);
 
+	template<class NodeAdjacencyFunction>
 	static void ProcessFixedDepthNodeAdjacentNodes(int maxDepth,
 			OctNode* node1, int width1, OctNode* node2, int width2,
 			int depth, NodeAdjacencyFunction const& F, int processCurrent = 1);
@@ -142,13 +142,16 @@ public:
 
 	void setFullDepth(int maxDepth);
 
+	template<class NodeAdjacencyFunction>
 	void processNodeFaces(OctNode const* node, NodeAdjacencyFunction const& F, int fIndex,
 			bool processCurrent = true) const;
 private:
+	template<class NodeAdjacencyFunction>
 	static void ProcessFixedDepthNodeAdjacentNodes(int dx, int dy, int dz,
 			OctNode* node1, int radius1, OctNode* node2, int radius2,
 			int width2, int depth, NodeAdjacencyFunction const& F, bool processCurrent = true);
 
+	template<class NodeAdjacencyFunction>
 	static void __ProcessFixedDepthNodeAdjacentNodes(int dx, int dy, int dz,
 			OctNode* node1, int radius1, OctNode* node2, int radius2,
 			int cWidth2, int depth, NodeAdjacencyFunction const& F);
@@ -159,6 +162,7 @@ private:
 
 	static unsigned long long Index(int depth, int const offset[3]);
 private:
+	template<class NodeAdjacencyFunction>
 	void processNodeFaces(OctNode const* node, NodeAdjacencyFunction const& F, int cIndex[4]) const;
 
 	int width(int maxDepth) const { return 1 << (maxDepth - depth()); }

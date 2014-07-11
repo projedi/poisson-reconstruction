@@ -56,8 +56,7 @@ public:
 		{ return std::equal(coefficients.begin(), coefficients.end(), p.coefficients.begin()); }
 	bool operator!=(Polynomial const& p) const { return !(*this == p); }
 
-	bool isZero() const
-		{ return std::all_of(coefficients, coefficients + Degree + 1, [](double p) { return p == 0; }); }
+	bool isZero() const;
 	void setZero() { std::fill(coefficients.begin(), coefficients.end(), 0); }
 
 	Polynomial& operator+=(Polynomial const& p);

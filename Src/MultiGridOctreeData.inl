@@ -539,11 +539,8 @@ Real Octree<Degree, OutputDensity>::SplatOrientedPoint(Point3D<Real> const& posi
 	}
 	Real weight;
 	Real depth;
-	std::function<TreeConstNeighbors3&(TreeOctNode*)> getNeighbors =
-		[&neighborKey](TreeOctNode* node) -> TreeConstNeighbors3& {
-			return (TreeConstNeighbors3&)neighborKey.setNeighbors(node);
-		};
-	GetSampleDepthAndWeight(temp, position, getNeighbors, samplesPerNode, depth, weight);
+	GetSampleDepthAndWeight(temp, position, SplatOrientedPointGetNeighborsFunction(neighborKey),
+			samplesPerNode, depth, weight);
 
 	depth = clamp(depth, minDepth, maxDepth);
 	int topDepth = clamp(lrint(std::ceil(depth)), minDepth, maxDepth);
@@ -574,10 +571,9 @@ Real Octree<Degree, OutputDensity>::SplatOrientedPoint(Point3D<Real> const& posi
 }
 
 template<int Degree, bool OutputDensity>
-template<class OctNodeS>
+template<class OctNodeS, class GetNeighbors>
 void Octree<Degree, OutputDensity>::GetSampleDepthAndWeight(OctNodeS* node, Point3D<Real> const& position,
-		std::function<TreeConstNeighbors3&(OctNodeS*)> const& getNeighbors, Real samplesPerNode,
-		Real& depth, Real& weight) const {
+		GetNeighbors const& getNeighbors, Real samplesPerNode, Real& depth, Real& weight) const {
 	OctNodeS* temp = node;
 	weight = (Real)1.0 / GetSampleWeight(temp, position, getNeighbors(temp));
 	if(weight >= samplesPerNode)
@@ -1073,8 +1069,8 @@ int Octree<Degree, OutputDensity>::SetMatrixRow(TreeNeighbors5 const& neighbors5
 	return count;
 }
 
-template<class T, int N>
-Stencil<T, N> SetStencil(std::function<T(int, int, int)> const& func) {
+template<class T, int N, class F>
+Stencil<T, N> SetStencil(F const& func) {
 	Stencil<T, N> stencil;
 	for(int x = 0; x != N; ++x) {
 		for(int y = 0; y != N; ++y) {
@@ -1086,21 +1082,53 @@ Stencil<T, N> SetStencil(std::function<T(int, int, int)> const& func) {
 	return stencil;
 }
 
-template<class T, int N1, int N2>
-Stencil<Stencil<T, N2>, N1> SetStencil(std::function<T(int, int, int, int, int, int)> const& func) {
-	return SetStencil<Stencil<T, N2>, N1>([&func](int i, int j, int k) {
-		return SetStencil<T, N2>([&](int x, int y, int z) { return func(i, j, k, x, y, z); });
-	});
+template<class T, class F>
+struct SetStencil1Function {
+	SetStencil1Function(F const& f, int i, int j, int k): func(f), i(i), j(j), k(k) { }
+	T operator()(int x, int y, int z) const { return func(i, j, k, x, y, z); }
+	F const& func;
+	int i;
+	int j;
+	int k;
+};
+
+template<class T, int N, class F>
+struct SetStencil2Function {
+	SetStencil2Function(F const& f): func(f) { }
+	Stencil<T, N> operator()(int i, int j, int k) const {
+		return SetStencil<T, N, SetStencil1Function<T, F> >(SetStencil1Function<T, F>(func, i, j, k));
+	}
+	F const& func;
+};
+
+template<class T, int N1, int N2, class F>
+Stencil<Stencil<T, N2>, N1> SetStencil(F const& func) {
+	return SetStencil<Stencil<T, N2>, N1>(SetStencil2Function<T, N2, F>(func));
 }
 
-template<class T, int N1, int N2, int N3>
-Stencil<Stencil<Stencil<T, N3>, N2>, N1> SetStencil(
-		std::function<T(int, int, int, int, int, int, int, int, int)> const& func) {
-	return SetStencil<Stencil<Stencil<T, N3>, N2>, N1>([&func](int cx, int cy, int cz) {
-		return SetStencil<T, N2, N3>([&](int i, int j, int k, int x, int y, int z) {
-			return func(cx, cy, cz, i, j, k, x, y, z);
-		});
-	});
+template<class T, class F>
+struct SetStencil3Function {
+	SetStencil3Function(F const& f, int cx, int cy, int cz): func(f), cx(cx), cy(cy), cz(cz) { }
+	T operator()(int i, int j, int k, int x, int y, int z) const
+		{ return func(cx, cy, cz, i, j, k, x, y, z); }
+	F const& func;
+	int cx;
+	int cy;
+	int cz;
+};
+
+template<class T, int N1, int N2, class F>
+struct SetStencil4Function {
+	SetStencil4Function(F const& f): func(f) { }
+	Stencil<Stencil<T, N2>, N1> operator()(int i, int j, int k) const {
+		return SetStencil<T, N1, N2, SetStencil3Function<T, F> >(SetStencil3Function<T, F>(func, i, j, k));
+	}
+	F const& func;
+};
+
+template<class T, int N1, int N2, int N3, class F>
+Stencil<Stencil<Stencil<T, N3>, N2>, N1> SetStencil(F const& func) {
+	return SetStencil<Stencil<Stencil<T, N3>, N2>, N1>(SetStencil4Function<T, N2, N3, F>(func));
 }
 
 template<int Degree, bool OutputDensity>
@@ -1108,13 +1136,8 @@ DivergenceStencil Octree<Degree, OutputDensity>::SetDivergenceStencil(int depth,
 		Integrator const& integrator, bool scatter) const {
 	if(depth < 2) return DivergenceStencil();
 	int center = 1 << (depth - 1);
-	return SetStencil<Point3D<double>, 5>([&](int x, int y, int z) {
-		int offset[] = { center, center, center };
-		int _offset[] = { x + center - 2, y + center - 2, z + center - 2 };
-		return scatter ?
-			GetDivergence1(integrator, depth, offset, _offset, false) :
-			GetDivergence2(integrator, depth, offset, _offset, false);
-	});
+	return SetStencil<Point3D<double>, 5, SetDivergenceStencilFunction>(
+		SetDivergenceStencilFunction(*this, depth, integrator, scatter, center));
 }
 
 template<int Degree, bool OutputDensity>
@@ -1122,13 +1145,8 @@ DivergenceStencils Octree<Degree, OutputDensity>::SetDivergenceStencils(int dept
 		Integrator const& integrator, bool scatter) const {
 	if(depth < 2) return DivergenceStencils();
 	int center = 1 << (depth - 1);
-	return SetStencil<Point3D<double>, 2, 5>([&](int i, int j, int k, int x, int y, int z) {
-		int offset[] = { center + i, center + j, center + k };
-		int _offset[] = { x + center / 2 - 2, y + center / 2 - 2, z + center / 2 - 2 };
-		return scatter ?
-			GetDivergence1(integrator, depth, offset, _offset, true) :
-			GetDivergence2(integrator, depth, offset, _offset, true);
-	});
+	return SetStencil<Point3D<double>, 2, 5, SetDivergenceStencilsFunction>(
+		SetDivergenceStencilsFunction(*this, depth, integrator, scatter, center));
 }
 
 template<int Degree, bool OutputDensity>
@@ -1136,11 +1154,8 @@ LaplacianStencil Octree<Degree, OutputDensity>::SetLaplacianStencil(int depth,
 		Integrator const& integrator) const {
 	if(depth < 2) return LaplacianStencil();
 	int center = 1 << (depth - 1);
-	return SetStencil<double, 5>([&](int x, int y, int z) {
-		int offset[] = { center, center, center };
-		int _offset[] = { x + center - 2, y + center - 2, z + center - 2 };
-		return GetLaplacian(integrator, depth, offset, _offset, false);
-	});
+	return SetStencil<double, 5, SetLaplacianStencilFunction>(
+		SetLaplacianStencilFunction(*this, depth, integrator, center));
 }
 
 template<int Degree, bool OutputDensity>
@@ -1148,11 +1163,8 @@ LaplacianStencils Octree<Degree, OutputDensity>::SetLaplacianStencils(int depth,
 		Integrator const& integrator) const {
 	if(depth < 2) return LaplacianStencils();
 	int center = 1 << (depth - 1);
-	return SetStencil<double, 2, 5>([&](int i, int j, int k, int x, int y, int z) {
-		int offset[] = { center + i, center + j, center + k };
-		int _offset[] = { x + center / 2 - 2, y + center / 2 - 2, z + center / 2 - 2 };
-		return GetLaplacian(integrator, depth, offset, _offset, true);
-	});
+	return SetStencil<double, 2, 5, SetLaplacianStencilsFunction>(
+		SetLaplacianStencilsFunction(*this, depth, integrator, center));
 }
 
 template<int Degree, bool OutputDensity>
@@ -1160,12 +1172,8 @@ CenterEvaluationStencil Octree<Degree, OutputDensity>::SetCenterEvaluationStenci
 		CenterEvaluator1 const& evaluator, int depth) const {
 	if(depth < 2) return CenterEvaluationStencil();
 	int center = 1 << (depth - 1);
-	return SetStencil<double, 3>([&](int x, int y, int z) {
-		int _offset[] = { x + center - 1, y + center - 1, z + center - 1 };
-		return evaluator.value(depth, center, _offset[0], false, false) *
-			evaluator.value(depth, center, _offset[1], false, false) *
-			evaluator.value(depth, center, _offset[2], false, false);
-	});
+	return SetStencil<double, 3, SetCenterEvaluationStencilFunction>(
+		SetCenterEvaluationStencilFunction(depth, center, evaluator));
 }
 
 template<int Degree, bool OutputDensity>
@@ -1173,13 +1181,8 @@ CenterEvaluationStencils Octree<Degree, OutputDensity>::SetCenterEvaluationStenc
 		CenterEvaluator1 const& evaluator, int depth) const {
 	if(depth < 3) return CenterEvaluationStencils();
 	int center = 1 << (depth - 1);
-	return SetStencil<double, 2, 3>([&](int cx, int cy, int cz, int x, int y, int z) {
-		int idx[] = { center + cx, center + cy, center + cz };
-		int off[] = { x + center / 2 - 1, y + center / 2 - 1, z + center / 2 - 1};
-		return evaluator.value(depth, idx[0], off[0], false, true) *
-			evaluator.value(depth, idx[1], off[1], false, true) *
-			evaluator.value(depth, idx[2], off[2], false, true);
-	});
+	return SetStencil<double, 2, 3, SetCenterEvaluationStencilsFunction>(
+		SetCenterEvaluationStencilsFunction(depth, center, evaluator));
 }
 
 template<int Degree, bool OutputDensity>
@@ -1187,12 +1190,8 @@ CornerEvaluationStencil Octree<Degree, OutputDensity>::SetCornerEvaluationStenci
 		CornerEvaluator2 const& evaluator, int depth) const {
 	if(depth < 2) return CornerEvaluationStencil();
 	int center = 1 << (depth - 1);
-	return SetStencil<double, 2, 3>([&](int cx, int cy, int cz, int x, int y, int z) {
-		int off[] = { center + x - 1, center + y - 1, center + z - 1 };
-		return evaluator.value(depth, center, cx, off[0], false, false) *
-			evaluator.value(depth, center, cy, off[1], false, false) *
-			evaluator.value(depth, center, cz, off[2], false, false);
-	});
+	return SetStencil<double, 2, 3, SetCornerEvaluationStencilFunction>(
+		SetCornerEvaluationStencilFunction(depth, center, evaluator));
 }
 
 template<int Degree, bool OutputDensity>
@@ -1200,14 +1199,8 @@ CornerEvaluationStencils Octree<Degree, OutputDensity>::SetCornerEvaluationStenc
 		CornerEvaluator2 const& evaluator, int depth) const {
 	if(depth < 3) return CornerEvaluationStencils();
 	int center = 1 << (depth - 1);
-	return SetStencil<double, 2, 2, 3>(
-		[&](int cx, int cy, int cz, int _cx, int _cy, int _cz, int x, int y, int z) {
-			int idx[] = { center + _cx, center + _cy, center + _cz };
-			int off[] = { center / 2 + x - 1, center / 2 + y - 1, center / 2 + z - 1 };
-			return evaluator.value(depth, idx[0], cx, off[0], false, true) *
-				evaluator.value(depth, idx[1], cy, off[1], false, true) *
-				evaluator.value(depth, idx[2], cz, off[2], false, true);
-	});
+	return SetStencil<double, 2, 2, 3, SetCornerEvaluationStencilsFunction>(
+		SetCornerEvaluationStencilsFunction(depth, center, evaluator));
 }
 
 template<int Degree, bool OutputDensity>
@@ -1215,16 +1208,8 @@ CornerNormalEvaluationStencil Octree<Degree, OutputDensity>::SetCornerNormalEval
 		CornerEvaluator2 const& evaluator, int depth) const {
 	if(depth < 2) return CornerNormalEvaluationStencil();
 	int center = 1 << (depth - 1);
-	return SetStencil<Point3D<double>, 2, 5>([&](int cx, int cy, int cz, int x, int y, int z) {
-		int off[] = { center + x - 2, center + y - 2, center + z - 2 };
-		double v[] = { evaluator.value(depth, center, cx, off[0], false, false),
-			evaluator.value(depth, center, cy, off[1], false, false),
-			evaluator.value(depth, center, cz, off[2], false, false) };
-		double dv[] = { evaluator.value(depth, center, cx, off[0], true, false),
-			evaluator.value(depth, center, cy, off[1], true, false),
-			evaluator.value(depth, center, cz, off[2], true, false) };
-		return Point3D<double>(dv[0] * v[1] * v[2], v[0] * dv[1] * v[2], v[0] * v[1] * dv[2]);
-	});
+	return SetStencil<Point3D<double>, 2, 5, SetCornerNormalEvaluationStencilFunction>(
+		SetCornerNormalEvaluationStencilFunction(depth, center, evaluator));
 }
 
 template<int Degree, bool OutputDensity>
@@ -1232,18 +1217,8 @@ CornerNormalEvaluationStencils Octree<Degree, OutputDensity>::SetCornerNormalEva
 		CornerEvaluator2 const& evaluator, int depth) const {
 	if(depth < 3) return CornerNormalEvaluationStencils();
 	int center = 1 << (depth - 1);
-	return SetStencil<Point3D<double>, 2, 2, 5>(
-		[&](int cx, int cy, int cz, int _cx, int _cy, int _cz, int x, int y, int z) {
-			int idx[] = { center + _cx, center + _cy, center + _cz };
-			int off[] = { center / 2 + x - 2, center / 2 + y - 2, center / 2 + z - 2 };
-			double v[] = { evaluator.value(depth, idx[0], cx, off[0], false, true),
-				evaluator.value(depth, idx[1], cy, off[1], false, true),
-				evaluator.value(depth, idx[2], cz, off[2], false, true) };
-			double dv[] = { evaluator.value(depth, idx[0], cx, off[0], true, true),
-				evaluator.value(depth, idx[1], cy, off[1], true, true),
-				evaluator.value(depth, idx[2], cz, off[2], true, true) };
-			return Point3D<double>(dv[0] * v[1] * v[2], v[0] * dv[1] * v[2], v[0] * v[1] * dv[2]);
-	});
+	return SetStencil<Point3D<double>, 2, 2, 5, SetCornerNormalEvaluationStencilsFunction>(
+			SetCornerNormalEvaluationStencilsFunction(depth, center, evaluator));
 }
 
 template<int Degree, bool OutputDensity>
@@ -1320,22 +1295,9 @@ void Octree<Degree, OutputDensity>::UpdateConstraintsFromCoarser(TreeNeighbors5 
 	}
 }
 
-struct UpSampleData {
-	UpSampleData(): start(0) {
-		v[0] = 0;
-		v[1] = 0;
-	}
-	UpSampleData(int s, double v1, double v2): start(s) {
-		v[0] = v1;
-		v[1] = v2;
-	}
-	int start;
-	double v[2];
-};
-
-template<bool OutputDensity, class TreeOctNode>
+template<bool OutputDensity, class TreeOctNode, class F>
 void UpSampleGeneric(int depth, SortedTreeNodes<OutputDensity> const& sNodes, BoundaryType boundaryType,
-		int threads, std::function<void(int, TreeOctNode const*, UpSampleData*, int*)> const& func) {
+		int threads, F const& func) {
 	double cornerValue = boundaryType == BoundaryTypeDirichlet ? 0.5 :
 		boundaryType == BoundaryTypeNeumann ? 1 : 0.75;
 	// For every node at the current depth
@@ -1377,10 +1339,7 @@ Vector<Real> Octree<Degree, OutputDensity>::UpSampleCoarserSolution(int depth,
 	if((boundaryType_ != BoundaryTypeNone && depth == 0) ||
 			(boundaryType_ == BoundaryTypeNone && depth <= 2)) return Solution;
 	UpSampleGeneric<OutputDensity, TreeOctNode>(depth, sNodes, boundaryType_, threads_,
-		[&](int i, TreeOctNode const* node, UpSampleData* usData, int* idxs) {
-			double dxyz = usData[0].v[idxs[0]] * usData[1].v[idxs[1]] * usData[2].v[idxs[2]];
-			Solution[i - start] += (Real)(node->nodeData.solution * dxyz);
-	});
+		UpSampleCoarserSolutionFunction(Solution, start));
 	// Clear the coarser solution
 #pragma omp parallel for num_threads(threads_)
 	for(int i = sNodes.nodeCount[depth - 1]; i < (int)sNodes.nodeCount[depth]; ++i)
@@ -1394,13 +1353,7 @@ void Octree<Degree, OutputDensity>::DownSample(int depth, SortedTreeNodes<Output
 		C* constraints) const {
 	if(depth == 0) return;
 	UpSampleGeneric<OutputDensity, TreeOctNode>(depth, sNodes, boundaryType_, threads_,
-		[&](int i, TreeOctNode const* node, UpSampleData* usData, int* idxs) {
-			C cx = constraints[i] * usData[0].v[idxs[0]];
-			C cxy = cx * usData[1].v[idxs[1]];
-			C cxyz = cxy * usData[2].v[idxs[2]];
-#pragma omp atomic
-			constraints[node->nodeData.nodeIndex] += cxyz;
-	});
+		DownSampleFunction<C>(constraints));
 }
 
 template<int Degree, bool OutputDensity>
@@ -1410,12 +1363,7 @@ void Octree<Degree, OutputDensity>::UpSample(int depth, SortedTreeNodes<OutputDe
 	if((boundaryType_ != BoundaryTypeNone && depth == 0) ||
 			(boundaryType_ == BoundaryTypeNone && depth <= 2)) return;
 	UpSampleGeneric<OutputDensity, TreeOctNode>(depth, sNodes, boundaryType_, threads_,
-		[&](int i, TreeOctNode const* node, UpSampleData* usData, int* idxs) {
-			double dx = usData[0].v[idxs[0]];
-			double dxy = dx * usData[1].v[idxs[1]];
-			double dxyz = dxy * usData[2].v[idxs[2]];
-			coefficients[i] += coefficients[node->nodeData.nodeIndex] * (Real)dxyz;
-	});
+		UpSample1Function<C>(coefficients));
 }
 
 template<int Degree, bool OutputDensity>
@@ -1424,13 +1372,7 @@ void Octree<Degree, OutputDensity>::UpSample(int depth, SortedTreeNodes<OutputDe
 		C const* coarseCoefficients, C* fineCoefficients) const {
 	if(depth <= minDepth_) return;
 	UpSampleGeneric<OutputDensity, TreeOctNode>(depth, sNodes, boundaryType_, threads_,
-		[&](int i, TreeOctNode const* node, UpSampleData* usData, int* idxs) {
-			double dx = usData[0].v[idxs[0]];
-			double dxy = dx * usData[1].v[idxs[1]];
-			double dxyz = dxy * usData[2].v[idxs[2]];
-			fineCoefficients[i - sNodes.nodeCount[depth]] +=
-				coarseCoefficients[node->nodeData.nodeIndex - sNodes.nodeCount[depth - 1]] * (Real)dxyz;
-	});
+		UpSample2Function<C>(depth, fineCoefficients, coarseCoefficients, sNodes));
 }
 
 template<int Degree, bool OutputDensity>
@@ -1492,12 +1434,11 @@ Real Octree<Degree, OutputDensity>::WeightedCoarserFunctionValue(TreeNeighborKey
 	return pointValue * weight;
 }
 
-// F1, F2 and F3 instead of std::function because type is easier on the eyes
 template<int Degree, bool OutputDensity>
 template<class F1, class F2, class F3>
 SparseSymmetricMatrix<Real> Octree<Degree, OutputDensity>::GetFixedDepthLaplacianGeneric(int depth,
 		Integrator const& integrator, SortedTreeNodes<OutputDensity> const& sNodes,
-		Real const* metSolution, size_t range, F1 getNode, F2 getRowSize, F3 setRow) {
+		Real const* metSolution, size_t range, F1 const& getNode, F2 const& getRowSize, F3 const& setRow) {
 	SparseSymmetricMatrix<Real> matrix;
 	matrix.Resize(range);
 	Stencil<double, 5> stencil = SetLaplacianStencil(depth, integrator);
@@ -1549,19 +1490,10 @@ SparseSymmetricMatrix<Real> Octree<Degree, OutputDensity>::GetFixedDepthLaplacia
 	size_t start = sNodes.nodeCount[depth];
 	size_t end = sNodes.nodeCount[depth + 1];
 	size_t range = end - start;
-	auto getNode = [&](int i) {
-		return sNodes.treeNodes[i + start];
-	};
-	auto getRowSize = [&](TreeNeighbors5 const& neighbors5, bool symmetric) {
-		return GetMatrixRowSize(neighbors5, symmetric);
-	};
-	auto setRow =
-		[&](TreeNeighbors5 const& neighbors5, Pointer(MatrixEntry<MatrixReal>) row, int offset,
-				Integrator const& integrator, Stencil<double, 5> const& stencil, bool symmetric) {
-		return SetMatrixRow(neighbors5, row, offset, integrator, stencil, symmetric);
-	};
 	return GetFixedDepthLaplacianGeneric(depth, integrator, sNodes, metSolution, range,
-			getNode, getRowSize, setRow);
+			GetFixedDepthLaplacianGetNodeFunction(sNodes, start),
+			GetFixedDepthLaplacianGetRowSizeFunction(*this),
+			GetFixedDepthLaplacianSetRowFunction(*this));
 }
 
 template<int Degree, bool OutputDensity>
@@ -1573,30 +1505,12 @@ SparseSymmetricMatrix<Real> Octree<Degree, OutputDensity>::GetRestrictedFixedDep
 	int rOff[3];
 	rNode->depthAndOffset(rDepth, rOff);
 	Range3D range;
-	auto getNode = [&](int i) {
-		TreeOctNode* node = sNodes.treeNodes[entries[i]];
-		int d;
-		int off[3];
-		node->depthAndOffset(d, off);
-		off[0] >>= depth - rDepth;
-		off[1] >>= depth - rDepth;
-		off[2] >>= depth - rDepth;
-		bool isInterior = off[0] == rOff[0] && off[1] == rOff[1] && off[2] == rOff[2];
-
-		if(!isInterior) SetMatrixRowBounds(node, rDepth, rOff, range);
-		else range = Range3D::FullRange();
-		return node;
-	};
-	auto getRowSize = [&](TreeNeighbors5 const& neighbors5, bool symmetric) {
-		return GetMatrixRowSize(neighbors5, range, symmetric);
-	};
-	auto setRow =
-		[&](TreeNeighbors5 const& neighbors5, Pointer(MatrixEntry<MatrixReal>) row, int,
-				Integrator const& integrator, Stencil<double, 5> const& stencil, bool symmetric) {
-		return SetMatrixRow(neighbors5, row, 0, integrator, stencil, range, symmetric);
-	};
 	SparseSymmetricMatrix<Real> matrix = GetFixedDepthLaplacianGeneric(depth, integrator, sNodes,
-			metSolution, entryCount, getNode, getRowSize, setRow);
+			metSolution, entryCount,
+			GetRestrictedFixedDepthLaplacianGetNodeFunction(*this, sNodes, depth, entries,
+				rDepth, rOff, range),
+			GetRestrictedFixedDepthLaplacianGetRowSizeFunction(*this, range),
+			GetRestrictedFixedDepthLaplacianSetRowFunction(*this, range));
 	for(int i = 0; i != (int)entryCount; ++i) sNodes.treeNodes[entries[i]]->nodeData.nodeIndex = entries[i];
 	return matrix;
 }
@@ -1693,10 +1607,9 @@ int Octree<Degree, OutputDensity>::SolveFixedDepthMatrix(int depth, Integrator c
 	return iter;
 }
 
-template<class TreeOctNode>
+template<class TreeOctNode, class ExtraCondition, class DoWork>
 void getAdjacencyCount(TreeOctNode* node, typename TreeOctNode::NeighborKey3& neighborKey3, int depth,
-		int fDataDepth, int width, std::function<bool(TreeOctNode const*)> const& extraCondition,
-		std::function<void(TreeOctNode const*, TreeOctNode const*)> const& doWork) {
+		int fDataDepth, int width, ExtraCondition const& extraCondition, DoWork const& doWork) {
 	// Count the number of nodes at depth "depth" that lie under sNodes.treeNodes[i]
 	for(TreeOctNode* temp = node->nextNode(); temp;) {
 		if(temp->depth() == depth && extraCondition(temp)) {
@@ -1714,6 +1627,36 @@ void getAdjacencyCount(TreeOctNode* node, typename TreeOctNode::NeighborKey3& ne
 					TreeOctNode::ProcessFixedDepthNodeAdjacentNodes(fDataDepth, node,
 							1, neighbors5.neighbors[x][y][z], 2 * width - 1, depth, doWork);
 }
+
+template<class TreeOctNode>
+bool SolveFixedDepthMatrix1Function(TreeOctNode const*) { return true; }
+
+template<class TreeOctNode>
+class SolveFixedDepthMatrix2Function {
+public:
+	SolveFixedDepthMatrix2Function(int& adjacencyCount): adjacencyCount(adjacencyCount) {}
+	void operator()(TreeOctNode const*, TreeOctNode const*) const {
+		++adjacencyCount;
+	}
+private:
+	int& adjacencyCount;
+};
+
+template<class TreeOctNode>
+bool SolveFixedDepthMatrix3Function(TreeOctNode const* temp) { return temp->nodeData.nodeIndex != -1; }
+
+template<class TreeOctNode>
+class SolveFixedDepthMatrix4Function {
+public:
+	SolveFixedDepthMatrix4Function(int& adjacencyCount2, int* adjacencies):
+		adjacencyCount2(adjacencyCount2), adjacencies(adjacencies) { }
+	void operator()(TreeOctNode const* node1, TreeOctNode const*) const {
+		adjacencies[adjacencyCount2++] = node1->nodeData.nodeIndex;
+	}
+private:
+	int& adjacencyCount2;
+	int* adjacencies;
+};
 
 template<int Degree, bool OutputDensity>
 int Octree<Degree, OutputDensity>::SolveFixedDepthMatrix(int depth, Integrator const& integrator,
@@ -1757,8 +1700,8 @@ int Octree<Degree, OutputDensity>::SolveFixedDepthMatrix(int depth, Integrator c
 	for(int i = sNodes.nodeCount[d]; i != sNodes.nodeCount[d + 1]; ++i) {
 		int adjacencyCount = 0;
 		getAdjacencyCount<TreeOctNode>(sNodes.treeNodes[i], neighborKey3, depth, fData_.depth(), width_,
-				[](TreeOctNode const*) { return true; },
-				[&adjacencyCount](TreeOctNode const*, TreeOctNode const*) { ++adjacencyCount; });
+				SolveFixedDepthMatrix1Function<TreeOctNode>,
+				SolveFixedDepthMatrix2Function<TreeOctNode>(adjacencyCount));
 		subDimension.push_back(adjacencyCount);
 		maxDimension = std::max(maxDimension, adjacencyCount);
 	}
@@ -1778,9 +1721,8 @@ int Octree<Degree, OutputDensity>::SolveFixedDepthMatrix(int depth, Integrator c
 		// Set the indices for the nodes under, or near, sNodes.treeNodes[i].
 		int adjacencyCount2 = 0;
 		getAdjacencyCount<TreeOctNode>(sNodes.treeNodes[i], neighborKey3, depth, fData_.depth(), width_,
-				[](TreeOctNode const* temp) { return temp->nodeData.nodeIndex != -1; },
-				[&adjacencyCount2, &adjacencies](TreeOctNode const* node1, TreeOctNode const*) {
-					adjacencies[adjacencyCount2++] = node1->nodeData.nodeIndex; });
+				SolveFixedDepthMatrix3Function<TreeOctNode>,
+				SolveFixedDepthMatrix4Function<TreeOctNode>(adjacencyCount2, adjacencies));
 		// Get the associated constraint vector
 		Vector<Real> _B(adjacencyCount2);
 		Vector<Real> _X(adjacencyCount2);
@@ -2040,7 +1982,7 @@ void Octree<Degree, OutputDensity>::SetLaplacianConstraints() {
 
 template<int Degree, bool OutputDensity>
 void Octree<Degree, OutputDensity>::FaceEdgesFunction::operator()(TreeOctNode const* node1,
-		TreeOctNode const*) {
+		TreeOctNode const*) const {
 	if(!node1->hasChildren() && MarchingCubes::HasRoots(node1->nodeData.mcIndex)) {
 		int isoTri[DIMENSION * MarchingCubes::MAX_TRIANGLES];
 		int count = MarchingCubes::AddTriangleIndices(node1->nodeData.mcIndex, isoTri);
@@ -2925,11 +2867,8 @@ int Octree<Degree, OutputDensity>::GetRoot(RootInfo<OutputDensity> const& ri, Re
 		Real weight;
 		TreeOctNode const* temp = ri.node;
 		while(temp->depth() > splatDepth_) temp = temp->parent();
-		std::function<TreeConstNeighbors3&(TreeOctNode const*)> getNeighbors =
-			[&neighborKey3](TreeOctNode const* node) -> TreeConstNeighbors3& {
-				return neighborKey3.getNeighbors3(node);
-		};
-		GetSampleDepthAndWeight(temp, position, getNeighbors, samplesPerNode_, depth, weight);
+		GetSampleDepthAndWeight(temp, position, GetRootGetNeighborsFunction(neighborKey3),
+				samplesPerNode_, depth, weight);
 		SetVertexValue(vertex, depth);
 	}
 	return 1;
