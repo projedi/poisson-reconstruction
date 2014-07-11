@@ -63,19 +63,6 @@ private:
 	T value_;
 };
 
-template<class T, size_t Dim>
-class cmdLine<std::array<T, Dim>>: public cmdLineReadable {
-public:
-	cmdLine(std::string const& name): cmdLineReadable(name) { }
-
-	std::array<T, Dim> const& values() const { return values_; }
-
-	int read(char** argv, int argc) override;
-	std::string toString() const override;
-private:
-	std::array<T, Dim> values_;
-};
-
 // This reads the arguments in argc, matches them against "names" and sets
 // the values of "r" appropriately. Parameters start with "--"
 void cmdLineParse(int argc, char** argv, std::vector<cmdLineReadable*> const& r,

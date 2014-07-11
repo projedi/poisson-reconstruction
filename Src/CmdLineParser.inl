@@ -28,6 +28,16 @@ DAMAGE.
 
 #include <sstream>
 
+template<class T1, class T2>
+std::ostream& operator<<(std::ostream& ost, std::pair<T1, T2> const& p) {
+	return ost << p.first << " " << p.second << std::endl;
+}
+
+template<class T1, class T2>
+std::istream& operator>>(std::istream& ist, std::pair<T1, T2>& p) {
+	return ist >> p.first >> p.second;
+}
+
 template<class T>
 int cmdLine<T>::read(char** argv, int argc) {
 	if(argc <= 0) return 0;
@@ -41,23 +51,5 @@ template<class T>
 std::string cmdLine<T>::toString() const {
 	std::stringstream ss;
 	ss << value_;
-	return ss.str();
-}
-
-template<class T, size_t Dim>
-int cmdLine<std::array<T, Dim>>::read(char** argv, int argc) {
-	if(argc < (int)Dim) return 0;
-	for(size_t i = 0; i != Dim; ++i, ++argv) {
-		std::stringstream ss(*argv);
-		ss >> values_[i];
-	}
-	set_ = true;
-	return Dim;
-}
-
-template<class T, size_t Dim>
-std::string cmdLine<std::array<T, Dim>>::toString() const {
-	std::stringstream ss;
-	for(auto v: values_) ss << v << " ";
 	return ss.str();
 }

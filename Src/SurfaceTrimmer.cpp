@@ -49,7 +49,7 @@ cmdLine<std::string> Out("out");
 cmdLine<int> Smooth("smooth", 5);
 cmdLine<float> Trim("trim");
 cmdLine<float> IslandAreaRatio("aRatio", 0.001f);
-cmdLine<std::array<float, 2>> ColorRange("color");
+cmdLine<std::pair<float, float>> ColorRange("color");
 cmdLineReadable PolygonMesh("polygonMesh");
 
 std::vector<cmdLineReadable*> params;
@@ -395,8 +395,8 @@ int main(int argc, char** argv) {
 			PlyWritePolygons(Out.value(), vertices, polys, ft, DumpOutput::instance().strings());
 	} else {
 		if(ColorRange.set()) {
-			min = ColorRange.values()[0];
-			max = ColorRange.values()[1];
+			min = ColorRange.value().first;
+			max = ColorRange.value().second;
 		}
 		std::vector<PlyColorVertex<float>> outVertices = ColorVertices(vertices, min, max);
 		if(Out.set())
