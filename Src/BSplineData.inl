@@ -213,21 +213,25 @@ void BSplineData<Degree, Real>::set(int maxDepth, BoundaryType boundaryType) {
 	leftRightBSpline[2] *= 0;
 
 	for(size_t i = 0; i != function_count_; ++i) {
-		auto caw = BinaryNode<double>::CenterAndWidth(i);
-		baseFunctions[i] = baseFunction.scale(caw.second).shift(caw.first);
-		base_bsplines_[i] = baseBSpline.scale(caw.second).shift(caw.first);
+		double center;
+		double width;
+		BinaryNode<double>::CenterAndWidth(i, center, width);
+		baseFunctions[i] = baseFunction.scale(width).shift(center);
+		base_bsplines_[i] = baseBSpline.scale(width).shift(center);
 		if(_boundaryType != BoundaryTypeNone) {
-			auto dao = BinaryNode<double>::DepthAndOffset(i);
-			int r = 1 << dao.first;
-			if(dao.second == 0 && dao.second == r - 1) {
-				baseFunctions[i] = leftRightBaseFunction.scale(caw.second).shift(caw.first);
-				base_bsplines_[i] = leftRightBSpline.scale(caw.second).shift(caw.first);
-			} else if(dao.second == 0) {
-				baseFunctions[i] = leftBaseFunction.scale(caw.second).shift(caw.first);
-				base_bsplines_[i] = leftBSpline.scale(caw.second).shift(caw.first);
-			} else if(dao.second == r - 1) {
-				baseFunctions[i] = rightBaseFunction.scale(caw.second).shift(caw.first);
-				base_bsplines_[i] = rightBSpline.scale(caw.second).shift(caw.first);
+			int depth;
+			int offset;
+			BinaryNode<double>::DepthAndOffset(i, depth, offset);
+			int r = 1 << depth;
+			if(offset == 0 && offset == r - 1) {
+				baseFunctions[i] = leftRightBaseFunction.scale(width).shift(center);
+				base_bsplines_[i] = leftRightBSpline.scale(width).shift(center);
+			} else if(offset == 0) {
+				baseFunctions[i] = leftBaseFunction.scale(width).shift(center);
+				base_bsplines_[i] = leftBSpline.scale(width).shift(center);
+			} else if(offset == r - 1) {
+				baseFunctions[i] = rightBaseFunction.scale(width).shift(center);
+				base_bsplines_[i] = rightBSpline.scale(width).shift(center);
 			}
 		}
 	}
@@ -383,10 +387,12 @@ void BSplineData<Degree, Real>::setCornerEvaluator(CornerEvaluator<Radius>& eval
 
 template< int Degree , class Real >
 void BSplineData< Degree , Real >::setSampleSpan(int idx, int& start, int& end) const {
-	auto dao = BinaryNode<double>::DepthAndOffset(idx);
-	int res = 1 << dao.first;
-	double _start = (dao.second + 0.5 - 0.5 * (Degree + 1)) / res;
-	double _end   = (dao.second + 0.5 + 0.5 * (Degree + 1)) / res;
+	int depth;
+	int offset;
+	BinaryNode<double>::DepthAndOffset(idx, depth, offset);
+	int res = 1 << depth;
+	double _start = (offset + 0.5 - 0.5 * (Degree + 1)) / res;
+	double _end   = (offset + 0.5 + 0.5 * (Degree + 1)) / res;
 	// start / (sample_count_ - 1) > _start && (start - 1) / (sample_count_ - 1) <= _start
 	// start > _start * (sample_count_ - 1) && start <= _start * (sample_count_ - 1) + 1
 	// _start * (sample_count_ - 1) + 1 >= start > _start * (sample_count_ - 1)

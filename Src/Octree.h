@@ -159,8 +159,7 @@ private:
 
 	static unsigned long long Index(int depth, int const offset[3]);
 private:
-	void processNodeFaces(OctNode const* node, NodeAdjacencyFunction const& F,
-			std::tuple<int, int, int, int> cIndex) const;
+	void processNodeFaces(OctNode const* node, NodeAdjacencyFunction const& F, int cIndex[4]) const;
 
 	int width(int maxDepth) const { return 1 << (maxDepth - depth()); }
 	void centerIndex(int maxDepth, int index[DIMENSION]) const;

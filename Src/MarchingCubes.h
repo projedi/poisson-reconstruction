@@ -36,8 +36,7 @@ struct Square {
 	static unsigned const CORNERS = 4;
 	static int CornerIndex(int x, int y) { return (y << 1) | x; }
 	static int AntipodalCornerIndex(int idx);
-	static std::tuple<int, int> FactorCornerIndex(int idx)
-		{ return std::make_tuple(idx % 2, (idx >> 1) % 2); }
+	static void FactorCornerIndex(int idx, int& x, int& y);
 };
 
 struct Cube {
@@ -48,13 +47,10 @@ struct Cube {
 	static int CornerIndex(int x, int y, int z) { return (z << 2) | (y << 1) | x; }
 	static int EdgeIndex(int orient, int i, int j) { return (orient << 2) | (j << 1) | i; }
 
-	static std::tuple<int, int, int> FactorCornerIndex(int idx)
-		{ return std::make_tuple(idx % 2, (idx >> 1) % 2, (idx >> 2) % 2); }
-	static std::tuple<int, int, int> FactorEdgeIndex(int idx)
-		{ return std::make_tuple(idx >> 2, idx & 1, (idx & 2) >> 1); }
-	static std::tuple<int, int> FactorFaceIndex(int idx)
-		{ return std::make_tuple(idx >> 1, idx & 1); }
-	static std::tuple<int, int, int> FactorFaceIndexXYZ(int idx);
+	static void FactorCornerIndex(int idx, int& x, int& y, int& z);
+	static void FactorEdgeIndex(int idx, int& orient, int& i, int& j);
+	static void FactorFaceIndex(int idx, int& dir, int& offset);
+	static void FactorFaceIndexXYZ(int idx, int& x, int& y, int& z);
 
 	static int AntipodalCornerIndex(int idx);
 	static int FaceReflectEdgeIndex(int idx, int faceIndex);
@@ -62,10 +58,10 @@ struct Cube {
 	static int EdgeReflectEdgeIndex(int edgeIndex);
 
 	static int FaceAdjacentToEdges(int eIndex1, int eIndex2);
-	static std::tuple<int, int> FacesAdjacentToEdge(int eIndex);
+	static void FacesAdjacentToEdge(int eIndex, int& f1, int& f2);
 
-	static std::tuple<int, int> EdgeCorners(int idx);
-	static std::tuple<int, int, int, int> FaceCorners(int idx);
+	static void EdgeCorners(int idx, int& c1, int& c2);
+	static void FaceCorners(int idx, int& c1, int& c2, int& c3, int& c4);
 private:
 	static int FaceIndex(int x, int y, int z);
 };

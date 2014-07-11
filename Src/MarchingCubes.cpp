@@ -35,13 +35,35 @@ DAMAGE.
 int Square::AntipodalCornerIndex(int idx) {
 	int x;
 	int y;
-	std::tie(x, y) = FactorCornerIndex(idx);
+	FactorCornerIndex(idx, x, y);
 	return CornerIndex((x + 1) % 2, (y + 1) % 2);
+}
+
+void Square::FactorCornerIndex(int idx, int& x, int& y) {
+	x = idx % 2;
+	y = (idx >> 1) % 2;
 }
 
 //////////
 // Cube //
 //////////
+
+void Cube::FactorCornerIndex(int idx, int& x, int& y, int& z) {
+	x = idx % 2;
+	y = (idx >> 1) % 2;
+	z = (idx >> 2) % 2;
+}
+
+void Cube::FactorEdgeIndex(int idx, int& orient, int& i, int& j) {
+	orient = idx >> 2;
+	i = idx & 1;
+	j = (idx & 2) >> 1;
+}
+
+void Cube::FactorFaceIndex(int idx, int& dir, int& offset) {
+	dir = idx >> 1;
+	offset = idx & 1;
+}
 
 int Cube::FaceIndex(int x, int y, int z) {
 	return x < 0 ? 0 :
@@ -53,70 +75,107 @@ int Cube::FaceIndex(int x, int y, int z) {
 		-1;
 }
 
-std::tuple<int, int, int> Cube::FactorFaceIndexXYZ(int idx) {
+void Cube::FactorFaceIndexXYZ(int idx, int& x, int& y, int& z) {
+	x = 0;
+	y = 0;
+	z = 0;
 	switch(idx) {
-		case 0: return std::make_tuple(-1, 0, 0);
-		case 1: return std::make_tuple(1, 0, 0);
-		case 2: return std::make_tuple(0, -1, 0);
-		case 3: return std::make_tuple(0, 1, 0);
-		case 4: return std::make_tuple(0, 0, -1);
-		case 5: return std::make_tuple(0, 0, 1);
-		default: return std::make_tuple(0, 0, 0);
+		case 0: x = -1; break;
+		case 1: x = 1; break;
+		case 2: y = -1; break;
+		case 3: y = 1; break;
+		case 4: z = -1; break;
+		case 5: z = 1; break;
 	};
 }
 
 int Cube::FaceAdjacentToEdges(int eIndex1, int eIndex2) {
 	int f1;
 	int f2;
+	FacesAdjacentToEdge(eIndex1, f1, f2);
 	int g1;
 	int g2;
-	std::tie(f1, f2) = FacesAdjacentToEdge(eIndex1);
-	std::tie(g1, g2) = FacesAdjacentToEdge(eIndex2);
+	FacesAdjacentToEdge(eIndex2, g1, g2);
 	if(f1 == g1 || f1 == g2) return f1;
 	if(f2 == g1 || f2 == g2) return f2;
 	return -1;
 }
 
-std::tuple<int, int> Cube::FacesAdjacentToEdge(int eIndex) {
+void Cube::FacesAdjacentToEdge(int eIndex, int& f1, int& f2) {
 	int orientation;
 	int i1;
 	int i2;
-	std::tie(orientation, i1, i2) = FactorEdgeIndex(eIndex);
+	FactorEdgeIndex(eIndex, orientation, i1, i2);
 	i1 <<= 1;
 	i2 <<= 1;
 	--i1;
 	--i2;
+	f1 = 0;
+	f2 = 0;
 	switch(orientation) {
-		case 0: return std::make_tuple(FaceIndex(0, i1, 0), FaceIndex(0, 0, i2));
-		case 1: return std::make_tuple(FaceIndex(i1, 0, 0), FaceIndex(0, 0, i2));
-		case 2: return std::make_tuple(FaceIndex(i1, 0, 0), FaceIndex(0, i2, 0));
-		default: return std::make_tuple(0, 0);
+		case 0:
+			f1 = FaceIndex(0, i1, 0);
+			f2 = FaceIndex(0, 0, i2);
+			break;
+		case 1:
+			f1 = FaceIndex(i1, 0, 0);
+			f2 = FaceIndex(0, 0, i2);
+			break;
+		case 2:
+			f1 = FaceIndex(i1, 0, 0);
+			f2 = FaceIndex(0, i2, 0);
+			break;
 	};
 }
 
-std::tuple<int, int> Cube::EdgeCorners(int idx) {
+void Cube::EdgeCorners(int idx, int& c1, int& c2) {
 	int orientation;
 	int i1;
 	int i2;
-	std::tie(orientation, i1, i2) = FactorEdgeIndex(idx);
+	FactorEdgeIndex(idx, orientation, i1, i2);
+	c1 = 0;
+	c2 = 0;
 	switch(orientation) {
-		case 0: return std::make_tuple(CornerIndex(0, i1, i2), CornerIndex(1, i1, i2));
-		case 1: return std::make_tuple(CornerIndex(i1, 0, i2), CornerIndex(i1, 1, i2));
-		case 2: return std::make_tuple(CornerIndex(i1, i2, 0), CornerIndex(i1, i2, 1));
-		default: return std::make_tuple(0, 0);
+		case 0:
+			c1 = CornerIndex(0, i1, i2);
+			c2 = CornerIndex(1, i1, i2);
+			break;
+		case 1:
+			c1 = CornerIndex(i1, 0, i2);
+			c2 = CornerIndex(i1, 1, i2);
+			break;
+		case 2:
+			c1 = CornerIndex(i1, i2, 0);
+			c2 = CornerIndex(i1, i2, 1);
+			break;
 	};
 }
 
-std::tuple<int, int, int, int> Cube::FaceCorners(int idx) {
+void Cube::FaceCorners(int idx, int& c1, int& c2, int& c3, int& c4) {
 	int i = idx % 2;
+	c1 = 0;
+	c2 = 0;
+	c3 = 0;
+	c4 = 0;
 	switch(idx / 2) {
-		case 0: return std::make_tuple(CornerIndex(i, 0, 0), CornerIndex(i, 1, 0),
-			CornerIndex(i, 0, 1), CornerIndex(i, 1, 1));
-		case 1: return std::make_tuple(CornerIndex(0, i, 0), CornerIndex(1, i, 0),
-			CornerIndex(0, i, 1), CornerIndex(1, i, 1));
-		case 2: return std::make_tuple(CornerIndex(0, 0, i), CornerIndex(1, 0, i),
-			CornerIndex(0, 1, i), CornerIndex(1, 1, i));
-		default: return std::make_tuple(0, 0, 0, 0);
+		case 0:
+			c1 = CornerIndex(i, 0, 0);
+			c2 = CornerIndex(i, 1, 0);
+			c3 = CornerIndex(i, 0, 1);
+			c4 = CornerIndex(i, 1, 1);
+			break;
+		case 1:
+			c1 = CornerIndex(0, i, 0);
+			c2 = CornerIndex(1, i, 0);
+			c3 = CornerIndex(0, i, 1);
+			c4 = CornerIndex(1, i, 1);
+			break;
+		case 2:
+			c1 = CornerIndex(0, 0, i);
+			c2 = CornerIndex(1, 0, i);
+			c3 = CornerIndex(0, 1, i);
+			c4 = CornerIndex(1, 1, i);
+			break;
 	}
 }
 
@@ -124,7 +183,7 @@ int Cube::AntipodalCornerIndex(int idx) {
 	int x;
 	int y;
 	int z;
-	std::tie(x, y, z) = FactorCornerIndex(idx);
+	FactorCornerIndex(idx, x, y, z);
 	return CornerIndex((x + 1) % 2, (y + 1) % 2, (z + 1) % 2);
 }
 
@@ -138,7 +197,7 @@ int Cube::FaceReflectEdgeIndex(int idx, int faceIndex) {
 	int o;
 	int i;
 	int j;
-	std::tie(o, i, j) = FactorEdgeIndex(idx);
+	FactorEdgeIndex(idx, o, i, j);
 	if(o == faceIndex / 2) return idx;
 	switch(faceIndex / 2) {
 		case 0: return EdgeIndex(o, (i + 1) % 2, j);
@@ -157,7 +216,7 @@ int Cube::EdgeReflectEdgeIndex(int edgeIndex) {
 	int o;
 	int i1;
 	int i2;
-	std::tie(o, i1, i2) = FactorEdgeIndex(edgeIndex);
+	FactorEdgeIndex(edgeIndex, o, i1, i2);
 	return Cube::EdgeIndex(o, (i1 + 1) % 2, (i2 + 1) % 2);
 }
 
@@ -463,7 +522,7 @@ int const MarchingCubes::cornerMap[Cube::CORNERS] = { 0, 1, 3, 2, 4, 5, 7, 6 };
 int MarchingCubes::HasEdgeRoots(int mcIndex, int edgeIndex) {
 	int c1;
 	int c2;
-	std::tie(c1, c2) = Cube::EdgeCorners(edgeIndex);
+	Cube::EdgeCorners(edgeIndex, c1, c2);
 	bool r1 = (mcIndex & (1 << MarchingCubes::cornerMap[c1]));
 	bool r2 = (mcIndex & (1 << MarchingCubes::cornerMap[c2]));
 
