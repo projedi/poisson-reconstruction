@@ -216,7 +216,7 @@ void BSplineData<Degree, Real>::set(int maxDepth, BoundaryType boundaryType) {
 		auto caw = BinaryNode<double>::CenterAndWidth(i);
 		baseFunctions[i] = baseFunction.scale(caw.second).shift(caw.first);
 		base_bsplines_[i] = baseBSpline.scale(caw.second).shift(caw.first);
-		if(_boundaryType != BoundaryType::None) {
+		if(_boundaryType != BoundaryTypeNone) {
 			auto dao = BinaryNode<double>::DepthAndOffset(i);
 			int r = 1 << dao.first;
 			if(dao.second == 0 && dao.second == r - 1) {
@@ -420,7 +420,7 @@ BSplineElements<Degree>::BSplineElements(int res, int offset, BoundaryType bound
 		int idx = -_off + offset + i;
 		if(idx >= 0 && idx < res) elems[idx][i] = 1;
 	}
-	if(boundary != BoundaryType::None) {
+	if(boundary != BoundaryTypeNone) {
 		_addLeft(offset - 2 * res, boundary);
 		_addRight(offset + 2 * res, boundary);
 		if(Degree & 1) {
