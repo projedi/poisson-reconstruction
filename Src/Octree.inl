@@ -165,6 +165,7 @@ OctNode<NodeData, Real>* OctNode<NodeData, Real>::nextNode(OctNode* current) {
 }
 
 template<class NodeData, class Real>
+template<class NodeAdjacencyFunction>
 void OctNode<NodeData, Real>::processNodeFaces(OctNode const* node,
 		NodeAdjacencyFunction const& F, int fIndex, bool processCurrent) const {
 	if(processCurrent) F(this, node);
@@ -174,6 +175,7 @@ void OctNode<NodeData, Real>::processNodeFaces(OctNode const* node,
 }
 
 template<class NodeData, class Real>
+template<class NodeAdjacencyFunction>
 void OctNode<NodeData, Real>::processNodeFaces(OctNode const* node,
 		NodeAdjacencyFunction const& F, int cIndex[4]) const {
 	F(&children_[cIndex[0]], node);
@@ -188,9 +190,10 @@ void OctNode<NodeData, Real>::processNodeFaces(OctNode const* node,
 }
 
 template<class NodeData, class Real>
+template<class NodeAdjacencyFunction>
 void OctNode<NodeData, Real>::ProcessFixedDepthNodeAdjacentNodes(int maxDepth,
 		OctNode* node1, int width1, OctNode* node2, int width2,
-		int depth, std::function<void(OctNode const*, OctNode const*)> const& F, int processCurrent) {
+		int depth, NodeAdjacencyFunction const& F, int processCurrent) {
 	int c1[3];
 	int c2[3];
 	node1->centerIndex(maxDepth + 1, c1);
@@ -204,6 +207,7 @@ void OctNode<NodeData, Real>::ProcessFixedDepthNodeAdjacentNodes(int maxDepth,
 }
 
 template<class NodeData, class Real>
+template<class NodeAdjacencyFunction>
 void OctNode<NodeData, Real>::ProcessFixedDepthNodeAdjacentNodes(
 		int dx, int dy, int dz, OctNode* node1, int radius1, OctNode* node2, int radius2,
 		int width2, int depth, NodeAdjacencyFunction const& F, bool processCurrent) {
@@ -220,6 +224,7 @@ void OctNode<NodeData, Real>::ProcessFixedDepthNodeAdjacentNodes(
 }
 
 template<class NodeData, class Real>
+template<class NodeAdjacencyFunction>
 void OctNode<NodeData, Real>::__ProcessFixedDepthNodeAdjacentNodes(
 		int dx, int dy, int dz, OctNode* node1, int radius1, OctNode* node2, int radius2,
 		int cWidth2, int depth, NodeAdjacencyFunction const& F) {
@@ -336,9 +341,10 @@ void Neighbors<N, T>::clear() {
 }
 
 template<class OctNode>
+template<class EmptyChildrenCallback>
 typename NeighborKey3<OctNode>::Neighbors3& NeighborKey3<OctNode>::collectNeighbors(
 		OctNode* node, int minDepth, bool flags[3][3][3], bool doReset,
-		std::function<void(OctNode*)> const& emptyChildrenCallback) {
+		EmptyChildrenCallback const& emptyChildrenCallback) {
 	int d = node->depth();
 	if(d < minDepth) {
 		std::cerr << "[ERROR] Node depth lower than min-depth: " << d <<
@@ -471,21 +477,44 @@ typename NeighborKey3<OctNode>::Neighbors3& NeighborKey3<OctNode>::collectNeighb
 	return neighbors_[d];
 }
 
+template<class OctNode>
+void setNeighborsFunction(OctNode* node) { node->initChildren(); }
+
 // Note the assumption is that if you enable an edge, you also enable adjacent faces.
 // And, if you enable a corner, you enable adjacent edges and faces.
 template<class OctNode>
 typename NeighborKey3<OctNode>::Neighbors3& NeighborKey3<OctNode>::setNeighbors(OctNode* node,
 		bool flags[3][3][3]) {
-	return collectNeighbors(node, 0, flags, true,
-			[](OctNode* node) { node->initChildren(); });
+	return collectNeighbors(node, 0, flags, true, setNeighborsFunction<OctNode>);
 }
+
+template<class OctNode>
+void getNeighbors3Function(OctNode*) { return; }
 
 template<class OctNode>
 typename NeighborKey3<OctNode>::Neighbors3& NeighborKey3<OctNode>::getNeighbors3(OctNode* node,
 		int minDepth) {
 	bool flags[3][3][3] = { };
-	return collectNeighbors(node, minDepth, flags, false, [](OctNode*) { return; });
+	return collectNeighbors(node, minDepth, flags, false, getNeighbors3Function<OctNode>);
 }
+
+struct RangeData {
+	RangeData(int s, int e, int o): start(s), end(e), neighborOffset(o) { }
+	int start;
+	int end;
+	int neighborOffset;
+};
+
+RangeData getRange(int c, int i) {
+	switch(i) {
+		case 0: return c % 2 ? RangeData(1, 2, -1) : RangeData(0, 2, 0);
+		case 1: return c % 2 ? RangeData(0, 2, 1) : RangeData(0, 2, 2);
+		case 2: return c % 2 ? RangeData(0, 2, 3) : RangeData(0, 1, 4);
+		default:
+			std::cerr << "[ERROR]: Invalid value of i in getRange lambda" << std::endl;
+			exit(1);
+	}
+};
 
 template<class OctNode>
 typename NeighborKey3<OctNode>::Neighbors5 NeighborKey3<OctNode>::getNeighbors5(OctNode* node) {
@@ -495,22 +524,6 @@ typename NeighborKey3<OctNode>::Neighbors5 NeighborKey3<OctNode>::getNeighbors5(
 		neighbors.neighbors[2][2][2] = node;
 		return neighbors;
 	}
-	struct RangeData {
-		RangeData(int s, int e, int o): start(s), end(e), neighborOffset(o) { }
-		int start;
-		int end;
-		int neighborOffset;
-	};
-	std::function<RangeData(int, int)> getRange = [](int c, int i) {
-		switch(i) {
-			case 0: return c % 2 ? RangeData(1, 2, -1) : RangeData(0, 2, 0);
-			case 1: return c % 2 ? RangeData(0, 2, 1) : RangeData(0, 2, 2);
-			case 2: return c % 2 ? RangeData(0, 2, 3) : RangeData(0, 1, 4);
-			default:
-				std::cerr << "[ERROR]: Invalid value of i in getRange lambda" << std::endl;
-				exit(1);
-		}
-	};
 	OctNode const** nodeIter = reinterpret_cast<OctNode const**>(
 			getNeighbors3(node->parent()).neighbors);
 	int idx = node->parent()->childIndex(node);

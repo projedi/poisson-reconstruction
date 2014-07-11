@@ -212,3 +212,10 @@ Polynomial<Degree> Polynomial<Degree>::BSplineComponent(int i) {
 	}
 	return p;
 }
+
+template<int Degree>
+bool Polynomial<Degree>::isZero() const {
+	for(int i = 0; i != Degree + 1; ++i)
+		if(coefficients[i] != 0) return false;
+	return true;
+}

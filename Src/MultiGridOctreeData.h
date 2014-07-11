@@ -255,6 +255,19 @@ struct CornerNormalStencil {
 	CornerNormalEvaluationStencils stencils;
 };
 
+struct UpSampleData {
+	UpSampleData(): start(0) {
+		v[0] = 0;
+		v[1] = 0;
+	}
+	UpSampleData(int s, double v1, double v2): start(s) {
+		v[0] = v1;
+		v[1] = v2;
+	}
+	int start;
+	double v[2];
+};
+
 // For computing the iso-surface there is a lot of re-computation of information across shared geometry.
 // For function values we don't care so much.
 // For edges we need to be careful so that the mesh remains water-tight
@@ -346,12 +359,363 @@ private:
 				TreeConstNeighborKey3& neighborKey3):
 			maxDepth(maxDepth), edges(edges), vertexCount(vertexCount), neighborKey3(neighborKey3) { }
 		void setFIndex(int fIndex) { this->fIndex = fIndex; }
-		void operator()(TreeOctNode const* node1, TreeOctNode const* node2);
+		void operator()(TreeOctNode const* node1, TreeOctNode const* node2) const;
 	private:
 		int fIndex;
 		int maxDepth;
 		edges_t& edges;
 		vertex_count_t& vertexCount;
+		TreeConstNeighborKey3& neighborKey3;
+	};
+
+	class SetDivergenceStencilFunction {
+	public:
+		SetDivergenceStencilFunction(Octree const& o, int depth, Integrator const& integrator,
+				bool scatter, int center):
+			o(o), depth(depth), integrator(integrator), scatter(scatter), center(center) { }
+		Point3D<double> operator()(int x, int y, int z) const {
+			int offset[] = { center, center, center };
+			int _offset[] = { x + center - 2, y + center - 2, z + center - 2 };
+			return scatter ?
+				o.GetDivergence1(integrator, depth, offset, _offset, false) :
+				o.GetDivergence2(integrator, depth, offset, _offset, false);
+		}
+	private:
+		Octree const& o;
+		int depth;
+		Integrator const& integrator;
+		bool scatter;
+		int center;
+	};
+
+	class SetDivergenceStencilsFunction {
+	public:
+		SetDivergenceStencilsFunction(Octree const& o, int depth, Integrator const& integrator,
+				bool scatter, int center):
+			o(o), depth(depth), integrator(integrator), scatter(scatter), center(center) { }
+		Point3D<double> operator()(int i, int j, int k, int x, int y, int z) const {
+			int offset[] = { center + i, center + j, center + k };
+			int _offset[] = { x + center / 2 - 2, y + center / 2 - 2, z + center / 2 - 2 };
+			return scatter ?
+				o.GetDivergence1(integrator, depth, offset, _offset, true) :
+				o.GetDivergence2(integrator, depth, offset, _offset, true);
+		}
+	private:
+		Octree const& o;
+		int depth;
+		Integrator const& integrator;
+		bool scatter;
+		int center;
+	};
+
+	class SetLaplacianStencilFunction {
+	public:
+		SetLaplacianStencilFunction(Octree const& o, int depth, Integrator const& integrator, int center):
+			o(o), depth(depth), integrator(integrator), center(center) { }
+		double operator()(int x, int y, int z) const {
+			int offset[] = { center, center, center };
+			int _offset[] = { x + center - 2, y + center - 2, z + center - 2 };
+			return o.GetLaplacian(integrator, depth, offset, _offset, false);
+		}
+	private:
+		Octree const& o;
+		int depth;
+		Integrator const& integrator;
+		int center;
+	};
+
+	class SetLaplacianStencilsFunction {
+	public:
+		SetLaplacianStencilsFunction(Octree const& o, int depth, Integrator const& integrator, int center):
+			o(o), depth(depth), integrator(integrator), center(center) { }
+		double operator()(int i, int j, int k, int x, int y, int z) const {
+			int offset[] = { center + i, center + j, center + k };
+			int _offset[] = { x + center / 2 - 2, y + center / 2 - 2, z + center / 2 - 2 };
+			return o.GetLaplacian(integrator, depth, offset, _offset, true);
+		}
+	private:
+		Octree const& o;
+		int depth;
+		Integrator const& integrator;
+		int center;
+	};
+
+	class SetCenterEvaluationStencilFunction {
+	public:
+		SetCenterEvaluationStencilFunction(int depth, int center, CenterEvaluator1 const& evaluator):
+			depth(depth), center(center), evaluator(evaluator) { }
+		double operator()(int x, int y, int z) const {
+			int _offset[] = { x + center - 1, y + center - 1, z + center - 1 };
+			return evaluator.value(depth, center, _offset[0], false, false) *
+				evaluator.value(depth, center, _offset[1], false, false) *
+				evaluator.value(depth, center, _offset[2], false, false);
+		}
+	private:
+		int depth;
+		int center;
+		CenterEvaluator1 const& evaluator;
+	};
+
+	class SetCenterEvaluationStencilsFunction {
+	public:
+		SetCenterEvaluationStencilsFunction(int depth, int center, CenterEvaluator1 const& evaluator):
+			depth(depth), center(center), evaluator(evaluator) { }
+		double operator()(int cx, int cy, int cz, int x, int y, int z) const {
+			int idx[] = { center + cx, center + cy, center + cz };
+			int off[] = { x + center / 2 - 1, y + center / 2 - 1, z + center / 2 - 1};
+			return evaluator.value(depth, idx[0], off[0], false, true) *
+				evaluator.value(depth, idx[1], off[1], false, true) *
+				evaluator.value(depth, idx[2], off[2], false, true);
+		}
+	private:
+		int depth;
+		int center;
+		CenterEvaluator1 const& evaluator;
+	};
+
+	class SetCornerEvaluationStencilFunction {
+	public:
+		SetCornerEvaluationStencilFunction(int depth, int center, CornerEvaluator2 const& evaluator):
+			depth(depth), center(center), evaluator(evaluator) { }
+		double operator()(int cx, int cy, int cz, int x, int y, int z) const {
+			int off[] = { center + x - 1, center + y - 1, center + z - 1 };
+			return evaluator.value(depth, center, cx, off[0], false, false) *
+				evaluator.value(depth, center, cy, off[1], false, false) *
+				evaluator.value(depth, center, cz, off[2], false, false);
+		}
+	private:
+		int depth;
+		int center;
+		CornerEvaluator2 const& evaluator;
+	};
+
+	class SetCornerEvaluationStencilsFunction {
+	public:
+		SetCornerEvaluationStencilsFunction(int depth, int center, CornerEvaluator2 const& evaluator):
+			depth(depth), center(center), evaluator(evaluator) { }
+		double operator()(int cx, int cy, int cz, int _cx, int _cy, int _cz,
+				int x, int y, int z) const {
+			int idx[] = { center + _cx, center + _cy, center + _cz };
+			int off[] = { center / 2 + x - 1, center / 2 + y - 1, center / 2 + z - 1 };
+			return evaluator.value(depth, idx[0], cx, off[0], false, true) *
+				evaluator.value(depth, idx[1], cy, off[1], false, true) *
+				evaluator.value(depth, idx[2], cz, off[2], false, true);
+		}
+	private:
+		int depth;
+		int center;
+		CornerEvaluator2 const& evaluator;
+	};
+
+	class SetCornerNormalEvaluationStencilFunction {
+	public:
+		SetCornerNormalEvaluationStencilFunction(int depth, int center, CornerEvaluator2 const& evaluator):
+			depth(depth), center(center), evaluator(evaluator) { }
+		Point3D<double> operator()(int cx, int cy, int cz, int x, int y, int z) const {
+			int off[] = { center + x - 2, center + y - 2, center + z - 2 };
+			double v[] = { evaluator.value(depth, center, cx, off[0], false, false),
+				evaluator.value(depth, center, cy, off[1], false, false),
+				evaluator.value(depth, center, cz, off[2], false, false) };
+			double dv[] = { evaluator.value(depth, center, cx, off[0], true, false),
+				evaluator.value(depth, center, cy, off[1], true, false),
+				evaluator.value(depth, center, cz, off[2], true, false) };
+			return Point3D<double>(dv[0] * v[1] * v[2], v[0] * dv[1] * v[2], v[0] * v[1] * dv[2]);
+		}
+	private:
+		int depth;
+		int center;
+		CornerEvaluator2 const& evaluator;
+	};
+
+	class SetCornerNormalEvaluationStencilsFunction {
+	public:
+		SetCornerNormalEvaluationStencilsFunction(int depth, int center, CornerEvaluator2 const& evaluator):
+			depth(depth), center(center), evaluator(evaluator) { }
+		Point3D<double> operator()(int cx, int cy, int cz, int _cx, int _cy, int _cz,
+				int x, int y, int z) const {
+			int idx[] = { center + _cx, center + _cy, center + _cz };
+			int off[] = { center / 2 + x - 2, center / 2 + y - 2, center / 2 + z - 2 };
+			double v[] = { evaluator.value(depth, idx[0], cx, off[0], false, true),
+				evaluator.value(depth, idx[1], cy, off[1], false, true),
+				evaluator.value(depth, idx[2], cz, off[2], false, true) };
+			double dv[] = { evaluator.value(depth, idx[0], cx, off[0], true, true),
+				evaluator.value(depth, idx[1], cy, off[1], true, true),
+				evaluator.value(depth, idx[2], cz, off[2], true, true) };
+			return Point3D<double>(dv[0] * v[1] * v[2], v[0] * dv[1] * v[2], v[0] * v[1] * dv[2]);
+		}
+	private:
+		int depth;
+		int center;
+		CornerEvaluator2 const& evaluator;
+	};
+
+	class UpSampleCoarserSolutionFunction {
+	public:
+		UpSampleCoarserSolutionFunction(Vector<Real>& Solution, size_t start):
+			Solution(Solution), start(start) { }
+		void operator()(int i, TreeOctNode const* node, UpSampleData* usData, int* idxs) const {
+			double dxyz = usData[0].v[idxs[0]] * usData[1].v[idxs[1]] * usData[2].v[idxs[2]];
+			Solution[i - start] += (Real)(node->nodeData.solution * dxyz);
+		}
+	private:
+		Vector<Real>& Solution;
+		size_t start;
+	};
+
+	template<class C>
+	class DownSampleFunction {
+	public:
+		DownSampleFunction(C* constraints): constraints(constraints) { }
+		void operator()(int i, TreeOctNode const* node, UpSampleData* usData, int* idxs) const {
+			C cx = constraints[i] * usData[0].v[idxs[0]];
+			C cxy = cx * usData[1].v[idxs[1]];
+			C cxyz = cxy * usData[2].v[idxs[2]];
+#pragma omp atomic
+			constraints[node->nodeData.nodeIndex] += cxyz;
+		}
+	private:
+		C* constraints;
+	};
+
+	template<class C>
+	class UpSample1Function {
+	public:
+		UpSample1Function(C* coefficients): coefficients(coefficients) { }
+		void operator()(int i, TreeOctNode const* node, UpSampleData* usData, int* idxs) const {
+			double dx = usData[0].v[idxs[0]];
+			double dxy = dx * usData[1].v[idxs[1]];
+			double dxyz = dxy * usData[2].v[idxs[2]];
+			coefficients[i] += coefficients[node->nodeData.nodeIndex] * (Real)dxyz;
+		}
+	private:
+		C* coefficients;
+	};
+
+	template<class C>
+	class UpSample2Function {
+	public:
+		UpSample2Function(int depth, C* fineCoefficients, C const* coarseCoefficients,
+				SortedTreeNodes<OutputDensity> const& sNodes): depth(depth),
+			fineCoefficients(fineCoefficients), coarseCoefficients(coarseCoefficients), sNodes(sNodes) { }
+		void operator()(int i, TreeOctNode const* node, UpSampleData* usData, int* idxs) const {
+			double dx = usData[0].v[idxs[0]];
+			double dxy = dx * usData[1].v[idxs[1]];
+			double dxyz = dxy * usData[2].v[idxs[2]];
+			fineCoefficients[i - sNodes.nodeCount[depth]] +=
+				coarseCoefficients[node->nodeData.nodeIndex - sNodes.nodeCount[depth - 1]] * (Real)dxyz;
+		}
+	private:
+		int depth;
+		C* fineCoefficients;
+		C const* coarseCoefficients;
+		SortedTreeNodes<OutputDensity> const& sNodes;
+	};
+
+	class GetFixedDepthLaplacianGetNodeFunction {
+	public:
+		GetFixedDepthLaplacianGetNodeFunction(SortedTreeNodes<OutputDensity> const& sNodes, size_t start):
+			sNodes(sNodes), start(start) { }
+		TreeOctNode* operator()(int i) const {
+			return sNodes.treeNodes[i + start];
+		}
+	private:
+		SortedTreeNodes<OutputDensity> const& sNodes;
+		size_t start;
+	};
+
+	class GetFixedDepthLaplacianGetRowSizeFunction {
+	public:
+		GetFixedDepthLaplacianGetRowSizeFunction(Octree& o): o(o) { }
+		int operator()(TreeNeighbors5 const& neighbors5, bool symmetric) const {
+			return o.GetMatrixRowSize(neighbors5, symmetric);
+		}
+	private:
+		Octree& o;
+	};
+
+	class GetFixedDepthLaplacianSetRowFunction {
+	public:
+		GetFixedDepthLaplacianSetRowFunction(Octree& o): o(o) { }
+		int operator()(TreeNeighbors5 const& neighbors5, Pointer(MatrixEntry<MatrixReal>) row, int offset,
+				Integrator const& integrator, Stencil<double, 5> const& stencil, bool symmetric) const {
+			return o.SetMatrixRow(neighbors5, row, offset, integrator, stencil, symmetric);
+		}
+	private:
+		Octree& o;
+	};
+
+	class GetRestrictedFixedDepthLaplacianGetNodeFunction {
+	public:
+		GetRestrictedFixedDepthLaplacianGetNodeFunction(Octree& o,
+				SortedTreeNodes<OutputDensity> const& sNodes, int depth, int const* entries, int rDepth,
+				int rOff[3], Range3D& range):
+			o(o), sNodes(sNodes), depth(depth), entries(entries), rDepth(rDepth), rOff(rOff), range(range) { }
+		TreeOctNode* operator()(int i) const {
+			TreeOctNode* node = sNodes.treeNodes[entries[i]];
+			int d;
+			int off[3];
+			node->depthAndOffset(d, off);
+			off[0] >>= depth - rDepth;
+			off[1] >>= depth - rDepth;
+			off[2] >>= depth - rDepth;
+			bool isInterior = off[0] == rOff[0] && off[1] == rOff[1] && off[2] == rOff[2];
+
+			if(!isInterior) o.SetMatrixRowBounds(node, rDepth, rOff, range);
+			else range = Range3D::FullRange();
+			return node;
+		}
+	private:
+		Octree& o;
+		SortedTreeNodes<OutputDensity> const& sNodes;
+		int depth;
+		int const* entries;
+		int rDepth;
+		int* rOff;
+		Range3D& range;
+	};
+
+	class GetRestrictedFixedDepthLaplacianGetRowSizeFunction {
+	public:
+		GetRestrictedFixedDepthLaplacianGetRowSizeFunction(Octree& o, Range3D const& range):
+			o(o), range(range) { }
+		int operator()(TreeNeighbors5 const& neighbors5, bool symmetric) const {
+			return o.GetMatrixRowSize(neighbors5, range, symmetric);
+		}
+	private:
+		Octree& o;
+		Range3D const& range;
+	};
+
+	class GetRestrictedFixedDepthLaplacianSetRowFunction {
+	public:
+		GetRestrictedFixedDepthLaplacianSetRowFunction(Octree& o, Range3D const& range):
+			o(o), range(range) { }
+		int operator()(TreeNeighbors5 const& neighbors5, Pointer(MatrixEntry<MatrixReal>) row, int,
+				Integrator const& integrator, Stencil<double, 5> const& stencil, bool symmetric) const {
+			return o.SetMatrixRow(neighbors5, row, 0, integrator, stencil, range, symmetric);
+		}
+	private:
+		Octree& o;
+		Range3D const& range;
+	};
+
+	class SplatOrientedPointGetNeighborsFunction {
+	public:
+		SplatOrientedPointGetNeighborsFunction(TreeNeighborKey3& key): neighborKey(key) { }
+		TreeConstNeighbors3& operator()(TreeOctNode* node) const {
+			return (TreeConstNeighbors3&)neighborKey.setNeighbors(node);
+		}
+	private:
+		TreeNeighborKey3& neighborKey;
+	};
+
+	class GetRootGetNeighborsFunction {
+	public:
+		GetRootGetNeighborsFunction(TreeConstNeighborKey3& key): neighborKey3(key) { }
+		TreeConstNeighbors3& operator()(TreeOctNode const* node) const {
+			return neighborKey3.getNeighbors3(node);
+		}
+	private:
 		TreeConstNeighborKey3& neighborKey3;
 	};
 
@@ -432,7 +796,7 @@ private:
 	template<class F1, class F2, class F3>
 	SparseSymmetricMatrix<Real> GetFixedDepthLaplacianGeneric(int depth, Integrator const& integrator,
 			SortedTreeNodes<OutputDensity> const& sNodes, Real const* metSolution, size_t range,
-			F1 getNode, F2 getRowSize, F3 setRow);
+			F1 const& getNode, F2 const& getRowSize, F3 const& setRow);
 	SparseSymmetricMatrix<Real> GetFixedDepthLaplacian(int depth, Integrator const& integrator,
 			SortedTreeNodes<OutputDensity> const& sNodes, Real const* metSolution);
 	SparseSymmetricMatrix<Real> GetRestrictedFixedDepthLaplacian(int depth, Integrator const& integrator,
@@ -463,10 +827,9 @@ private:
 	Real GetSampleWeight(TreeOctNode const* node, Point3D<Real> const& position,
 			TreeConstNeighbors3& neighbors) const;
 	// To abstract from "TreeOctNode" and "TreeOctNode const"
-	template<class OctNodeS>
+	template<class OctNodeS, class GetNeighbors>
 	void GetSampleDepthAndWeight(OctNodeS* node, Point3D<Real> const& position,
-			std::function<TreeConstNeighbors3&(OctNodeS*)> const& getNeighbors,
-			Real samplesPerNode, Real& depth, Real& weight) const;
+			GetNeighbors const& getNeighbors, Real samplesPerNode, Real& depth, Real& weight) const;
 	void SplatOrientedPoint(TreeOctNode* node, Point3D<Real> const& point, Point3D<Real> const& normal,
 			TreeNeighborKey3& neighborKey);
 	Real SplatOrientedPoint(Point3D<Real> const& point, Point3D<Real> const& normal,
