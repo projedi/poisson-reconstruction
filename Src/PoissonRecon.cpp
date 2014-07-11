@@ -226,7 +226,7 @@ int Execute() {
 
 	XForm<Real, 4> xForm;
 	if(Xform.set()) {
-		std::ifstream file(Xform.value());
+		std::ifstream file(Xform.value().c_str());
 		if(!file) {
 			std::cerr << "[WARNING] Could not read x-form from: " << Xform.value() << std::endl;
 			xForm = XForm<Real, 4>::Identity();
@@ -286,7 +286,7 @@ int Execute() {
 
 	if(VoxelGrid.set()) {
 		double t = Time();
-		std::ofstream file(VoxelGrid.value(), std::ofstream::out | std::ofstream::binary);
+		std::ofstream file(VoxelGrid.value().c_str(), std::ofstream::out | std::ofstream::binary);
 		if(!file) std::cerr << "Failed to open voxel file for writing: " << VoxelGrid.value() << std::endl;
 		else {
 			int res;
