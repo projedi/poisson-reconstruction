@@ -285,6 +285,22 @@ struct RootData: SortedTreeNodes<OutputDensity>::CornerTableData,
 		{ return SortedTreeNodes<OutputDensity>::EdgeTableData::indices(node)[idx]; }
 };
 
+struct Range3D {
+	static Range3D FullRange() {
+		Range3D range;
+		range.xStart = range.yStart = range.zStart = 0;
+		range.xEnd = range.yEnd = range.zEnd = 5;
+		return range;
+	}
+
+	int xStart;
+	int xEnd;
+	int yStart;
+	int yEnd;
+	int zStart;
+	int zEnd;
+};
+
 template<int Degree, bool OutputDensity>
 class Octree {
 public:
@@ -342,8 +358,7 @@ private:
 	};
 
 	static double MemoryUsage();
-	static void UpdateCoarserSupportBounds(TreeOctNode const* node, int& startX, int& endX,
-			int& startY, int& endY, int& startZ, int& endZ);
+	static void UpdateCoarserSupportBounds(TreeOctNode const* node, Range3D& range);
 	static int IsBoundaryFace(TreeOctNode const* node, int faceIndex, int subdivideDepth);
 	static int IsBoundaryEdge(TreeOctNode const* node, int edgeIndex, int subdivideDepth);
 	static int IsBoundaryEdge(TreeOctNode const* node, int dir, int x, int y, int subidivideDepth);
@@ -379,18 +394,17 @@ private:
 			SortedTreeNodes<OutputDensity> const& sNodes, Real* subConstraints, int startingDepth,
 			bool showResidual, int minIters, double accuracy, bool noSolve, int fixedIters);
 	void SetMatrixRowBounds(TreeOctNode const* node, int rDepth, int const rOff[3], 
-			int& xStart, int& xEnd, int& yStart, int& yEnd, int& zStart, int& zEnd) const;
+			Range3D& range) const;
 	int GetMatrixRowSize(TreeNeighbors5 const& neighbors5, bool symmetric) const
-		{ return GetMatrixRowSize(neighbors5, 0, 5, 0, 5, 0, 5, symmetric); }
-	int GetMatrixRowSize(TreeNeighbors5 const& neighbors5, int xStart, int xEnd,
-			int yStart, int yEnd, int zStart, int zEnd, bool symmetric) const;
+		{ return GetMatrixRowSize(neighbors5, Range3D::FullRange(), symmetric); }
+	int GetMatrixRowSize(TreeNeighbors5 const& neighbors5, Range3D const& range, bool symmetric) const;
 	int SetMatrixRow(TreeNeighbors5 const& neighbors5, Pointer(MatrixEntry<MatrixReal>) row,
 			int offset, Integrator const& integrator, Stencil<double, 5> const& stencil,
 			bool symmetric) const
-		{ return SetMatrixRow(neighbors5, row, offset, integrator, stencil, 0, 5, 0, 5, 0, 5, symmetric); }
+		{ return SetMatrixRow(neighbors5, row, offset, integrator, stencil, Range3D::FullRange(), symmetric); }
 	int SetMatrixRow(TreeNeighbors5 const& neighbors5, Pointer(MatrixEntry<MatrixReal>) row,
 			int offset, Integrator const& integrator, Stencil<double, 5> const& stencil,
-			int xStart, int xEnd, int yStart, int yEnd, int zStart, int zEnd, bool symmetric) const;
+			Range3D const& range, bool symmetric) const;
 	LaplacianStencil SetLaplacianStencil(int depth, Integrator const& integrator) const;
 	LaplacianStencils SetLaplacianStencils(int depth, Integrator const& integrator) const;
 	DivergenceStencil SetDivergenceStencil(int depth, Integrator const& integrator, bool scatter) const;

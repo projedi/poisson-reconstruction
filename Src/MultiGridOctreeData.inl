@@ -931,13 +931,13 @@ Point3D<double> Octree<Degree, OutputDensity>::GetDivergence2(Integrator const& 
 
 template<int Degree, bool OutputDensity>
 void Octree<Degree, OutputDensity>::SetMatrixRowBounds(TreeOctNode const* node, int rDepth,
-		int const rOff[3], int& xStart, int& xEnd, int& yStart, int& yEnd, int& zStart, int& zEnd) const {
+		int const rOff[3], Range3D& range) const {
 	int depth;
 	int off[3];
 	node->depthAndOffset(depth, off);
 	int width = 1 << (depth - rDepth);
-	int* starts[] = { &xStart, &yStart, &zStart };
-	int* ends[] = { &xEnd, &yEnd, &zEnd };
+	int* starts[] = { &range.xStart, &range.yStart, &range.zStart };
+	int* ends[] = { &range.xEnd, &range.yEnd, &range.zEnd };
 
 	for(int i = 0; i != 3; ++i) {
 		off[i] -= rOff[i] << (depth - rDepth);
@@ -948,13 +948,13 @@ void Octree<Degree, OutputDensity>::SetMatrixRowBounds(TreeOctNode const* node, 
 
 template<int Degree, bool OutputDensity>
 int Octree<Degree, OutputDensity>::GetMatrixRowSize(TreeNeighbors5 const& neighbors5,
-		int xStart, int xEnd, int yStart, int yEnd, int zStart, int zEnd, bool symmetric) const {
+		Range3D const& range, bool symmetric) const {
 	int count = 0;
 	if(symmetric) {
-		for(int x = xStart; x != 3; ++x) {
-			for(int y = yStart; y != yEnd; ++y) {
+		for(int x = range.xStart; x != 3; ++x) {
+			for(int y = range.yStart; y != range.yEnd; ++y) {
 				if(x == 2 && y > 2) continue;
-				for(int z = zStart; z < zEnd; ++z) {
+				for(int z = range.zStart; z < range.zEnd; ++z) {
 					if(x == 2 && y == 2 && z > 2) continue;
 					if(neighbors5.neighbors[x][y][z] && neighbors5.neighbors[x][y][z]->nodeData.nodeIndex >= 0)
 						++count;
@@ -963,9 +963,9 @@ int Octree<Degree, OutputDensity>::GetMatrixRowSize(TreeNeighbors5 const& neighb
 		}
 	} else {
 		int nodeIndex = neighbors5.neighbors[2][2][2]->nodeData.nodeIndex;
-		for(int x = xStart; x != xEnd; ++x)
-			for(int y = yStart; y != yEnd; ++y)
-				for(int z = zStart; z != zEnd; ++z)
+		for(int x = range.xStart; x != range.xEnd; ++x)
+			for(int y = range.yStart; y != range.yEnd; ++y)
+				for(int z = range.zStart; z != range.zEnd; ++z)
 					if(neighbors5.neighbors[x][y][z] &&
 							neighbors5.neighbors[x][y][z]->nodeData.nodeIndex >= 0 &&
 							(!symmetric || neighbors5.neighbors[x][y][z]->nodeData.nodeIndex >= nodeIndex))
@@ -977,8 +977,7 @@ int Octree<Degree, OutputDensity>::GetMatrixRowSize(TreeNeighbors5 const& neighb
 template<int Degree, bool OutputDensity>
 int Octree<Degree, OutputDensity>::SetMatrixRow(TreeNeighbors5 const& neighbors5,
 		Pointer(MatrixEntry<MatrixReal>) row, int offset, Integrator const& integrator,
-		Stencil<double, 5> const& stencil, int xStart, int xEnd, int yStart, int yEnd,
-		int zStart, int zEnd, bool symmetric) const {
+		Stencil<double, 5> const& stencil, Range3D const& range, bool symmetric) const {
 	TreeOctNode const* node = neighbors5.neighbors[2][2][2];
 	int d;
 	int off[3];
@@ -1028,10 +1027,10 @@ int Octree<Degree, OutputDensity>::SetMatrixRow(TreeNeighbors5 const& neighbors5
 	bool isInterior =
 		off[0] >= mn && off[0] < mx && off[1] >= mn && off[1] < mx && off[2] >= mn && off[2] < mx;
 	int count = 0;
-	for(int x = xStart; x < (symmetric ? 3 : xEnd); ++x) {
-		for(int y = yStart; y < yEnd; ++y) {
+	for(int x = range.xStart; x < (symmetric ? 3 : range.xEnd); ++x) {
+		for(int y = range.yStart; y < range.yEnd; ++y) {
 			if(x == 2 && y > 2 && symmetric) break;
-			for(int z = zStart; z < zEnd; ++z) {
+			for(int z = range.zStart; z < range.zEnd; ++z) {
 				if(x == 2 && y == 2 && z > 2 && symmetric) break;
 				TreeOctNode const* _node = neighbors5.neighbors[x][y][z];
 				if(_node && _node->nodeData.nodeIndex >= 0) {
@@ -1231,19 +1230,18 @@ CornerNormalEvaluationStencils Octree<Degree, OutputDensity>::SetCornerNormalEva
 }
 
 template<int Degree, bool OutputDensity>
-void Octree<Degree, OutputDensity>::UpdateCoarserSupportBounds(TreeOctNode const* node,
-		int& startX, int& endX, int& startY, int& endY, int& startZ, int& endZ) {
+void Octree<Degree, OutputDensity>::UpdateCoarserSupportBounds(TreeOctNode const* node, Range3D& range) {
 	if(!node->parent()) return;
 	int x;
 	int y;
 	int z;
 	std::tie(x, y, z) = Cube::FactorCornerIndex(node->parent()->childIndex(node));
-	if(x == 0) endX = 4;
-	else startX = 1;
-	if(y == 0) endY = 4;
-	else startY = 1;
-	if(z == 0) endZ = 4;
-	else startZ = 1;
+	if(x == 0) range.xEnd = 4;
+	else range.xStart = 1;
+	if(y == 0) range.yEnd = 4;
+	else range.yStart = 1;
+	if(z == 0) range.zEnd = 4;
+	else range.zStart = 1;
 }
 
 template<int Degree, bool OutputDensity>
@@ -1259,17 +1257,12 @@ void Octree<Degree, OutputDensity>::UpdateConstraintsFromCoarser(TreeNeighbors5 
 		off[0] >= mn && off[0] < mx && off[1] >= mn && off[1] < mx && off[2] >= mn && off[2] < mx;
 	if(d <= minDepth_) return;
 	// Offset the constraints using the solution from lower resolutions.
-	int startX = 0;
-	int endX = 5;
-	int startY = 0;
-	int endY = 5;
-	int startZ = 0;
-	int endZ = 5;
-	UpdateCoarserSupportBounds(node, startX, endX, startY, endY, startZ, endZ);
+	Range3D range = Range3D::FullRange();
+	UpdateCoarserSupportBounds(node, range);
 
-	for(int x = startX; x != endX; ++x) {
-		for(int y = startY; y != endY; ++y) {
-			for(int z = startZ; z != endZ; ++z) {
+	for(int x = range.xStart; x != range.xEnd; ++x) {
+		for(int y = range.yStart; y != range.yEnd; ++y) {
+			for(int z = range.zStart; z != range.zEnd; ++z) {
 				TreeOctNode const* _node = pNeighbors5.neighbors[x][y][z];
 				if(_node && _node->nodeData.nodeIndex >= 0) {
 					Real _solution = metSolution[_node->nodeData.nodeIndex];
@@ -1556,13 +1549,7 @@ SparseSymmetricMatrix<Real> Octree<Degree, OutputDensity>::GetRestrictedFixedDep
 	int rDepth;
 	int rOff[3];
 	rNode->depthAndOffset(rDepth, rOff);
-	size_t range = entryCount;
-	int xStart;
-	int xEnd;
-	int yStart;
-	int yEnd;
-	int zStart;
-	int zEnd;
+	Range3D range;
 	auto getNode = [&](int i) {
 		TreeOctNode* node = sNodes.treeNodes[entries[i]];
 		int d;
@@ -1573,28 +1560,20 @@ SparseSymmetricMatrix<Real> Octree<Degree, OutputDensity>::GetRestrictedFixedDep
 		off[2] >>= depth - rDepth;
 		bool isInterior = off[0] == rOff[0] && off[1] == rOff[1] && off[2] == rOff[2];
 
-		if(!isInterior) SetMatrixRowBounds(node, rDepth, rOff, xStart, xEnd, yStart, yEnd, zStart, zEnd);
-		else {
-			xStart = 0;
-			xEnd = 5;
-			yStart = 0;
-			yEnd = 5;
-			zStart = 0;
-			zEnd = 5;
-		}
+		if(!isInterior) SetMatrixRowBounds(node, rDepth, rOff, range);
+		else range = Range3D::FullRange();
 		return node;
 	};
 	auto getRowSize = [&](TreeNeighbors5 const& neighbors5, bool symmetric) {
-		return GetMatrixRowSize(neighbors5, xStart, xEnd, yStart, yEnd, zStart, zEnd, symmetric);
+		return GetMatrixRowSize(neighbors5, range, symmetric);
 	};
 	auto setRow =
 		[&](TreeNeighbors5 const& neighbors5, Pointer(MatrixEntry<MatrixReal>) row, int,
 				Integrator const& integrator, Stencil<double, 5> const& stencil, bool symmetric) {
-		return SetMatrixRow(neighbors5, row, 0, integrator, stencil,
-				xStart, xEnd, yStart, yEnd, zStart, zEnd, symmetric);
+		return SetMatrixRow(neighbors5, row, 0, integrator, stencil, range, symmetric);
 	};
 	SparseSymmetricMatrix<Real> matrix = GetFixedDepthLaplacianGeneric(depth, integrator, sNodes,
-			metSolution, range, getNode, getRowSize, setRow);
+			metSolution, entryCount, getNode, getRowSize, setRow);
 	for(int i = 0; i != (int)entryCount; ++i) sNodes.treeNodes[entries[i]]->nodeData.nodeIndex = entries[i];
 	return matrix;
 }
@@ -1888,12 +1867,7 @@ void Octree<Degree, OutputDensity>::SetLaplacianConstraints() {
 #pragma omp parallel for num_threads(threads_) firstprivate(neighborKey3)
 		for(int i = sNodes_.nodeCount[d]; i < sNodes_.nodeCount[d + 1]; ++i) {
 			TreeOctNode* node = sNodes_.treeNodes[i];
-			int startX = 0;
-			int endX = 5;
-			int startY = 0;
-			int endY = 5;
-			int startZ = 0;
-			int endZ = 5;
+			Range3D range = Range3D::FullRange();
 			TreeNeighbors5 neighbors5 = neighborKey3.getNeighbors5(node);
 
 			int off[3];
@@ -1914,9 +1888,9 @@ void Octree<Degree, OutputDensity>::SetLaplacianConstraints() {
 			DivergenceStencil& _stencil = stencils.at(cx, cy, cz);
 
 			// Set constraints from current depth
-			for(int x = startX; x != endX; ++x) {
-				for(int y = startY; y != endY; ++y) {
-					for(int z = startZ; z != endZ; ++z) {
+			for(int x = range.xStart; x != range.xEnd; ++x) {
+				for(int y = range.yStart; y != range.yEnd; ++y) {
+					for(int z = range.zStart; z != range.zEnd; ++z) {
 						TreeOctNode const* _node = neighbors5.neighbors[x][y][z];
 						if(_node && _node->nodeData.normalIndex >= 0) {
 							Point3D<Real> const& _normal = normals_[_node->nodeData.normalIndex];
@@ -1930,8 +1904,7 @@ void Octree<Degree, OutputDensity>::SetLaplacianConstraints() {
 					}
 				}
 			}
-			UpdateCoarserSupportBounds(neighbors5.neighbors[2][2][2], startX, endX, startY, endY,
-					startZ, endZ);
+			UpdateCoarserSupportBounds(neighbors5.neighbors[2][2][2], range);
 			if(node->nodeData.nodeIndex < 0 || node->nodeData.normalIndex < 0) continue;
 			Point3D<Real> const& normal = normals_[node->nodeData.normalIndex];
 			if(normal == Point3D<Real>()) continue;
@@ -1940,9 +1913,9 @@ void Octree<Degree, OutputDensity>::SetLaplacianConstraints() {
 			if(d) {
 				neighbors5 = neighborKey3.getNeighbors5(node->parent());
 
-				for(int x = startX; x != endX; ++x) {
-					for(int y = startY; y != endY; ++y) {
-						for(int z = startZ; z != endZ; ++z) {
+				for(int x = range.xStart; x != range.xEnd; ++x) {
+					for(int y = range.yStart; y != range.yEnd; ++y) {
+						for(int z = range.zStart; z != range.zEnd; ++z) {
 							TreeOctNode* _node = neighbors5.neighbors[x][y][z];
 							if(_node && _node->nodeData.nodeIndex != -1) {
 								int _d;
@@ -1995,13 +1968,8 @@ void Octree<Degree, OutputDensity>::SetLaplacianConstraints() {
 			TreeOctNode* node = sNodes_.treeNodes[i];
 			int off[3];
 			node->depthAndOffset(d, off);
-			int startX = 0;
-			int endX = 5;
-			int startY = 0;
-			int endY = 5;
-			int startZ = 0;
-			int endZ = 5;
-			UpdateCoarserSupportBounds(node, startX, endX, startY, endY, startZ, endZ);
+			Range3D range = Range3D::FullRange();
+			UpdateCoarserSupportBounds(node, range);
 			TreeNeighbors5 neighbors5 = neighborKey3.getNeighbors5(node->parent());
 
 			int mn = boundaryType_ == BoundaryType::None ? (1 << (d - 2)) + 4 : 4;
@@ -2015,9 +1983,9 @@ void Octree<Degree, OutputDensity>::SetLaplacianConstraints() {
 			DivergenceStencil& _stencil = stencils.at(cx, cy, cz);
 
 			Real constraint = 0;
-			for(int x = startX; x != endX; ++x) {
-				for(int y = startY; y != endY; ++y) {
-					for(int z = startZ; z != endZ; ++z) {
+			for(int x = range.xStart; x != range.xEnd; ++x) {
+				for(int y = range.yStart; y != range.yEnd; ++y) {
+					for(int z = range.zStart; z != range.zEnd; ++z) {
 						TreeOctNode* _node = neighbors5.neighbors[x][y][z];
 						if(_node && _node->nodeData.nodeIndex != -1) {
 							int _d;
@@ -2389,33 +2357,30 @@ Real Octree<Degree, OutputDensity>::getCornerValue(TreeConstNeighborKey3 const& 
 	int cx;
 	int cy;
 	int cz;
-	int startX = 0;
-	int endX = 3;
-	int startY = 0;
-	int endY = 3;
-	int startZ = 0;
-	int endZ = 3;
+	Range3D range;
+	range.xStart = range.yStart = range.zStart = 0;
+	range.xEnd = range.yEnd = range.zEnd = 3;
 	std::tie(cx, cy, cz) = Cube::FactorCornerIndex(corner);
 	TreeConstNeighbors3 const& neighbors = neighborKey3.neighbors(d);
-	if(cx == 0) endX = 2;
-	else startX = 1;
-	if(cy == 0) endY = 2;
-	else startY = 1;
-	if(cz == 0) endZ = 2;
-	else startZ = 1;
+	if(cx == 0) range.xEnd = 2;
+	else range.xStart = 1;
+	if(cy == 0) range.yEnd = 2;
+	else range.yStart = 1;
+	if(cz == 0) range.zEnd = 2;
+	else range.zStart = 1;
 	if(isInterior) {
-		for(int x = startX; x != endX; ++x) {
-			for(int y = startY; y != endY; ++y) {
-				for(int z = startZ; z != endZ; ++z) {
+		for(int x = range.xStart; x != range.xEnd; ++x) {
+			for(int y = range.yStart; y != range.yEnd; ++y) {
+				for(int z = range.zStart; z != range.zEnd; ++z) {
 					TreeOctNode const* _node = neighbors.neighbors[x][y][z];
 					if(_node) value += _node->nodeData.solution * stencil.at(x, y, z);
 				}
 			}
 		}
 	} else {
-		for(int x = startX; x != endX; ++x) {
-			for(int y = startY; y != endY; ++y) {
-				for(int z = startZ; z != endZ; ++z) {
+		for(int x = range.xStart; x != range.xEnd; ++x) {
+			for(int y = range.yStart; y != range.yEnd; ++y) {
+				for(int z = range.zStart; z != range.zEnd; ++z) {
 					TreeOctNode const* _node = neighbors.neighbors[x][y][z];
 					if(_node) {
 						int _d;
@@ -2437,22 +2402,22 @@ Real Octree<Degree, OutputDensity>::getCornerValue(TreeConstNeighborKey3 const& 
 		int _cz;
 		std::tie(_cx, _cy, _cz) = Cube::FactorCornerIndex(_corner);
 		if(cx !=_cx) {
-			startX = 0;
-			endX = 3;
+			range.xStart = 0;
+			range.xEnd = 3;
 		}
 		if(cy !=_cy) {
-			startY = 0;
-			endY = 3;
+			range.yStart = 0;
+			range.yEnd = 3;
 		}
 		if(cz !=_cz) {
-			startZ = 0;
-			endZ = 3;
+			range.zStart = 0;
+			range.zEnd = 3;
 		}
 		TreeConstNeighbors3 const& neighbors = neighborKey3.neighbors(d - 1);
 		if(isInterior) {
-			for(int x = startX; x != endX; ++x) {
-				for(int y = startY; y != endY; ++y) {
-					for(int z = startZ; z != endZ; ++z) {
+			for(int x = range.xStart; x != range.xEnd; ++x) {
+				for(int y = range.yStart; y != range.yEnd; ++y) {
+					for(int z = range.zStart; z != range.zEnd; ++z) {
 						TreeOctNode const* _node = neighbors.neighbors[x][y][z];
 						if(_node) value +=
 							metSolution[_node->nodeData.nodeIndex] * stencils.at(_cx, _cy, _cz).at(x, y, z);
@@ -2460,9 +2425,9 @@ Real Octree<Degree, OutputDensity>::getCornerValue(TreeConstNeighborKey3 const& 
 				}
 			}
 		} else {
-			for(int x = startX; x != endX; ++x) {
-				for(int y = startY; y != endY; ++y) {
-					for(int z = startZ; z != endZ; ++z) {
+			for(int x = range.xStart; x != range.xEnd; ++x) {
+				for(int y = range.yStart; y != range.yEnd; ++y) {
+					for(int z = range.zStart; z != range.zEnd; ++z) {
 						const TreeOctNode* _node = neighbors.neighbors[x][y][z];
 						if(_node) {
 							int _d;
@@ -2497,32 +2462,27 @@ Point3D<Real> Octree<Degree, OutputDensity>::getCornerNormal(TreeConstNeighbors5
 	int cx;
 	int cy;
 	int cz;
-	int startX = 0;
-	int endX = 5;
-	int startY = 0;
-	int endY = 5;
-	int startZ = 0;
-	int endZ = 5;
+	Range3D range = Range3D::FullRange();
 	std::tie(cx, cy, cz) = Cube::FactorCornerIndex(corner);
-	if(cx == 0) endX = 4;
-	else startX = 1;
-	if(cy == 0) endY = 4;
-	else startY = 1;
-	if(cz == 0) endZ = 4;
-	else startZ = 1;
+	if(cx == 0) range.xEnd = 4;
+	else range.xStart = 1;
+	if(cy == 0) range.yEnd = 4;
+	else range.yStart = 1;
+	if(cz == 0) range.zEnd = 4;
+	else range.zStart = 1;
 	if(isInterior) {
-		for(int x = startX; x != endX; ++x) {
-			for(int y = startY; y != endY; ++y) {
-				for(int z = startZ; z != endZ; ++z) {
+		for(int x = range.xStart; x != range.xEnd; ++x) {
+			for(int y = range.yStart; y != range.yEnd; ++y) {
+				for(int z = range.zStart; z != range.zEnd; ++z) {
 					TreeOctNode const* _node = neighbors5.neighbors[x][y][z];
 					if(_node) normal += nStencil.at(x, y, z) * _node->nodeData.solution;
 				}
 			}
 		}
 	} else {
-		for(int x = startX; x != endX; ++x) {
-			for(int y = startY; y != endY; ++y) {
-				for(int z = startZ; z != endZ; ++z) {
+		for(int x = range.xStart; x != range.xEnd; ++x) {
+			for(int y = range.yStart; y != range.yEnd; ++y) {
+				for(int z = range.zStart; z != range.zEnd; ++z) {
 					TreeOctNode const* _node = neighbors5.neighbors[x][y][z];
 					if(_node) {
 						int _d;
@@ -2549,21 +2509,21 @@ Point3D<Real> Octree<Degree, OutputDensity>::getCornerNormal(TreeConstNeighbors5
 		int _corner = node->parent()->childIndex(node);
 		std::tie(_cx, _cy, _cz) = Cube::FactorCornerIndex(_corner);
 		if(cx !=_cx) {
-			startX = 0;
-			endX = 5;
+			range.xStart = 0;
+			range.xEnd = 5;
 		}
 		if(cy !=_cy) {
-			startY = 0;
-			endY = 5;
+			range.yStart = 0;
+			range.yEnd = 5;
 		}
 		if(cz !=_cz) {
-			startZ = 0;
-			endZ = 5;
+			range.zStart = 0;
+			range.zEnd = 5;
 		}
 		if(isInterior) {
-			for(int x = startX; x != endX; ++x) {
-				for(int y = startY; y != endY; ++y) {
-					for(int z = startZ; z != endZ; ++z) {
+			for(int x = range.xStart; x != range.xEnd; ++x) {
+				for(int y = range.yStart; y != range.yEnd; ++y) {
+					for(int z = range.zStart; z != range.zEnd; ++z) {
 						TreeOctNode const* _node = pNeighbors5.neighbors[x][y][z];
 						if(_node) normal += nStencils.at(_cx, _cy, _cz).at(x, y, z) *
 							metSolution[_node->nodeData.nodeIndex];
@@ -2571,9 +2531,9 @@ Point3D<Real> Octree<Degree, OutputDensity>::getCornerNormal(TreeConstNeighbors5
 				}
 			}
 		} else {
-			for(int x = startX; x != endX; ++x) {
-				for(int y = startY; y != endY; ++y) {
-					for(int z = startZ; z != endZ; ++z) {
+			for(int x = range.xStart; x != range.xEnd; ++x) {
+				for(int y = range.yStart; y != range.yEnd; ++y) {
+					for(int z = range.zStart; z != range.zEnd; ++z) {
 						TreeOctNode const* _node = pNeighbors5.neighbors[x][y][z];
 						if(_node) {
 							int _d;
