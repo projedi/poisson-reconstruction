@@ -2211,7 +2211,8 @@ void Octree<Degree, OutputDensity>::GetMCIsoTriangles(Real isoValue, int subdivi
 	rootData.interiorRoots.clear();
 	shrink_to_fit(rootData.interiorRoots);
 	coarseRootData.interiorRoots.clear();
-	coarseRootData.boundaryValues = std::move(rootData.boundaryValues);
+	coarseRootData.boundaryValues = rootData.boundaryValues;
+	rootData.boundaryValues.clear();
 	for(HashMap<long long, int>::iterator iter = rootData.boundaryRoots.begin();
 			iter != rootData.boundaryRoots.end(); ++iter)
 		coarseRootData.boundaryRoots[iter->first] = iter->second;

@@ -11,6 +11,7 @@ public:
 	iterator end() { return hashmap_.end(); }
 	iterator find(Key const& key) { return hashmap_.find(key); }
 	Value& operator[](Key const& key) { return hashmap_[key]; }
+	void clear() { hashmap_.clear(); }
 private:
 	hashmap hashmap_;
 };
