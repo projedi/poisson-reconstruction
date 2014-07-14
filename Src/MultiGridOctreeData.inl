@@ -102,7 +102,7 @@ void SortedTreeNodes<OutputDensity>::setCornerTable(CornerTableData& cData, Tree
 	int minDepth;
 	int off[3];
 	int start;
-	int end;
+	int end = 0;
 	if(rootNode) {
 		rootNode->depthAndOffset(minDepth, off);
 		start = end = rootNode->nodeData.nodeIndex;
@@ -265,7 +265,7 @@ void SortedTreeNodes<OutputDensity>::setEdgeTable(EdgeTableData& eData, TreeOctN
 	int minDepth;
 	eData.resizeOffsets(this->maxDepth, -1);
 	int start;
-	int end;
+	int end = 0;
 	if(rootNode) {
 		minDepth = rootNode->depth();
 		start = end = rootNode->nodeData.nodeIndex;
@@ -311,9 +311,9 @@ void SortedTreeNodes<OutputDensity>::setEdgeTable(EdgeTableData& eData, TreeOctN
 				for(unsigned cc = 0; cc != Square::CORNERS; ++cc) {
 					int ii;
 					int jj;
-					int x;
-					int y;
-					int z;
+					int x = 0;
+					int y = 0;
+					int z = 0;
 					Square::FactorCornerIndex(cc, ii, jj);
 					ii += _i;
 					jj += _j;
@@ -337,9 +337,9 @@ void SortedTreeNodes<OutputDensity>::setEdgeTable(EdgeTableData& eData, TreeOctN
 						int jj;
 						int aii;
 						int ajj;
-						int x;
-						int y;
-						int z;
+						int x = 0;
+						int y = 0;
+						int z = 0;
 						Square::FactorCornerIndex(cc, ii, jj);
 						Square::FactorCornerIndex(Square::AntipodalCornerIndex(cc), aii, ajj);
 						ii += _i;
@@ -389,9 +389,9 @@ int SortedTreeNodes<OutputDensity>::getMaxEdgeCount(TreeOctNode const*, int dept
 			for(unsigned cc = 0; cc != Square::CORNERS; ++cc) {
 				int ii;
 				int jj;
-				int x;
-				int y;
-				int z;
+				int x = 0;
+				int y = 0;
+				int z = 0;
 				Square::FactorCornerIndex(cc, ii, jj);
 				ii += i;
 				jj += j;
@@ -2684,8 +2684,8 @@ int Octree<Degree, OutputDensity>::IsBoundaryEdge(TreeOctNode const* node, int d
 	int o[3];
 	node->depthAndOffset( d , o );
 
-	int idx1;
-	int idx2;
+	int idx1 = 0;
+	int idx2 = 0;
 	switch(dir) {
 		case 0:
 			idx1 = o[1] + x;
@@ -2759,7 +2759,7 @@ int Octree<Degree, OutputDensity>::GetRoot(RootInfo<OutputDensity> const& ri, Re
 	}
 	TreeConstNeighbors5 neighbors5;
 	TreeConstNeighbors5 pNeighbors5;
-	bool isInterior;
+	bool isInterior = false;
 	if(!haveKey1 || !haveKey2) {
 		neighbors5 = neighborKey3.getNeighbors5(ri.node);
 		if(ri.node->parent()) pNeighbors5 = neighborKey3.getNeighbors5(ri.node->parent());
@@ -2966,7 +2966,7 @@ int Octree<Degree, OutputDensity>::GetRootIndex(TreeOctNode const* node, int edg
 		finest->depthAndOffset(d, off);
 		ri.node = finest;
 		ri.edgeIndex = finestIndex;
-		int eIndex[2];
+		int eIndex[2] = {};
 		int offset = BinaryNode<Real>::CenterIndex(d, off[o]);
 		switch(o) {
 			case 0:

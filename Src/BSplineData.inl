@@ -74,7 +74,7 @@ double BSplineData<Degree, Real>::Integrator::dot(int depth, int off1, int off2,
 		bool d1, bool d2, bool childParent) const {
 	if(depth < 0 || depth >= (int)iTables.size()) return 0.;
 	typename Integrator::IntegralTables const& iTable = iTables[depth];
-	int c;
+	int c = 0;
 	if(childParent) {
 		c = off1 & 1;
 		off1 >>= 1;
