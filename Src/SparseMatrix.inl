@@ -37,7 +37,11 @@ SparseSymmetricMatrix<T>::SparseSymmetricMatrix():
 	rows(0) { }
 
 template<class T>
-SparseSymmetricMatrix<T>::SparseSymmetricMatrix(SparseSymmetricMatrix const& M): SparseSymmetricMatrix() {
+SparseSymmetricMatrix<T>::SparseSymmetricMatrix(SparseSymmetricMatrix const& M):
+	rowSizes_(NullPointer<int>()),
+	m_ppElements(NullPointer<Pointer(MatrixEntry<T>)>()),
+	_maxEntriesPerRow(0),
+	rows(0) {
 	Resize(M.rows);
 	for(int i = 0; i != rows; ++i) {
 		SetRowSize(i, M.rowSizes_[i]);
