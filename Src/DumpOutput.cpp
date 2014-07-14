@@ -1,4 +1,5 @@
 #include <cstdarg>
+#include <cstdio>
 #include <cstring>
 
 #include "DumpOutput.h"

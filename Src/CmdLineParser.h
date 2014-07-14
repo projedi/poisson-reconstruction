@@ -32,6 +32,8 @@ DAMAGE.
 #include <string>
 #include <vector>
 
+#include "Util.h"
+
 class cmdLineReadable {
 public:
 	cmdLineReadable(std::string const& name): set_(false), name_(name) { }
