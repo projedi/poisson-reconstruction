@@ -30,6 +30,11 @@ DAMAGE.
 #include <stdlib.h>
 #include <math.h>
 #include <float.h>
+
+#ifndef NO_OMP
+#include <omp.h>
+#endif
+
 #ifdef _WIN32
 #include <Windows.h>
 #include <Psapi.h>
@@ -42,7 +47,6 @@ DAMAGE.
 #include "PPolynomial.h"
 #include "Ply.h"
 #include "MemoryUsage.h"
-#include "omp.h"
 #include <stdarg.h>
 
 char* outputFile=NULL;
@@ -136,7 +140,11 @@ cmdLineInt
 #endif
 	MaxSolveDepth( "maxSolveDepth" ) ,
 	BoundaryType( "boundary" , 1 ) ,
+#ifndef NO_OMP
 	Threads( "threads" , omp_get_num_procs() );
+#else
+	Threads( "threads" , 1 );
+#endif
 
 cmdLineFloat
 	SamplesPerNode( "samplesPerNode" , 1.f ) ,

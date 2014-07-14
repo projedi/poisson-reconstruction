@@ -29,7 +29,11 @@ DAMAGE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <float.h>
+
+#ifndef NO_OMP
 #include <omp.h>
+#endif
+
 #include "CmdLineParser.h"
 #include "Geometry.h"
 #include "Ply.h"

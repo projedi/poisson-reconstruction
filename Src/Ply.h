@@ -533,7 +533,7 @@ int PlyWritePolygons( char* fileName , CoredMeshData< Vertex >* mesh , int file_
 	int nr_vertices=int(mesh->outOfCorePointCount()+mesh->inCorePoints.size());
 	int nr_faces=mesh->polygonCount();
 	float version;
-	char *elem_names[] = { "vertex" , "face" };
+	char const* elem_names[] = { "vertex" , "face" };
 	PlyFile *ply = ply_open_for_writing( fileName , 2 , elem_names , file_type , &version );
 	if( !ply ) return 0;
 
