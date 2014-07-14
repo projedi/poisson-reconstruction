@@ -28,8 +28,8 @@ DAMAGE.
 
 #pragma once
 
-#include <array>
 #include <cmath>
+#include <string>
 #include <vector>
 
 template<class Real>
@@ -148,7 +148,7 @@ struct CoredPointIndex {
 
 struct TriangleIndex {
 	TriangleIndex(int i0, int i1, int i2);
-	std::array<int, 3> idx;
+	int idx[3];
 };
 
 struct CoredVertexIndex {
