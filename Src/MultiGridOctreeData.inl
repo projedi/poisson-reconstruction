@@ -546,7 +546,7 @@ Real Octree<Degree, OutputDensity>::SplatOrientedPoint(Point3D<Real> const& posi
 	GetSampleDepthAndWeight(temp, position, getNeighbors, samplesPerNode, depth, weight);
 
 	depth = clamp(depth, minDepth, maxDepth);
-	int topDepth = clamp(std::lrint(std::ceil(depth)), minDepth, maxDepth);
+	int topDepth = clamp(lrint(std::ceil(depth)), minDepth, maxDepth);
 
 	while(temp->depth() > topDepth) temp = temp->parent();
 
@@ -1763,7 +1763,7 @@ int Octree<Degree, OutputDensity>::SolveFixedDepthMatrix(int depth, Integrator c
 		maxDimension = std::max(maxDimension, adjacencyCount);
 	}
 
-	Real myRadius = std::lrint(2 * radius_ - (Real)0.5 - ROUND_EPS) + ROUND_EPS;
+	Real myRadius = lrint(2 * radius_ - (Real)0.5 - ROUND_EPS) + ROUND_EPS;
 	int* adjacencies = new int[maxDimension];
 	int tIter = 0;
 	double systemTime = 0;

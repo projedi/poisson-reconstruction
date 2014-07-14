@@ -101,7 +101,7 @@ std::vector<PlyColorVertex<Real> > ColorVertices(std::vector<PlyValueVertex<Real
 		float temp = (inVertices[i].value - min) / (max - min);
 		temp = std::max(0.f, std::min(1.f, temp));
 		temp *= 255;
-		outVertices[i].color[0] = outVertices[i].color[1] = outVertices[i].color[2] = (int)std::lround(temp);
+		outVertices[i].color[0] = outVertices[i].color[1] = outVertices[i].color[2] = (int)lround(temp);
 	}
 	return outVertices;
 }
