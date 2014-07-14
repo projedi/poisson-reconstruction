@@ -36,7 +36,7 @@ PPolynomial<Degree>::PPolynomial(PPolynomial<Degree2> const& p):
 
 template<int Degree>
 PPolynomial<Degree>::PPolynomial(StartingPolynomial<Degree>* sps, int count):
-	PPolynomial(count) {
+	polys_(count) {
 	std::sort(sps, sps + count);
 	int c = 0;
 	for(int i = 0; i != count; ++i) {
