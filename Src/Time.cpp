@@ -34,6 +34,8 @@ DAMAGE.
 #include <sys/time.h>
 #endif
 
+#include "Util.h"
+
 double Time() {
 #ifdef WIN32
 	struct _timeb t;

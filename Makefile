@@ -10,7 +10,7 @@ ST_TARGET=SurfaceTrimmer
 PR_SOURCE=CmdLineParser.cpp DumpOutput.cpp Factor.cpp Geometry.cpp MarchingCubes.cpp PlyFile.cpp Time.cpp PoissonRecon.cpp
 ST_SOURCE=CmdLineParser.cpp DumpOutput.cpp Factor.cpp Geometry.cpp MarchingCubes.cpp PlyFile.cpp Time.cpp SurfaceTrimmer.cpp
 
-CFLAGS += -fopenmp -std=c++11 -Wall -Wextra -Werror
+CFLAGS += -fopenmp -std=c++03 -Wall -Wextra -Werror
 LFLAGS += -lgomp
 
 CFLAGS_DEBUG = -DDEBUG -g3
@@ -35,7 +35,7 @@ all: LFLAGS += $(LFLAGS_DEBUG)
 all: $(BIN)$(PR_TARGET)
 all: $(BIN)$(ST_TARGET)
 
-clang-noomp: CFLAGS = -std=c++11 -Wall -Wextra -Werror -DNO_OMP $(CFLAGS_DEBUG)
+clang-noomp: CFLAGS = -std=c++11 -Wall -Wextra -Werror -DNO_OMP -DCPP11 $(CFLAGS_DEBUG)
 clang-noomp: LFLAGS = $(LFLAGS_DEBUG)
 clang-noomp: CXX = clang++
 clang-noomp: $(BIN)$(PR_TARGET)
