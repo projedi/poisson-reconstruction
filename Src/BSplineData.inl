@@ -70,6 +70,27 @@ BSplineData<Degree, Real>::~BSplineData() {
 }
 
 template<int Degree, class Real>
+double const& BSplineData<Degree, Real>::Integrator::IntegralTables::at(int i, int j, bool d1, bool d2,
+		bool childParent) const {
+	if(childParent)
+		return (d1 && d2) ? dd_cpIntegrals[i][j] :
+			d1 ? dv_cpIntegrals[i][j] :
+			d2 ? vd_cpIntegrals[i][j] :
+			vv_cpIntegrals[i][j];
+	else
+		return (d1 && d2) ? dd_ccIntegrals[i][j] :
+			d1 ? dv_ccIntegrals[i][j] :
+			d2 ? vd_ccIntegrals[i][j] :
+			vv_ccIntegrals[i][j];
+}
+
+template<int Degree, class Real>
+double& BSplineData<Degree, Real>::Integrator::IntegralTables::at(int i, int j, bool d1, bool d2,
+		bool childParent) {
+	return const_cast<double&>(static_cast<IntegralTables const&>(*this).at(i, j, d1, d2, childParent));
+}
+
+template<int Degree, class Real>
 double BSplineData<Degree, Real>::Integrator::dot(int depth, int off1, int off2,
 		bool d1, bool d2, bool childParent) const {
 	if(depth < 0 || depth >= (int)iTables.size()) return 0.;
@@ -87,16 +108,8 @@ double BSplineData<Degree, Real>::Integrator::dot(int depth, int off1, int off2,
 	int ii = off1 < Degree ? off1 : 
 				off1 >= res - Degree ? 2 * Degree + off1 - (res - 1) :
 				Degree;
-	if(childParent)
-		return (d1 && d2) ? iTable.dd_cpIntegrals[2 * ii + c][d + Degree] :
-			d1 ? iTable.dv_cpIntegrals[2 * ii + c][d + Degree] :
-			d2 ? iTable.vd_cpIntegrals[2 * ii + c][d + Degree] :
-			iTable.vv_cpIntegrals[2 * ii + c][d + Degree];
-	else
-		return (d1 && d2) ? iTable.dd_ccIntegrals[ii][d + Degree] :
-			d1 ? iTable.dv_ccIntegrals[ii][d + Degree] :
-			d2 ? iTable.vd_ccIntegrals[ii][d + Degree] :
-			iTable.vv_ccIntegrals[ii][d + Degree];
+	if(childParent) ii = 2 * ii + c;
+	return iTable.at(ii, d + Degree, d1, d2, childParent);
 }
 
 template<int Degree, class Real>
@@ -320,13 +333,13 @@ void BSplineData<Degree, Real>::setIntegrator(Integrator& integrator, bool inset
 			for(int j = -Degree; j <= Degree; ++j) {
 				int res = 1 << d;
 				int ii = i <= Degree ? i : i + res - 1 - 2 * Degree;
-				integrator.iTables[d].vv_ccIntegrals[i][j + Degree] =
+				integrator.iTables[d].at(i, j + Degree, false, false, false) =
 					_dot<false, false>(d, ii, d, ii + j, inset);
-				integrator.iTables[d].dv_ccIntegrals[i][j + Degree] =
+				integrator.iTables[d].at(i, j + Degree, true, false, false) =
 					_dot<true, false>(d, ii, d, ii + j, inset);
-				integrator.iTables[d].vd_ccIntegrals[i][j + Degree] =
+				integrator.iTables[d].at(i, j + Degree, false, true, false) =
 					_dot<false, true>(d, ii, d, ii + j, inset);
-				integrator.iTables[d].dd_ccIntegrals[i][j + Degree] =
+				integrator.iTables[d].at(i, j + Degree, true, true, false) =
 					_dot<true, true>(d, ii, d, ii + j, inset);
 			}
 	for(int d = 1; d <= depth_; ++d)
@@ -335,13 +348,13 @@ void BSplineData<Degree, Real>::setIntegrator(Integrator& integrator, bool inset
 				int res = 1 << d;
 				int ii = i <= Degree ? i : i + res / 2 - 1 - 2 * Degree;
 				for(int c = 0; c < 2; ++c) {
-					integrator.iTables[d].vv_cpIntegrals[2 * i + c][j + Degree] =
+					integrator.iTables[d].at(2 * i + c, j + Degree, false, false, true) =
 						_dot<false, false>(d, 2 * ii + c, d - 1, ii + j, inset);
-					integrator.iTables[d].dv_cpIntegrals[2 * i + c][j + Degree] =
+					integrator.iTables[d].at(2 * i + c, j + Degree, true, false, true) =
 						_dot<true, false>(d, 2 * ii + c, d - 1, ii + j, inset);
-					integrator.iTables[d].vd_cpIntegrals[2 * i + c][j + Degree] =
+					integrator.iTables[d].at(2 * i + c, j + Degree, false, true, true) =
 						_dot<false, true>(d, 2 * ii + c, d - 1, ii + j, inset);
-					integrator.iTables[d].dd_cpIntegrals[2 * i + c][j + Degree] =
+					integrator.iTables[d].at(2 * i + c, j + Degree, true, true, true) =
 						_dot<true, true>(d, 2 * ii + c, d - 1, ii + j, inset);
 				}
 			}

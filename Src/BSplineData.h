@@ -91,7 +91,11 @@ public:
 				bool childParent = false ) const;
 	private:
 		friend class BSplineData<Degree, Real>;
-		struct IntegralTables {
+		class IntegralTables {
+		public:
+			double const& at(int i, int j, bool d1, bool d2, bool childParent) const;
+			double& at(int i, int j, bool d1, bool d2, bool childParent);
+		private:
 			double vv_ccIntegrals[2 * Degree + 1][2 * Degree + 1];
 			double dv_ccIntegrals[2 * Degree + 1][2 * Degree + 1];
 			double vd_ccIntegrals[2 * Degree + 1][2 * Degree + 1];
