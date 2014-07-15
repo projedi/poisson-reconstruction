@@ -46,11 +46,6 @@ release: LFLAGS += $(LFLAGS_RELEASE)
 release: $(BIN)$(PR_TARGET)
 release: $(BIN)$(ST_TARGET)
 
-newmatrix: CFLAGS += $(CFLAGS_DEBUG) -DNEW_MATRIX_CODE
-newmatrix: LFLAGS += $(LFLAGS_DEBUG)
-newmatrix: $(BIN)$(PR_TARGET)
-newmatrix: $(BIN)$(ST_TARGET)
-
 nogradient: CFLAGS += $(CFLAGS_DEBUG) -DNO_GRADIENT_DOMAIN_SOLUTION
 nogradient: LFLAGS += $(LFLAGS_DEBUG)
 nogradient: $(BIN)$(PR_TARGET)
@@ -91,11 +86,6 @@ test: all
 test-release: release
 	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig-release"
 	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig-release"
-
-# NEW_MATRIX_CODE 1
-test-newmatrix: newmatrix
-	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig-newmatrix"
-	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig-newmatrix"
 
 # GRADIENT_DOMAIN_SOLUTION 0
 test-nogradient: nogradient

@@ -107,34 +107,6 @@ Vector<T2> SparseSymmetricMatrix<T>::operator*(Vector<T2> const& V) const {
 	return R;
 }
 
-#ifdef NEW_MATRIX_CODE
-template<class T>
-template<class T2>
-void SparseSymmetricMatrix<T>::Multiply(Vector<T2> const& in, Vector<T2>& out, bool addDCTerm,
-		int threads) const {
-	out = Vector<T2>(Rows());
-#pragma omp parallel for num_threads(threads)
-	for(int i = 0; i < Rows(); ++i) {
-		T2 acc = 0;
-		for(int ii = 0; ii != rowSizes_[i]; ++ii) {
-			MatrixEntry<T> e = m_ppElements[i][ii];
-			acc += e.Value * in[e.N];
-#pragma omp atomic
-			out[e.N] += e.Value * in[i];
-		}
-#pragma omp atomic
-		out[i] += acc;
-	}
-	if(addDCTerm) {
-		T2 dcTerm = 0;
-#pragma omp parallel for num_threads(threads) reduction(+ : dcTerm)
-		for(int i = 0; i < Rows(); ++i) dcTerm += in[i];
-		dcTerm /= Rows();
-#pragma omp parallel for num_threads(threads)
-		for(int i = 0; i < Rows(); ++i) out[i] += dcTerm;
-	}
-}
-#else
 template<class T>
 template<class T2>
 void SparseSymmetricMatrix<T>::Multiply(Vector<T2> const& in, Vector<T2>& out, bool addDCTerm,
@@ -174,7 +146,6 @@ void SparseSymmetricMatrix<T>::Multiply(Vector<T2> const& in, Vector<T2>& out, b
 		for(int t = 0; t < threads; ++t) out[i] += OutScratch[t][i];
 	}
 }
-#endif
 
 template<class T>
 template<class T2>
