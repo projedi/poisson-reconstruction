@@ -499,22 +499,28 @@ typename NeighborKey3<OctNode>::Neighbors3& NeighborKey3<OctNode>::getNeighbors3
 }
 
 struct RangeData {
-	RangeData(int s, int e, int o): start(s), end(e), neighborOffset(o) { }
 	int start;
 	int end;
 	int neighborOffset;
 };
 
-RangeData getRange(int c, int i) {
+// Profiling showed a significant usage of this function
+inline RangeData getRange(unsigned c, unsigned i) {
+	int c2 = c % 2;
+	RangeData res;
+	res.start = 0;
+	res.end = 2;
+	res.neighborOffset = (int)(2 * i) - c2;
 	switch(i) {
-		case 0: return c % 2 ? RangeData(1, 2, -1) : RangeData(0, 2, 0);
-		case 1: return c % 2 ? RangeData(0, 2, 1) : RangeData(0, 2, 2);
-		case 2: return c % 2 ? RangeData(0, 2, 3) : RangeData(0, 1, 4);
+		case 0: res.start = c2; break;
+		case 1: break;
+		case 2: res.end = 1 + c2; break;
 		default:
-			std::cerr << "[ERROR]: Invalid value of i in getRange lambda" << std::endl;
-			exit(1);
+			std::cerr << "[ERROR]: Invalid value of i (" << i << ") in getRange" << std::endl;
+			std::terminate();
 	}
-};
+	return res;
+}
 
 template<class OctNode>
 typename NeighborKey3<OctNode>::Neighbors5 NeighborKey3<OctNode>::getNeighbors5(OctNode* node) {
@@ -526,10 +532,10 @@ typename NeighborKey3<OctNode>::Neighbors5 NeighborKey3<OctNode>::getNeighbors5(
 	}
 	OctNode const** nodeIter = reinterpret_cast<OctNode const**>(
 			getNeighbors3(node->parent()).neighbors);
-	int idx = node->parent()->childIndex(node);
-	for(int i = 0; i != 3; ++i)
-		for(int j = 0; j != 3; ++j)
-			for(int k = 0; k != 3; ++k, ++nodeIter) {
+	unsigned idx = node->parent()->childIndex(node);
+	for(unsigned i = 0; i != 3; ++i)
+		for(unsigned j = 0; j != 3; ++j)
+			for(unsigned k = 0; k != 3; ++k, ++nodeIter) {
 				RangeData ri = getRange(idx, i);
 				RangeData rj = getRange(idx / 2, j);
 				RangeData rk = getRange(idx / 4, k);
