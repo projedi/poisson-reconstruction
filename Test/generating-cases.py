@@ -2,6 +2,7 @@
 
 import math
 import random
+import sys
 
 # eps in radians
 def random_radials(theta, phi, eps):
@@ -102,5 +103,11 @@ def do_sphere():
 def do_cube():
     points_to_text(generate_cube(3000, 200, 5, math.pi / 10))
 
-#do_sphere()
-do_cube()
+if len(sys.argv) != 2:
+    print('USAGE: ', sys.argv[0], ' [cube|sphere]')
+    sys.exit(1)
+
+if sys.argv[1] == 'sphere':
+    do_sphere()
+elif sys.argv[1] == 'cube':
+    do_cube()
