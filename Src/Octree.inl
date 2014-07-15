@@ -332,14 +332,6 @@ void OctNode<NodeData, Real>::centerIndex(int maxDepth, int index[DIMENSION]) co
 
 namespace octree_internals {
 
-template<int N, class T>
-void Neighbors<N, T>::clear() {
-	for(int i = 0; i != N; ++i)
-		for(int j = 0; j != N; ++j)
-			for(int k = 0; k != N; ++k)
-				neighbors[i][j][k] = nullptr;
-}
-
 template<class OctNode>
 template<class EmptyChildrenCallback>
 typename NeighborKey3<OctNode>::Neighbors3& NeighborKey3<OctNode>::collectNeighbors(
@@ -505,16 +497,15 @@ struct RangeData {
 };
 
 // Profiling showed a significant usage of this function
-inline RangeData getRange(unsigned c, unsigned i) {
-	int c2 = c % 2;
+inline RangeData getRange(int c, unsigned i) {
 	RangeData res;
 	res.start = 0;
 	res.end = 2;
-	res.neighborOffset = (int)(2 * i) - c2;
+	res.neighborOffset = (int)(2 * i) - c;
 	switch(i) {
-		case 0: res.start = c2; break;
+		case 0: res.start = c; break;
 		case 1: break;
-		case 2: res.end = 1 + c2; break;
+		case 2: res.end = 1 + c; break;
 		default:
 			std::cerr << "[ERROR]: Invalid value of i (" << i << ") in getRange" << std::endl;
 			std::terminate();
@@ -530,22 +521,27 @@ typename NeighborKey3<OctNode>::Neighbors5 NeighborKey3<OctNode>::getNeighbors5(
 		neighbors.at(2, 2, 2) = node;
 		return neighbors;
 	}
-	OctNode const** nodeIter = const_cast<OctNode const**>(getNeighbors3(node->parent()).data());
+	OctNode** nodeIter = getNeighbors3(node->parent()).data();
 	unsigned idx = node->parent()->childIndex(node);
-	for(unsigned i = 0; i != 3; ++i)
-		for(unsigned j = 0; j != 3; ++j)
+	// Apparently gcc does not automatically pull common subexpressions out of the loop
+	int c1 = idx & 1;
+	int c2 = (idx & 2) / 2;
+	int c3 = (idx & 4) / 4;
+	for(unsigned i = 0; i != 3; ++i) {
+		RangeData ri = getRange(c1, i);
+		for(unsigned j = 0; j != 3; ++j) {
+			RangeData rj = getRange(c2, j);
 			for(unsigned k = 0; k != 3; ++k, ++nodeIter) {
-				RangeData ri = getRange(idx, i);
-				RangeData rj = getRange(idx / 2, j);
-				RangeData rk = getRange(idx / 4, k);
-				if(*nodeIter && (*nodeIter)->hasChildren())
-					for(int ii = ri.start; ii != ri.end; ++ii)
-						for(int jj = rj.start; jj != rj.end; ++jj)
-							for(int kk = rk.start; kk != rk.end; ++kk)
-								neighbors.at(ii + ri.neighborOffset,
-									jj + rj.neighborOffset, kk + rk.neighborOffset) =
-										(*nodeIter)->child(Cube::CornerIndex(ii, jj, kk));
+				RangeData rk = getRange(c3, k);
+				if(!*nodeIter || !(*nodeIter)->hasChildren()) continue;
+				for(int ii = ri.start; ii != ri.end; ++ii)
+					for(int jj = rj.start; jj != rj.end; ++jj)
+						for(int kk = rk.start; kk != rk.end; ++kk)
+							neighbors.at(ii + ri.neighborOffset, jj + rj.neighborOffset, kk + rk.neighborOffset) =
+									(*nodeIter)->child(Cube::CornerIndex(ii, jj, kk));
 			}
+		}
+	}
 	return neighbors;
 }
 

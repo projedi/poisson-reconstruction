@@ -37,7 +37,7 @@ namespace octree_internals {
 template<int N, class T>
 class Neighbors {
 public:
-	Neighbors() { memset(neighbors, 0, sizeof(T*) * N * N * N); }
+	Neighbors() { clear(); }
 
 	operator Neighbors<N, T const>() {
 		Neighbors<N, T const> r;
@@ -45,14 +45,15 @@ public:
 		return r;
 	}
 
-	T*& at(int i, int j, int k) { return neighbors[i][j][k]; }
-	T* const& at(int i, int j, int k) const { return neighbors[i][j][k]; }
+	T*& at(int i, int j, int k) { return neighbors[N * N * i + N * j + k]; }
+	T* const& at(int i, int j, int k) const { return neighbors[N * N * i + N * j + k]; }
 
-	T** data() { return reinterpret_cast<T**>(neighbors); }
+	T** data() { return neighbors; }
 
-	void clear();
+	void clear() { memset(neighbors, 0, sizeof(T*) * N * N * N); }
 private:
-	T* neighbors[N][N][N];
+	// Apparently doing multidimensional by hand slightly speeds up indexing into.
+	T* neighbors[N * N * N];
 };
 
 template<class OctNode>
