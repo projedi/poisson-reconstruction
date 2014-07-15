@@ -139,28 +139,26 @@ template<class T>
 template<class T2>
 void SparseSymmetricMatrix<T>::Multiply(Vector<T2> const& in, Vector<T2>& out, bool addDCTerm,
 		int threads) const {
-	// TODO: If slow, OutScratch may be turned into static thread-local
 	std::vector<std::vector<T2> > OutScratch(threads);
-#pragma omp parallel for num_threads(threads)
-	for(int t = 0; t < threads; ++t) {
-		std::vector<T2>& outs = OutScratch[t];
-		outs.assign(in.Dimensions(), 0);
-		for(int i = (Rows() * t) / threads; i < (Rows() * (t + 1)) / threads; ++i) {
-			if(addDCTerm) {
-				for(int ii = 0; ii != rowSizes_[i]; ++ii) {
-					MatrixEntry<T> e = m_ppElements[i][ii];
-					outs[i] += e.Value * in[e.N];
-					outs[e.N] += e.Value * in[i];
-				}
-			} else {
-				T2 acc = 0;
-				for(int ii = 0; ii != rowSizes_[i]; ++ii) {
-					MatrixEntry<T> e = m_ppElements[i][ii];
-					acc += e.Value * in[e.N];
-					outs[e.N] += e.Value * in[i];
-				}
-				outs[i] += acc;
+	for(int t = 0; t < threads; ++t)
+		OutScratch[t].assign(in.Dimensions(), 0);
+#pragma omp parallel for num_threads(threads) schedule(static)
+	for(int i = 0; i < Rows(); ++i) {
+		std::vector<T2>& outs = OutScratch[omp_get_thread_num()];
+		if(addDCTerm) {
+			for(int ii = 0; ii != rowSizes_[i]; ++ii) {
+				MatrixEntry<T> e = m_ppElements[i][ii];
+				outs[i] += e.Value * in[e.N];
+				outs[e.N] += e.Value * in[i];
 			}
+		} else {
+			T2 acc = 0;
+			for(int ii = 0; ii != rowSizes_[i]; ++ii) {
+				MatrixEntry<T> e = m_ppElements[i][ii];
+				acc += e.Value * in[e.N];
+				outs[e.N] += e.Value * in[i];
+			}
+			outs[i] += acc;
 		}
 	}
 	T2 dcTerm = 0;
