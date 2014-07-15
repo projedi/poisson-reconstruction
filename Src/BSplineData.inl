@@ -91,9 +91,9 @@ double& BSplineData<Degree, Real>::Integrator::IntegralTables::at(int i, int j, 
 }
 
 template<int Degree, class Real>
-double BSplineData<Degree, Real>::Integrator::dot(int depth, int off1, int off2,
+double BSplineData<Degree, Real>::Integrator::dot(unsigned depth, unsigned off1, unsigned off2,
 		bool d1, bool d2, bool childParent) const {
-	if(depth < 0 || depth >= (int)iTables.size()) return 0.;
+	if(depth >= iTables.size()) return 0.;
 	typename Integrator::IntegralTables const& iTable = iTables[depth];
 	int c = 0;
 	if(childParent) {
@@ -101,10 +101,9 @@ double BSplineData<Degree, Real>::Integrator::dot(int depth, int off1, int off2,
 		off1 >>= 1;
 		--depth;
 	}
-	int d = off2 - off1;
-	int res = 1 << depth;
-	if(depth < 0 || off1 < 0 || off2 < 0 || off1 >= res || off2 >= res ||
-			d < -Degree || d > Degree) return 0;
+	int d = (int)off2 - (int)off1;
+	unsigned res = 1 << depth;
+	if(off1 >= res || off2 >= res || d < -Degree || d > Degree) return 0;
 	int ii = off1 < Degree ? off1 : 
 				off1 >= res - Degree ? 2 * Degree + off1 - (res - 1) :
 				Degree;

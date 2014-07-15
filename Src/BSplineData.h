@@ -87,7 +87,7 @@ public:
 	~BSplineData();
 
 	struct Integrator {
-		double dot(int depth, int off1, int off2, bool d1, bool d2,
+		double dot(unsigned depth, unsigned off1, unsigned off2, bool d1, bool d2,
 				bool childParent = false ) const;
 	private:
 		friend class BSplineData<Degree, Real>;
