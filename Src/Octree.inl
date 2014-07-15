@@ -351,19 +351,19 @@ typename NeighborKey3<OctNode>::Neighbors3& NeighborKey3<OctNode>::collectNeighb
 			" < " << minDepth << std::endl;
 		std::exit(1);
 	}
-	if(doReset && node == neighbors_[d].neighbors[1][1][1]) {
+	if(doReset && node == neighbors_[d].at(1, 1, 1)) {
 		bool reset = false;
 		for(int i = 0; i != 3; ++i)
 			for(int j = 0; j != 3; ++j)
 				for(int k = 0; k != 3; ++k)
-					if(flags[i][j][k] && !neighbors_[d].neighbors[i][j][k]) reset = true;
-		if(reset) neighbors_[d].neighbors[1][1][1] = nullptr;
+					if(flags[i][j][k] && !neighbors_[d].at(i, j, k)) reset = true;
+		if(reset) neighbors_[d].at(1, 1, 1) = nullptr;
 	}
-	if(node != neighbors_[d].neighbors[1][1][1]) {
+	if(node != neighbors_[d].at(1, 1, 1)) {
 		neighbors_[d].clear();
 
 		if(d == minDepth)
-			neighbors_[d].neighbors[1][1][1] = node;
+			neighbors_[d].at(1, 1, 1) = node;
 		else {
 			int x1;
 			int y1;
@@ -377,7 +377,7 @@ typename NeighborKey3<OctNode>::Neighbors3& NeighborKey3<OctNode>::collectNeighb
 			for(int i = 0; i != 2; ++i)
 				for(int j = 0; j != 2; ++j)
 					for(int k = 0; k != 2; ++k)
-						neighbors_[d].neighbors[x2 + i][y2 + j][z2 + k] =
+						neighbors_[d].at(x2 + i, y2 + j, z2 + k) =
 							node->parent()->child(Cube::CornerIndex(i, j, k));
 
 			Neighbors3& temp = collectNeighbors(node->parent(), minDepth, flags,
@@ -386,38 +386,38 @@ typename NeighborKey3<OctNode>::Neighbors3& NeighborKey3<OctNode>::collectNeighb
 			// Set the neighbors from across the faces
 			{
 				int i = x1 << 1;
-				if(temp.neighbors[i][1][1]) {
-					if(flags[i][1][1] && !temp.neighbors[i][1][1]->hasChildren())
-						emptyChildrenCallback(temp.neighbors[i][1][1]);
-					if(temp.neighbors[i][1][1]->hasChildren())
+				if(temp.at(i, 1, 1)) {
+					if(flags[i][1][1] && !temp.at(i, 1, 1)->hasChildren())
+						emptyChildrenCallback(temp.at(i, 1, 1));
+					if(temp.at(i, 1, 1)->hasChildren())
 						for(int j = 0; j != 2; ++j)
 							for(int k = 0; k != 2; ++k)
-								neighbors_[d].neighbors[i][y2 + j][z2 + k] =
-									temp.neighbors[i][1][1]->child(Cube::CornerIndex(x2, j, k));
+								neighbors_[d].at(i, y2 + j, z2 + k) =
+									temp.at(i, 1, 1)->child(Cube::CornerIndex(x2, j, k));
 				}
 			}
 			{
 				int j = y1 << 1;
-				if(temp.neighbors[1][j][1]) {
-					if(flags[1][j][1] && !temp.neighbors[1][j][1]->hasChildren())
-						emptyChildrenCallback(temp.neighbors[1][j][1]);
-					if(temp.neighbors[1][j][1]->hasChildren())
+				if(temp.at(1, j, 1)) {
+					if(flags[1][j][1] && !temp.at(1, j, 1)->hasChildren())
+						emptyChildrenCallback(temp.at(1, j, 1));
+					if(temp.at(1, j, 1)->hasChildren())
 						for(int i = 0; i != 2; ++i)
 							for(int k = 0; k != 2; ++k)
-								neighbors_[d].neighbors[x2 + i][j][z2 + k] =
-									temp.neighbors[1][j][1]->child(Cube::CornerIndex(i, y2, k));
+								neighbors_[d].at(x2 + i, j, z2 + k) =
+									temp.at(1, j, 1)->child(Cube::CornerIndex(i, y2, k));
 				}
 			}
 			{
 				int k = z1 << 1;
-				if(temp.neighbors[1][1][k]) {
-					if(flags[1][1][k] && !temp.neighbors[1][1][k]->hasChildren())
-						emptyChildrenCallback(temp.neighbors[1][1][k]);
-					if(temp.neighbors[1][1][k]->hasChildren())
+				if(temp.at(1, 1, k)) {
+					if(flags[1][1][k] && !temp.at(1, 1, k)->hasChildren())
+						emptyChildrenCallback(temp.at(1, 1, k));
+					if(temp.at(1, 1, k)->hasChildren())
 						for(int i = 0; i != 2; ++i)
 							for(int j = 0; j != 2; ++j)
-								neighbors_[d].neighbors[x2 + i][y2 + j][k] =
-									temp.neighbors[1][1][k]->child(Cube::CornerIndex(i, j, z2));
+								neighbors_[d].at(x2 + i, y2 + j, k) =
+									temp.at(1, 1, k)->child(Cube::CornerIndex(i, j, z2));
 				}
 			}
 
@@ -425,37 +425,37 @@ typename NeighborKey3<OctNode>::Neighbors3& NeighborKey3<OctNode>::collectNeighb
 			{
 				int i = x1 << 1;
 				int j = y1 << 1;
-				if(temp.neighbors[i][j][1]) {
-					if(flags[i][j][1] && !temp.neighbors[i][j][1]->hasChildren())
-						emptyChildrenCallback(temp.neighbors[i][j][1]);
-					if(temp.neighbors[i][j][1]->hasChildren())
+				if(temp.at(i, j, 1)) {
+					if(flags[i][j][1] && !temp.at(i, j, 1)->hasChildren())
+						emptyChildrenCallback(temp.at(i, j, 1));
+					if(temp.at(i, j, 1)->hasChildren())
 						for(int k = 0; k != 2; ++k)
-							neighbors_[d].neighbors[i][j][z2 + k] =
-								temp.neighbors[i][j][1]->child(Cube::CornerIndex(x2, y2, k));
+							neighbors_[d].at(i, j, z2 + k) =
+								temp.at(i, j, 1)->child(Cube::CornerIndex(x2, y2, k));
 				}
 			}
 			{
 				int i = x1 << 1;
 				int k = z1 << 1;
-				if(temp.neighbors[i][1][k]) {
-					if(flags[i][1][k] && !temp.neighbors[i][1][k]->hasChildren())
-						emptyChildrenCallback(temp.neighbors[i][1][k]);
-					if(temp.neighbors[i][1][k]->hasChildren())
+				if(temp.at(i, 1, k)) {
+					if(flags[i][1][k] && !temp.at(i, 1, k)->hasChildren())
+						emptyChildrenCallback(temp.at(i, 1, k));
+					if(temp.at(i, 1, k)->hasChildren())
 						for(int j = 0; j != 2; ++j)
-							neighbors_[d].neighbors[i][y2 + j][k] =
-								temp.neighbors[i][1][k]->child(Cube::CornerIndex(x2, j, z2));
+							neighbors_[d].at(i, y2 + j, k) =
+								temp.at(i, 1, k)->child(Cube::CornerIndex(x2, j, z2));
 				}
 			}
 			{
 				int j = y1 << 1;
 				int k = z1 << 1;
-				if(temp.neighbors[1][j][k]) {
-					if(flags[1][j][k] && !temp.neighbors[1][j][k]->hasChildren())
-						emptyChildrenCallback(temp.neighbors[1][j][k]);
-					if(temp.neighbors[1][j][k]->hasChildren())
+				if(temp.at(1, j, k)) {
+					if(flags[1][j][k] && !temp.at(1, j, k)->hasChildren())
+						emptyChildrenCallback(temp.at(1, j, k));
+					if(temp.at(1, j, k)->hasChildren())
 						for(int i = 0; i != 2; ++i)
-							neighbors_[d].neighbors[x2 + i][j][k] =
-								temp.neighbors[1][j][k]->child(Cube::CornerIndex(i, y2, z2));
+							neighbors_[d].at(x2 + i, j, k) =
+								temp.at(1, j, k)->child(Cube::CornerIndex(i, y2, z2));
 				}
 			}
 
@@ -464,12 +464,12 @@ typename NeighborKey3<OctNode>::Neighbors3& NeighborKey3<OctNode>::collectNeighb
 				int i = x1 << 1;
 				int j = y1 << 1;
 				int k = z1 << 1;
-				if(temp.neighbors[i][j][k]) {
-					if(flags[i][j][k] && !temp.neighbors[i][j][k]->hasChildren())
-						emptyChildrenCallback(temp.neighbors[i][j][k]);
-					if(temp.neighbors[i][j][k]->hasChildren())
-						neighbors_[d].neighbors[i][j][k] =
-							temp.neighbors[i][j][k]->child(Cube::CornerIndex(x2, y2, z2));
+				if(temp.at(i, j, k)) {
+					if(flags[i][j][k] && !temp.at(i, j, k)->hasChildren())
+						emptyChildrenCallback(temp.at(i, j, k));
+					if(temp.at(i, j, k)->hasChildren())
+						neighbors_[d].at(i, j, k) =
+							temp.at(i, j, k)->child(Cube::CornerIndex(x2, y2, z2));
 				}
 			}
 		}
@@ -527,11 +527,10 @@ typename NeighborKey3<OctNode>::Neighbors5 NeighborKey3<OctNode>::getNeighbors5(
 	Neighbors5 neighbors;
 	if(!node) return neighbors;
 	if(!node->parent()) {
-		neighbors.neighbors[2][2][2] = node;
+		neighbors.at(2, 2, 2) = node;
 		return neighbors;
 	}
-	OctNode const** nodeIter = reinterpret_cast<OctNode const**>(
-			getNeighbors3(node->parent()).neighbors);
+	OctNode const** nodeIter = const_cast<OctNode const**>(getNeighbors3(node->parent()).data());
 	unsigned idx = node->parent()->childIndex(node);
 	for(unsigned i = 0; i != 3; ++i)
 		for(unsigned j = 0; j != 3; ++j)
@@ -543,8 +542,8 @@ typename NeighborKey3<OctNode>::Neighbors5 NeighborKey3<OctNode>::getNeighbors5(
 					for(int ii = ri.start; ii != ri.end; ++ii)
 						for(int jj = rj.start; jj != rj.end; ++jj)
 							for(int kk = rk.start; kk != rk.end; ++kk)
-								neighbors.neighbors[ii + ri.neighborOffset]
-									[jj + rj.neighborOffset][kk + rk.neighborOffset] =
+								neighbors.at(ii + ri.neighborOffset,
+									jj + rj.neighborOffset, kk + rk.neighborOffset) =
 										(*nodeIter)->child(Cube::CornerIndex(ii, jj, kk));
 			}
 	return neighbors;

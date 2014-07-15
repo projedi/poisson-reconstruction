@@ -37,7 +37,6 @@ namespace octree_internals {
 template<int N, class T>
 class Neighbors {
 public:
-	T* neighbors[N][N][N];
 	Neighbors() { memset(neighbors, 0, sizeof(T*) * N * N * N); }
 
 	operator Neighbors<N, T const>() {
@@ -46,7 +45,14 @@ public:
 		return r;
 	}
 
+	T*& at(int i, int j, int k) { return neighbors[i][j][k]; }
+	T* const& at(int i, int j, int k) const { return neighbors[i][j][k]; }
+
+	T** data() { return reinterpret_cast<T**>(neighbors); }
+
 	void clear();
+private:
+	T* neighbors[N][N][N];
 };
 
 template<class OctNode>
