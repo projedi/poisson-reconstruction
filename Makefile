@@ -105,5 +105,9 @@ test-splat1: splat1
 test-binary: all
 	Test/run-for-dataset.sh "Examples/horse.bnpts" "horse" "-orig"
 
+test-parallel: all
+	Test/run-parallel-test.sh "Examples/cube.npts" "cube"
+	Test/run-parallel-test.sh "Examples/horse.npts" "horse"
+
 include $(PR_DEPENDS)
 include $(ST_DEPENDS)
