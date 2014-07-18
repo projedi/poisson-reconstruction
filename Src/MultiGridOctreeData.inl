@@ -1489,8 +1489,9 @@ SparseSymmetricMatrix<Real> Octree<Degree, OutputDensity>::GetFixedDepthLaplacia
 
 template<int Degree, bool OutputDensity>
 SparseSymmetricMatrix<Real> Octree<Degree, OutputDensity>::GetRestrictedFixedDepthLaplacian(int depth,
-		Integrator const& integrator, int const* entries, int entryCount, TreeOctNode const* rNode, Real,
-		SortedTreeNodes<OutputDensity> const& sNodes, Real const* metSolution) {
+		Integrator const& integrator, std::vector<int> const& entries, int entryCount,
+		TreeOctNode const* rNode, Real, SortedTreeNodes<OutputDensity> const& sNodes,
+		Real const* metSolution) {
 	for(int i = 0; i != (int)entryCount; ++i) sNodes.treeNodes[entries[i]]->nodeData.nodeIndex = i;
 	int rDepth;
 	int rOff[3];
@@ -1639,14 +1640,14 @@ bool SolveFixedDepthMatrix3Function(TreeOctNode const* temp) { return temp->node
 template<class TreeOctNode>
 class SolveFixedDepthMatrix4Function {
 public:
-	SolveFixedDepthMatrix4Function(int& adjacencyCount2, int* adjacencies):
+	SolveFixedDepthMatrix4Function(int& adjacencyCount2, std::vector<int>& adjacencies):
 		adjacencyCount2(adjacencyCount2), adjacencies(adjacencies) { }
 	void operator()(TreeOctNode const* node1, TreeOctNode const*) const {
 		adjacencies[adjacencyCount2++] = node1->nodeData.nodeIndex;
 	}
 private:
 	int& adjacencyCount2;
-	int* adjacencies;
+	std::vector<int>& adjacencies;
 };
 
 template<int Degree, bool OutputDensity>
@@ -1698,7 +1699,7 @@ int Octree<Degree, OutputDensity>::SolveFixedDepthMatrix(int depth, Integrator c
 	}
 
 	Real myRadius = lrint(2 * radius_ - (Real)0.5 - ROUND_EPS) + ROUND_EPS;
-	int* adjacencies = new int[maxDimension];
+	std::vector<int> adjacencies(maxDimension);
 	int tIter = 0;
 	double systemTime = 0;
 	double solveTime = 0;
@@ -1764,7 +1765,8 @@ int Octree<Degree, OutputDensity>::SolveFixedDepthMatrix(int depth, Integrator c
 		MemoryUsage();
 		tIter += iter;
 	}
-	delete[] adjacencies;
+	adjacencies.clear();
+	shrink_to_fit(adjacencies);
 	MemoryUsage();
 	DumpOutput::instance()("#\tEvaluated / Got / Solved in: %6.3f / %6.3f / %6.3f\t(%.3f MB)\n",
 			evaluateTime, systemTime, solveTime, (float)maxMemoryUsage());

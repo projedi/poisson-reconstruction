@@ -647,8 +647,8 @@ private:
 	class GetRestrictedFixedDepthLaplacianGetNodeFunction {
 	public:
 		GetRestrictedFixedDepthLaplacianGetNodeFunction(Octree& o,
-				SortedTreeNodes<OutputDensity> const& sNodes, int depth, int const* entries, int rDepth,
-				int rOff[3], Range3D& range):
+				SortedTreeNodes<OutputDensity> const& sNodes, int depth, std::vector<int> const& entries,
+				int rDepth, int rOff[3], Range3D& range):
 			o(o), sNodes(sNodes), depth(depth), entries(entries), rDepth(rDepth), rOff(rOff), range(range) { }
 		TreeOctNode* operator()(int i) const {
 			TreeOctNode* node = sNodes.treeNodes[entries[i]];
@@ -668,7 +668,7 @@ private:
 		Octree& o;
 		SortedTreeNodes<OutputDensity> const& sNodes;
 		int depth;
-		int const* entries;
+		std::vector<int> const& entries;
 		int rDepth;
 		int* rOff;
 		Range3D& range;
@@ -800,7 +800,7 @@ private:
 	SparseSymmetricMatrix<Real> GetFixedDepthLaplacian(int depth, Integrator const& integrator,
 			SortedTreeNodes<OutputDensity> const& sNodes, Real const* metSolution);
 	SparseSymmetricMatrix<Real> GetRestrictedFixedDepthLaplacian(int depth, Integrator const& integrator,
-			int const* entries, int entryCount, TreeOctNode const* rNode, Real radius,
+			std::vector<int> const& entries, int entryCount, TreeOctNode const* rNode, Real radius,
 			SortedTreeNodes<OutputDensity> const& sNodes, Real const* metSolution);
 	void SetIsoCorners(Real isoValue, TreeOctNode* leaf, CornerTableData& cData, char* valuesSet,
 			Real* values, TreeConstNeighborKey3& nKey, std::vector<Real> const& metSolution,
