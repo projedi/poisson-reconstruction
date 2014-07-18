@@ -1,6 +1,7 @@
 #!/bin/sh
 
 DO_CHECK=1
+QUIET=1
 
 INNAME=$1
 OUTNAME=$2
@@ -17,19 +18,29 @@ TRIMMEDFILLED=".screened.trimmed.filled"
 
 echo "Running for $INNAME"
 
+function run_with_quiet() {
+   if [[ $QUIET -ne 0 ]]; then
+      $@ >/dev/null 2>/dev/null
+      return $?
+   else
+      $@
+      return $?
+   fi
+}
+
 function run_compare() {
    suf=$1
    shift
    sed '/^comment.*$/d' "${ORIGDIR}/${ORIGNAME}$suf.ply" > "${OUTDIR}/orig"
    sed '/^comment.*$/d' "${OUTDIR}/${OUTNAME}$suf.ply" > "${OUTDIR}/new"
-   cmp "${OUTDIR}/orig" "${OUTDIR}/new"
+   run_with_quiet cmp "${OUTDIR}/orig" "${OUTDIR}/new"
    return $?
 }
 
 function run_imprecise_compare() {
    suf=$1
    shift
-   CloudCompare "${ORIGDIR}/${ORIGNAME}$suf.ply" "${OUTDIR}/${OUTNAME}$suf.ply"
+   run_with_quiet CloudCompare "${ORIGDIR}/${ORIGNAME}$suf.ply" "${OUTDIR}/${OUTNAME}$suf.ply"
    return $?
 }
 
@@ -40,7 +51,7 @@ function run() {
    shift
    suf=$1
    shift
-   "$name" --in "$inp" --out "${OUTDIR}/${OUTNAME}$suf.ply" $@
+   run_with_quiet "$name" --in "$inp" --out "${OUTDIR}/${OUTNAME}$suf.ply" --verbose $@
    run_imprecise_compare $suf
    if [[ $? -ne 0 ]]; then
       return 1
