@@ -17,6 +17,22 @@ TRIMMEDFILLED=".screened.trimmed.filled"
 
 echo "Running for $INNAME"
 
+function run_compare() {
+   suf=$1
+   shift
+   sed '/^comment.*$/d' "${ORIGDIR}/${ORIGNAME}$suf.ply" > "${OUTDIR}/orig"
+   sed '/^comment.*$/d' "${OUTDIR}/${OUTNAME}$suf.ply" > "${OUTDIR}/new"
+   cmp "${OUTDIR}/orig" "${OUTDIR}/new"
+   return $?
+}
+
+function run_imprecise_compare() {
+   suf=$1
+   shift
+   CloudCompare "${ORIGDIR}/${ORIGNAME}$suf.ply" "${OUTDIR}/${OUTNAME}$suf.ply"
+   return $?
+}
+
 function run() {
    name=$1
    shift
@@ -25,9 +41,7 @@ function run() {
    suf=$1
    shift
    "$name" --in "$inp" --out "${OUTDIR}/${OUTNAME}$suf.ply" $@
-   sed '/^comment.*$/d' "${ORIGDIR}/${ORIGNAME}$suf.ply" > "${OUTDIR}/orig"
-   sed '/^comment.*$/d' "${OUTDIR}/${OUTNAME}$suf.ply" > "${OUTDIR}/new"
-   cmp "${OUTDIR}/orig" "${OUTDIR}/new"
+   run_imprecise_compare $suf
    if [[ $? -ne 0 ]]; then
       return 1
    fi
