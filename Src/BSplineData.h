@@ -84,7 +84,6 @@ template<int Degree, class Real>
 class BSplineData {
 public:
 	BSplineData();
-	~BSplineData();
 
 	struct Integrator {
 		double dot(unsigned depth, unsigned off1, unsigned off2, bool d1, bool d2,
@@ -191,9 +190,9 @@ private:
 	int depth_;
 	size_t function_count_;
 	size_t sample_count_;
-	Pointer(Real) value_tables_;
-	Pointer(PPolynomial<Degree>) baseFunctions;
-	Pointer(BSplineComponents) base_bsplines_;
+	std::vector<Real> value_tables_;
+	std::vector<PPolynomial<Degree> > baseFunctions;
+	std::vector<BSplineComponents> base_bsplines_;
 };
 
 template<int Degree1, int Degree2>

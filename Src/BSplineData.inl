@@ -56,17 +56,11 @@ DAMAGE.
 template<int Degree, class Real>
 BSplineData<Degree, Real>::BSplineData():
 	function_count_(0),
-	sample_count_(0),
-	value_tables_(NullPointer<Real>()) {
+	sample_count_(0) {
 	SetBSplineElementIntegrals<Degree, Degree>(_vvIntegrals);
 	SetBSplineElementIntegrals<Degree, Degree - 1>(_vdIntegrals);
 	SetBSplineElementIntegrals<Degree - 1, Degree>(_dvIntegrals);
 	SetBSplineElementIntegrals<Degree - 1, Degree - 1>(_ddIntegrals);
-}
-
-template<int Degree, class Real>
-BSplineData<Degree, Real>::~BSplineData() {
-	if(function_count_ && value_tables_) DeletePointer(value_tables_);
 }
 
 template<int Degree, class Real>
@@ -169,8 +163,8 @@ void BSplineData<Degree, Real>::set(int maxDepth, BoundaryType boundaryType) {
 	function_count_ = BinaryNode<double>::CumulativeCenterCount(depth_);
 	sample_count_ = BinaryNode<double>::CenterCount(depth_) +
 		BinaryNode<double>::CornerCount(depth_);
-	baseFunctions = NewPointer<PPolynomial<Degree> >(function_count_);
-	base_bsplines_ = NewPointer<BSplineComponents>(function_count_);
+	baseFunctions.resize(function_count_);
+	base_bsplines_.resize(function_count_);
 
 	BSplineComponents baseBSpline;
 	PPolynomial<Degree> baseFunction = PPolynomial<Degree>::BSpline();
@@ -417,8 +411,8 @@ void BSplineData< Degree , Real >::setSampleSpan(int idx, int& start, int& end) 
 
 template<int Degree, class Real>
 void BSplineData<Degree, Real>::setValueTables() {
-	if(value_tables_) DeletePointer(value_tables_);
-	value_tables_ = NewPointer<Real>(function_count_ * sample_count_);
+	value_tables_.clear();
+	value_tables_.resize(function_count_ * sample_count_);
 	for(size_t i = 0; i != function_count_; ++i)
 		for(size_t j = 0; j != sample_count_; ++j)
 			value_tables_[j * function_count_ + i] =
