@@ -187,12 +187,11 @@ public:
 	typedef Indices<Cube::EDGES> EdgeIndices;
 	typedef TableData<TreeOctNode, EdgeIndices> EdgeTableData;
 
-	int* nodeCount;
-	Pointer(TreeOctNode*) treeNodes;
+	std::vector<int> nodeCount;
+	std::vector<TreeOctNode*> treeNodes;
 	int maxDepth;
 
-	SortedTreeNodes(): nodeCount(nullptr), treeNodes(NullPointer<TreeOctNode*>()), maxDepth(0) { }
-	~SortedTreeNodes();
+	SortedTreeNodes(): maxDepth(0) { }
 	void set(TreeOctNode& root);
 
 // TODO: setTable and getMaxCount between Corner and Edge share a lot of code. But straight up

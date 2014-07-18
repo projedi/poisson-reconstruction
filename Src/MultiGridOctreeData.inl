@@ -60,19 +60,13 @@ TreeNodeData<StoreDensity>::TreeNodeData():
 /////////////////////
 // SortedTreeNodes //
 /////////////////////
-template<bool OutputDensity>
-SortedTreeNodes<OutputDensity>::~SortedTreeNodes() {
-	if(nodeCount) delete[] nodeCount;
-	if(treeNodes) DeletePointer(treeNodes);
-}
 
 template<bool OutputDensity>
 void SortedTreeNodes<OutputDensity>::set(TreeOctNode& root) {
-	if(nodeCount) delete[] nodeCount;
-	if(treeNodes) DeletePointer(treeNodes);
+	treeNodes.clear();
 	maxDepth = root.maxDepth() + 1;
-	nodeCount = new int[maxDepth + 1];
-	treeNodes = NewPointer<TreeOctNode*>(root.nodes());
+	nodeCount.resize(maxDepth + 1);
+	treeNodes.resize(root.nodes());
 
 	int startDepth = 0;
 	nodeCount[0] = 0;
