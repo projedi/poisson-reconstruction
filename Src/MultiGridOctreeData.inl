@@ -2077,7 +2077,6 @@ void Octree<Degree, OutputDensity>::GetMCIsoTriangles(Real isoValue, int subdivi
 	// Ensure that the subtrees are self-contained
 	int sDepth = refineBoundary(subdivideDepth);
 
-	std::vector<Vertex>* interiorVertices;
 	int maxDepth = tree_.maxDepth();
 
 	std::vector<Real> metSolution(sNodes_.nodeCount[maxDepth], 0);
@@ -2130,7 +2129,7 @@ void Octree<Degree, OutputDensity>::GetMCIsoTriangles(Real isoValue, int subdivi
 		rootData.cornerValuesSet.assign(rootData.cCount(), 0);
 		rootData.cornerNormalsSet.assign(rootData.cCount(), 0);
 		rootData.edgesSet.assign(rootData.eCount(), 0);
-		interiorVertices = new std::vector<Vertex>();
+		std::vector<Vertex> interiorVertices;
 		for(int d = maxDepth; d > sDepth; --d) {
 			std::vector<TreeOctNode*> leafNodes;
 			for(TreeOctNode* node = sNodes_.treeNodes[i]->nextLeaf(); node;
@@ -2171,7 +2170,7 @@ void Octree<Degree, OutputDensity>::GetMCIsoTriangles(Real isoValue, int subdivi
 				// Compute the iso-vertices
 				//
 				if(boundaryType_ != BoundaryTypeNone || IsInset(leaf))
-					SetMCRootPositions(leaf, sDepth, isoValue, nKey, rootData, interiorVertices, mesh,
+					SetMCRootPositions(leaf, sDepth, isoValue, nKey, rootData, &interiorVertices, mesh,
 							metSolution, evaluator, nStencils[d].stencil, nStencils[d].stencils,
 							nonLinearFit);
 			}
@@ -2183,13 +2182,12 @@ void Octree<Degree, OutputDensity>::GetMCIsoTriangles(Real isoValue, int subdivi
 			for(int i = 0; i < (int)leafNodeCount; ++i) {
 				TreeOctNode* leaf = leafNodes[i];
 				if(boundaryType_ != BoundaryTypeNone || IsInset(leaf))
-					GetMCIsoTriangles(leaf, nKey, mesh, rootData, interiorVertices, offSet, sDepth,
+					GetMCIsoTriangles(leaf, nKey, mesh, rootData, &interiorVertices, offSet, sDepth,
 							polygonMesh, addBarycenter ? &barycenters : nullptr);
 			}
-			for(size_t i = 0; i != barycenters.size(); ++i) interiorVertices->push_back(barycenters[i]);
+			for(size_t i = 0; i != barycenters.size(); ++i) interiorVertices.push_back(barycenters[i]);
 		}
 		offSet = mesh->outOfCorePointCount();
-		delete interiorVertices;
 	}
 
 	MemoryUsage();
