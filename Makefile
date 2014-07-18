@@ -84,23 +84,23 @@ test: all
 	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig"
 
 test-release: release
-	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig-release"
-	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig-release"
+	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig"
+	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig"
 
 # GRADIENT_DOMAIN_SOLUTION 0
 test-nogradient: nogradient
-	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig-nogradient"
-	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig-nogradient"
+	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig"
+	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig"
 
 # FORCE_NEUMANN_FIELD 0
 test-noneumann: noneumann
-	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig-noneumann"
-	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig-noneumann"
+	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig"
+	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig"
 
 # SPLAT_ORDER 1
 test-splat1: splat1
-	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig-splat1"
-	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig-splat1"
+	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig"
+	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig"
 
 test-binary: all
 	Test/run-for-dataset.sh "Examples/horse.bnpts" "horse" "-orig"
