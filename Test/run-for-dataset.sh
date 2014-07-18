@@ -16,7 +16,7 @@ SCREENEDDENS=".screened.density"
 TRIMMED=".screened.trimmed"
 TRIMMEDFILLED=".screened.trimmed.filled"
 
-echo "Running for $INNAME"
+echo -e "\e[0;31mRunning for $INNAME\e[0m"
 
 function run_with_quiet() {
    if [[ $QUIET -ne 0 ]]; then
@@ -76,7 +76,7 @@ function run_prog() {
    shift
    greeting=$1
    shift
-   echo "$greeting"
+   echo -e "\e[0;32m$greeting\e[0m"
    case "$prog" in
       "poisson")
          run_poisson $@
