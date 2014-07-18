@@ -52,6 +52,9 @@ function run() {
    suf=$1
    shift
    run_with_quiet "$name" --in "$inp" --out "${OUTDIR}/${OUTNAME}$suf.ply" --verbose $@
+   if [[ $? -ne 0 ]]; then
+      return 1
+   fi
    run_imprecise_compare $suf
    if [[ $? -ne 0 ]]; then
       return 1
