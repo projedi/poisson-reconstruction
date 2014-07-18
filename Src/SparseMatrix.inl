@@ -30,70 +30,6 @@ DAMAGE.
 #include <cfloat>
 
 template<class T>
-SparseSymmetricMatrix<T>::SparseSymmetricMatrix():
-	rowSizes_(NullPointer<int>()),
-	m_ppElements(NullPointer<Pointer(MatrixEntry<T>)>()),
-	_maxEntriesPerRow(0),
-	rows(0) { }
-
-template<class T>
-SparseSymmetricMatrix<T>::SparseSymmetricMatrix(SparseSymmetricMatrix const& M):
-	rowSizes_(NullPointer<int>()),
-	m_ppElements(NullPointer<Pointer(MatrixEntry<T>)>()),
-	_maxEntriesPerRow(0),
-	rows(0) {
-	Resize(M.rows);
-	for(int i = 0; i != rows; ++i) {
-		SetRowSize(i, M.rowSizes_[i]);
-		memcpy((*this)[i], M[i], sizeof(MatrixEntry<T>) * rowSizes_[i]);
-	}
-}
-
-template<class T>
-void SparseSymmetricMatrix<T>::swap(SparseSymmetricMatrix<T>& M) {
-	using std::swap;
-	swap(rowSizes_, M.rowSizes_);
-	swap(m_ppElements, M.m_ppElements);
-	swap(_maxEntriesPerRow, M._maxEntriesPerRow);
-	swap(rows, M.rows);
-}
-
-template<class T>
-SparseSymmetricMatrix<T>::~SparseSymmetricMatrix() { Resize(0); }
-
-template<class T>
-int SparseSymmetricMatrix<T>::Entries() const {
-	int e = 0;
-	for(int i = 0; i != rows; ++i) e += rowSizes_[i];
-	return e;
-}
-
-template<class T>
-void SparseSymmetricMatrix<T>::Resize(int r) {
-	if(rows > 0) {
-		for(int i = 0; i != rows; ++i)
-			if(rowSizes_[i]) FreePointer(m_ppElements[i]);
-		FreePointer(m_ppElements);
-		FreePointer(rowSizes_);
-	}
-	rows = r;
-	if(r) {
-		rowSizes_ = AllocPointer<int>(r);
-		m_ppElements = AllocPointer<Pointer(MatrixEntry<T>)>(r);
-		memset(rowSizes_, 0, sizeof(int) * r);
-	}
-	_maxEntriesPerRow = 0;
-}
-
-template<class T>
-void SparseSymmetricMatrix<T>::SetRowSize(int row, int count) {
-	if(row >= 0 && row < rows) {
-		if(rowSizes_[row]) FreePointer(m_ppElements[row]);
-		if(count > 0) m_ppElements[row] = AllocPointer<MatrixEntry<T> >(count);
-	}
-}
-
-template<class T>
 template<class T2>
 Vector<T2> SparseSymmetricMatrix<T>::operator*(Vector<T2> const& V) const {
 	Vector<T2> R(Rows());
@@ -212,7 +148,7 @@ int SparseSymmetricMatrix<T>::Solve(SparseSymmetricMatrix<T> const& A, Vector<T2
 template<class T>
 T SparseSymmetricMatrix<T>::Norm(size_t Ln) const {
 	T N = 0;
-	for(int i = 0; i != rows; ++i)
+	for(size_t i = 0; i != rowSizes_.size(); ++i)
 		for(int j = 0; j != rowSizes_[i]; ++j)
 			N += std::pow(m_ppElements[i][j].Value, (T)Ln);
 	return std::pow(N, (T)1.0 / Ln);

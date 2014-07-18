@@ -636,9 +636,10 @@ private:
 	class GetFixedDepthLaplacianSetRowFunction {
 	public:
 		GetFixedDepthLaplacianSetRowFunction(Octree& o): o(o) { }
-		int operator()(TreeNeighbors5 const& neighbors5, Pointer(MatrixEntry<MatrixReal>) row, int offset,
-				Integrator const& integrator, Stencil<double, 5> const& stencil, bool symmetric) const {
-			return o.SetMatrixRow(neighbors5, row, offset, integrator, stencil, symmetric);
+		int operator()(TreeNeighbors5 const& neighbors5, SparseSymmetricMatrix<MatrixReal>& m, int row,
+				int offset, Integrator const& integrator, Stencil<double, 5> const& stencil,
+				bool symmetric) const {
+			return o.SetMatrixRow(neighbors5, m, row, offset, integrator, stencil, symmetric);
 		}
 	private:
 		Octree& o;
@@ -690,9 +691,9 @@ private:
 	public:
 		GetRestrictedFixedDepthLaplacianSetRowFunction(Octree& o, Range3D const& range):
 			o(o), range(range) { }
-		int operator()(TreeNeighbors5 const& neighbors5, Pointer(MatrixEntry<MatrixReal>) row, int,
+		int operator()(TreeNeighbors5 const& neighbors5, SparseSymmetricMatrix<MatrixReal>& m, int row, int,
 				Integrator const& integrator, Stencil<double, 5> const& stencil, bool symmetric) const {
-			return o.SetMatrixRow(neighbors5, row, 0, integrator, stencil, range, symmetric);
+			return o.SetMatrixRow(neighbors5, m, row, 0, integrator, stencil, range, symmetric);
 		}
 	private:
 		Octree& o;
@@ -760,11 +761,11 @@ private:
 	int GetMatrixRowSize(TreeNeighbors5 const& neighbors5, bool symmetric) const
 		{ return GetMatrixRowSize(neighbors5, Range3D::FullRange(), symmetric); }
 	int GetMatrixRowSize(TreeNeighbors5 const& neighbors5, Range3D const& range, bool symmetric) const;
-	int SetMatrixRow(TreeNeighbors5 const& neighbors5, Pointer(MatrixEntry<MatrixReal>) row,
-			int offset, Integrator const& integrator, Stencil<double, 5> const& stencil,
+	int SetMatrixRow(TreeNeighbors5 const& neighbors5, SparseSymmetricMatrix<MatrixReal>& m, int row,
+			int off, Integrator const& integrator, Stencil<double, 5> const& stencil,
 			bool symmetric) const
-		{ return SetMatrixRow(neighbors5, row, offset, integrator, stencil, Range3D::FullRange(), symmetric); }
-	int SetMatrixRow(TreeNeighbors5 const& neighbors5, Pointer(MatrixEntry<MatrixReal>) row,
+		{ return SetMatrixRow(neighbors5, m, row, off, integrator, stencil, Range3D::FullRange(), symmetric); }
+	int SetMatrixRow(TreeNeighbors5 const& neighbors5, SparseSymmetricMatrix<MatrixReal>& m, int row,
 			int offset, Integrator const& integrator, Stencil<double, 5> const& stencil,
 			Range3D const& range, bool symmetric) const;
 	LaplacianStencil SetLaplacianStencil(int depth, Integrator const& integrator) const;

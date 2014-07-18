@@ -986,7 +986,7 @@ int Octree<Degree, OutputDensity>::GetMatrixRowSize(TreeNeighbors5 const& neighb
 
 template<int Degree, bool OutputDensity>
 int Octree<Degree, OutputDensity>::SetMatrixRow(TreeNeighbors5 const& neighbors5,
-		Pointer(MatrixEntry<MatrixReal>) row, int offset, Integrator const& integrator,
+		SparseSymmetricMatrix<MatrixReal>& m, int row, int offset, Integrator const& integrator,
 		Stencil<double, 5> const& stencil, Range3D const& range, bool symmetric) const {
 	TreeOctNode const* node = neighbors5.at(2, 2, 2);
 	int d;
@@ -1055,8 +1055,8 @@ int Octree<Degree, OutputDensity>::SetMatrixRow(TreeNeighbors5 const& neighbors5
 					if(constrainValues_) temp += pointValues[x][y][z];
 					if(x == 2 && y == 2 && z == 2 && symmetric) temp /= 2;
 					if(std::abs(temp) > MATRIX_ENTRY_EPSILON) {
-						row[count].N = _node->nodeData.nodeIndex - offset;
-						row[count].Value = temp;
+						m.at(row, count).N = _node->nodeData.nodeIndex - offset;
+						m.at(row, count).Value = temp;
 						++count;
 					}
 				}
@@ -1457,9 +1457,9 @@ SparseSymmetricMatrix<Real> Octree<Degree, OutputDensity>::GetFixedDepthLaplacia
 
 		// Set the row entries
 		if(insetSupported) matrix.rowSize(i) =
-				setRow(neighbors5, matrix[i], sNodes.nodeCount[depth], integrator, stencil, true);
+				setRow(neighbors5, matrix, i, sNodes.nodeCount[depth], integrator, stencil, true);
 		else {
-			matrix[i][0] = MatrixEntry<Real>(i, 1);
+			matrix.at(i, 0) = MatrixEntry<Real>(i, 1);
 			matrix.rowSize(i) = 1;
 		}
 

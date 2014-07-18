@@ -28,8 +28,9 @@ DAMAGE.
 
 #pragma once
 
+#include <numeric>
+
 #include "Vector.h"
-#include "Array.h"
 
 template<class T>
 struct MatrixEntry {
@@ -42,26 +43,16 @@ struct MatrixEntry {
 template<class T>
 class SparseSymmetricMatrix {
 public:
-	int Rows() const { return rows; }
-	int Columns() const { return _maxEntriesPerRow; }
+	int Rows() const { return m_ppElements.size(); }
 
-	Pointer(MatrixEntry<T>) operator[](int idx) { return m_ppElements[idx]; }
-	ConstPointer(MatrixEntry<T>) operator[](int idx) const { return m_ppElements[idx]; }
+	MatrixEntry<T>& at(int i, int j) { return m_ppElements[i][j]; }
+	MatrixEntry<T> const& at(int i, int j) const { return m_ppElements[i][j]; }
 
 	int& rowSize(int i) { return rowSizes_[i]; }
 
-	SparseSymmetricMatrix();
-	SparseSymmetricMatrix(SparseSymmetricMatrix const& M);
-
-	~SparseSymmetricMatrix();
-
-	SparseSymmetricMatrix<T>& operator=(SparseSymmetricMatrix<T> M) { swap(M); return *this; }
-
-	void swap(SparseSymmetricMatrix<T>& M);
-
-	void Resize(int rows);
-	void SetRowSize(int row, int count);
-	int Entries() const;
+	void Resize(int rows) { m_ppElements.resize(rows); rowSizes_.resize(rows); }
+	void SetRowSize(int row, int count) { m_ppElements[row].resize(count); }
+	int Entries() const { return std::accumulate(rowSizes_.begin(), rowSizes_.end(), 0); }
 
 	template<class T2>
 	Vector<T2> operator*(Vector<T2> const& V) const;
@@ -75,10 +66,8 @@ private:
 	template<class T2>
 	void Multiply(Vector<T2> const& In, Vector<T2>& Out, bool addDCTerm, int threads) const;
 private:
-	Pointer(int) rowSizes_;
-	Pointer(Pointer(MatrixEntry<T>)) m_ppElements;
-	int _maxEntriesPerRow;
-	int rows;
+	std::vector<int> rowSizes_;
+	std::vector<std::vector<MatrixEntry<T> > > m_ppElements;
 };
 
 #include "SparseMatrix.inl"
