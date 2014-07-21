@@ -45,8 +45,18 @@ class SparseSymmetricMatrix {
 public:
 	int Rows() const { return m_ppElements.size(); }
 
-	MatrixEntry<T>& at(int i, int j) { return m_ppElements[i][j]; }
-	MatrixEntry<T> const& at(int i, int j) const { return m_ppElements[i][j]; }
+	MatrixEntry<T> const& at(int i, int j) const {
+		if(j >= rowSizes_[i]) {
+			//std::cerr << "[WARNING] accessing to the right of rowSize" << std::endl;
+		}
+		if((size_t)j >= m_ppElements[i].size()) {
+			std::cerr << "[ERROR] accessing to the right of m_ppElements[i]" << std::endl;
+			throw "OHAI";
+		}
+		return m_ppElements[i][j];
+	}
+	MatrixEntry<T>& at(int i, int j)
+		{ return const_cast<MatrixEntry<T>&>(static_cast<SparseSymmetricMatrix const&>(*this).at(i, j)); }
 
 	int& rowSize(int i) { return rowSizes_[i]; }
 

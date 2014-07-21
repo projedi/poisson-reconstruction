@@ -648,8 +648,8 @@ private:
 	public:
 		GetRestrictedFixedDepthLaplacianGetNodeFunction(Octree& o,
 				SortedTreeNodes<OutputDensity> const& sNodes, int depth, std::vector<int> const& entries,
-				int rDepth, int rOff[3], Range3D& range):
-			o(o), sNodes(sNodes), depth(depth), entries(entries), rDepth(rDepth), rOff(rOff), range(range) { }
+				int rDepth, int rOff[3], std::vector<Range3D>& ranges):
+			o(o), sNodes(sNodes), depth(depth), entries(entries), rDepth(rDepth), rOff(rOff), ranges(ranges) { }
 		TreeOctNode* operator()(int i) const {
 			TreeOctNode* node = sNodes.treeNodes[entries[i]];
 			int d;
@@ -660,8 +660,8 @@ private:
 			off[2] >>= depth - rDepth;
 			bool isInterior = off[0] == rOff[0] && off[1] == rOff[1] && off[2] == rOff[2];
 
-			if(!isInterior) o.SetMatrixRowBounds(node, rDepth, rOff, range);
-			else range = Range3D::FullRange();
+			if(!isInterior) o.SetMatrixRowBounds(node, rDepth, rOff, ranges[omp_get_thread_num()]);
+			else ranges[omp_get_thread_num()] = Range3D::FullRange();
 			return node;
 		}
 	private:
@@ -671,32 +671,33 @@ private:
 		std::vector<int> const& entries;
 		int rDepth;
 		int* rOff;
-		Range3D& range;
+		std::vector<Range3D>& ranges;
 	};
 
 	class GetRestrictedFixedDepthLaplacianGetRowSizeFunction {
 	public:
-		GetRestrictedFixedDepthLaplacianGetRowSizeFunction(Octree& o, Range3D const& range):
-			o(o), range(range) { }
+		GetRestrictedFixedDepthLaplacianGetRowSizeFunction(Octree& o, std::vector<Range3D> const& ranges):
+			o(o), ranges(ranges) { }
 		int operator()(TreeNeighbors5 const& neighbors5, bool symmetric) const {
-			return o.GetMatrixRowSize(neighbors5, range, symmetric);
+			return o.GetMatrixRowSize(neighbors5, ranges[omp_get_thread_num()], symmetric);
 		}
 	private:
 		Octree& o;
-		Range3D const& range;
+		std::vector<Range3D> const& ranges;
 	};
 
 	class GetRestrictedFixedDepthLaplacianSetRowFunction {
 	public:
-		GetRestrictedFixedDepthLaplacianSetRowFunction(Octree& o, Range3D const& range):
-			o(o), range(range) { }
+		GetRestrictedFixedDepthLaplacianSetRowFunction(Octree& o, std::vector<Range3D> const& ranges):
+			o(o), ranges(ranges) { }
 		int operator()(TreeNeighbors5 const& neighbors5, SparseSymmetricMatrix<MatrixReal>& m, int row, int,
 				Integrator const& integrator, Stencil<double, 5> const& stencil, bool symmetric) const {
-			return o.SetMatrixRow(neighbors5, m, row, 0, integrator, stencil, range, symmetric);
+			return o.SetMatrixRow(neighbors5, m, row, 0, integrator, stencil,
+					ranges[omp_get_thread_num()], symmetric);
 		}
 	private:
 		Octree& o;
-		Range3D const& range;
+		std::vector<Range3D> const& ranges;
 	};
 
 	class SplatOrientedPointGetNeighborsFunction {

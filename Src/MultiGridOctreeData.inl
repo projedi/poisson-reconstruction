@@ -1489,13 +1489,14 @@ SparseSymmetricMatrix<Real> Octree<Degree, OutputDensity>::GetRestrictedFixedDep
 	int rDepth;
 	int rOff[3];
 	rNode->depthAndOffset(rDepth, rOff);
-	Range3D range;
+	// One range per thread
+	std::vector<Range3D> ranges(threads_);
 	SparseSymmetricMatrix<Real> matrix = GetFixedDepthLaplacianGeneric(depth, integrator, sNodes,
 			metSolution, entryCount,
 			GetRestrictedFixedDepthLaplacianGetNodeFunction(*this, sNodes, depth, entries,
-				rDepth, rOff, range),
-			GetRestrictedFixedDepthLaplacianGetRowSizeFunction(*this, range),
-			GetRestrictedFixedDepthLaplacianSetRowFunction(*this, range));
+				rDepth, rOff, ranges),
+			GetRestrictedFixedDepthLaplacianGetRowSizeFunction(*this, ranges),
+			GetRestrictedFixedDepthLaplacianSetRowFunction(*this, ranges));
 	for(int i = 0; i != (int)entryCount; ++i) sNodes.treeNodes[entries[i]]->nodeData.nodeIndex = entries[i];
 	return matrix;
 }
