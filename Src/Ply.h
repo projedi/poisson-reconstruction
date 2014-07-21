@@ -528,7 +528,7 @@ int PlyReadPolygons(char const* fileName,
 				ply_get_element (ply, (void *) &ply_face);
 				polygons[j].resize(ply_face.nr_vertices);
 				for(k=0;k<ply_face.nr_vertices;k++)	polygons[j][k]=ply_face.vertices[k];
-				delete[] ply_face.vertices;
+				free(ply_face.vertices);
 			}  // for, read faces
 		}  // if face
 		else{ply_get_other_element (ply, elem_name, num_elems);}
