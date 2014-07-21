@@ -28,6 +28,8 @@ DAMAGE.
 
 #pragma once
 
+#include <tr1/array>
+
 #include "Allocator.h"
 #include "BinaryNode.h"
 #include "MarchingCubes.h"
@@ -39,21 +41,13 @@ class Neighbors {
 public:
 	Neighbors() { clear(); }
 
-	operator Neighbors<N, T const>() {
-		Neighbors<N, T const> r;
-		r.neighbors = neighbors;
-		return r;
-	}
-
 	T*& at(int i, int j, int k) { return neighbors[N * N * i + N * j + k]; }
 	T* const& at(int i, int j, int k) const { return neighbors[N * N * i + N * j + k]; }
 
-	T** data() { return neighbors; }
-
-	void clear() { memset(neighbors, 0, sizeof(T*) * N * N * N); }
+	void clear() { neighbors.assign(nullptr); }
 private:
 	// Apparently doing multidimensional by hand slightly speeds up indexing into.
-	T* neighbors[N * N * N];
+	std::tr1::array<T*, N * N * N> neighbors;
 };
 
 template<class OctNode>
@@ -63,10 +57,6 @@ public:
 	typedef Neighbors<5, OctNode> Neighbors5;
 
 	explicit NeighborKey3(int depth): neighbors_(depth + 1) { }
-
-	operator NeighborKey3<OctNode const>() {
-		return reinterpret_cast<NeighborKey3<OctNode const> >(*this);
-	}
 
 	Neighbors3& neighbors(int idx) { return neighbors_[idx]; }
 	Neighbors3 const& neighbors(int idx) const { return neighbors_[idx]; }

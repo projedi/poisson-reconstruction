@@ -521,7 +521,7 @@ typename NeighborKey3<OctNode>::Neighbors5 NeighborKey3<OctNode>::getNeighbors5(
 		neighbors.at(2, 2, 2) = node;
 		return neighbors;
 	}
-	OctNode** nodeIter = getNeighbors3(node->parent()).data();
+	Neighbors3 n3 = getNeighbors3(node->parent());
 	unsigned idx = node->parent()->childIndex(node);
 	// Apparently gcc does not automatically pull common subexpressions out of the loop
 	int c1 = idx & 1;
@@ -531,14 +531,15 @@ typename NeighborKey3<OctNode>::Neighbors5 NeighborKey3<OctNode>::getNeighbors5(
 		RangeData ri = getRange(c1, i);
 		for(unsigned j = 0; j != 3; ++j) {
 			RangeData rj = getRange(c2, j);
-			for(unsigned k = 0; k != 3; ++k, ++nodeIter) {
+			for(unsigned k = 0; k != 3; ++k) {
 				RangeData rk = getRange(c3, k);
-				if(!*nodeIter || !(*nodeIter)->hasChildren()) continue;
+				OctNode* nodeIter = n3.at(i, j, k);
+				if(!nodeIter || !nodeIter->hasChildren()) continue;
 				for(int ii = ri.start; ii != ri.end; ++ii)
 					for(int jj = rj.start; jj != rj.end; ++jj)
 						for(int kk = rk.start; kk != rk.end; ++kk)
 							neighbors.at(ii + ri.neighborOffset, jj + rj.neighborOffset, kk + rk.neighborOffset) =
-									(*nodeIter)->child(Cube::CornerIndex(ii, jj, kk));
+									nodeIter->child(Cube::CornerIndex(ii, jj, kk));
 			}
 		}
 	}
