@@ -955,25 +955,17 @@ template<int Degree, bool OutputDensity>
 int Octree<Degree, OutputDensity>::GetMatrixRowSize(TreeNeighbors5 const& neighbors5,
 		Range3D const& range, bool symmetric) const {
 	int count = 0;
-	if(symmetric) {
-		for(int x = range.xStart; x != 3; ++x) {
-			for(int y = range.yStart; y != range.yEnd; ++y) {
-				if(x == 2 && y > 2) continue;
-				for(int z = range.zStart; z < range.zEnd; ++z) {
-					if(x == 2 && y == 2 && z > 2) continue;
-					if(neighbors5.at(x, y, z) && neighbors5.at(x, y, z)->nodeData.nodeIndex >= 0)
-						++count;
-				}
+	for(int x = range.xStart; x < range.xEnd; ++x) {
+		if(x > 2 && symmetric) break;
+		for(int y = range.yStart; y < range.yEnd; ++y) {
+			if(x == 2 && y > 2 && symmetric) break;
+			for(int z = range.zStart; z < range.zEnd; ++z) {
+				if(x == 2 && y == 2 && z > 2 && symmetric) break;
+				TreeOctNode const* node = neighbors5.at(x, y, z);
+				if(node && node->nodeData.nodeIndex >= 0)
+					++count;
 			}
 		}
-	} else {
-		int nodeIndex = neighbors5.at(2, 2, 2)->nodeData.nodeIndex;
-		for(int x = range.xStart; x != range.xEnd; ++x)
-			for(int y = range.yStart; y != range.yEnd; ++y)
-				for(int z = range.zStart; z != range.zEnd; ++z)
-					if(neighbors5.at(x, y, z) && neighbors5.at(x, y, z)->nodeData.nodeIndex >= 0 &&
-							(!symmetric || neighbors5.at(x, y, z)->nodeData.nodeIndex >= nodeIndex))
-						++count;
 	}
 	return count;
 }
@@ -1031,7 +1023,8 @@ int Octree<Degree, OutputDensity>::SetMatrixRow(TreeNeighbors5 const& neighbors5
 	bool isInterior =
 		off[0] >= mn && off[0] < mx && off[1] >= mn && off[1] < mx && off[2] >= mn && off[2] < mx;
 	int count = 0;
-	for(int x = range.xStart; x < (symmetric ? 3 : range.xEnd); ++x) {
+	for(int x = range.xStart; x < range.xEnd; ++x) {
+		if(x > 2 && symmetric) break;
 		for(int y = range.yStart; y < range.yEnd; ++y) {
 			if(x == 2 && y > 2 && symmetric) break;
 			for(int z = range.zStart; z < range.zEnd; ++z) {
