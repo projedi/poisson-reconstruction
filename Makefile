@@ -13,8 +13,14 @@ ST_SOURCE=CmdLineParser.cpp DumpOutput.cpp Factor.cpp Geometry.cpp MarchingCubes
 CFLAGS += -fopenmp -std=c++03 -Wall -Wextra -Werror
 LFLAGS += -lgomp
 
-CFLAGS_DEBUG = -DDEBUG -g3
-LFLAGS_DEBUG =
+CFLAGS_DEBUG = -DDEBUG -g3 -O0
+LFLAGS_DEBUG = -O0
+
+CFLAGS_ADDRESS_SANITIZER = $(CFLAGS_DEBUG) -fsanitize=address -fno-omit-frame-pointer
+LFLAGS_ADDRESS_SANITIZER = $(LFLAGS_DEBUG) -fsanitize=address
+
+CFLAGS_THREAD_SANITIZER = $(CFLAGS_DEBUG) -fsanitize=thread -fPIC
+LFLAGS_THREAD_SANITIZER = $(LFLAGS_DEBUG) -fsanitize=thread -pie
 
 CFLAGS_RELEASE = -O3 -DRELEASE -funroll-loops -ffast-math
 LFLAGS_RELEASE = -O3
@@ -34,6 +40,16 @@ all: CFLAGS += $(CFLAGS_DEBUG)
 all: LFLAGS += $(LFLAGS_DEBUG)
 all: $(BIN)$(PR_TARGET)
 all: $(BIN)$(ST_TARGET)
+
+address-sanitizer: CFLAGS += $(CFLAGS_ADDRESS_SANITIZER)
+address-sanitizer: LFLAGS += $(LFLAGS_ADDRESS_SANITIZER)
+address-sanitizer: $(BIN)$(PR_TARGET)
+address-sanitizer: $(BIN)$(ST_TARGET)
+
+thread-sanitizer: CFLAGS += $(CFLAGS_THREAD_SANITIZER)
+thread-sanitizer: LFLAGS += $(LFLAGS_THREAD_SANITIZER)
+thread-sanitizer: $(BIN)$(PR_TARGET)
+thread-sanitizer: $(BIN)$(ST_TARGET)
 
 clang-noomp: CFLAGS = -std=c++11 -Wall -Wextra -Werror -DNO_OMP -DCPP11 $(CFLAGS_DEBUG)
 clang-noomp: LFLAGS = $(LFLAGS_DEBUG)
@@ -80,6 +96,14 @@ $(BIN)%.d: $(SRC)%.cpp
 	$(CXX) $(CFLAGS) -MF"$@" -MG -MM -MP -MT "$(addprefix $(BIN), $(addsuffix .o, $(notdir $(basename $<))))" "$<"
 
 test: all
+	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig"
+	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig"
+
+test-address-sanitizer: address-sanitizer
+	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig"
+	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig"
+
+test-thread-sanitizer: thread-sanitizer
 	Test/run-for-dataset.sh "Examples/horse.npts" "horse" "-orig"
 	Test/run-for-dataset.sh "Examples/bunny.points.ply" "bunny" "-orig"
 
