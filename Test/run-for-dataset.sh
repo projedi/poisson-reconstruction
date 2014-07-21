@@ -65,7 +65,7 @@ function run_poisson() {
    suf=$1
    shift
    # Parallelism is undeterministic here. Therefore it must be run on a single thread.
-   run "Bin/PoissonRecon" "$INNAME" "$suf" --threads 1 $@
+   run "Bin/PoissonRecon" "$INNAME" "$suf" $@
 }
 
 function run_trimmer() {
